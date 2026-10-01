@@ -1,0 +1,394 @@
+﻿<ResourceDictionary
+	xmlns     ="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x   ="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:sys ="clr-namespace:System;assembly=System.Runtime">
+
+	<!-- Connection -->
+	<sys:String
+		x:Key="ServerHint">
+		The SQL Server instance to connect to, e.g. localhost, MYPC\SQLEXPRESS or myserver.database.windows.net,1433.
+		Press Enter to load the metadata.
+	</sys:String>
+
+	<sys:String
+		x:Key="UserNameHint">
+		The SQL Server login (SQL Server authentication) used to read the metadata and, in direct insert mode, to insert
+		the data. Press Enter to load the metadata.
+	</sys:String>
+
+	<sys:String
+		x:Key="PasswordHint">
+		The password of the SQL Server login. It is only kept in memory: it is never saved or written to the generated
+		scripts. Press Enter to load the metadata.
+	</sys:String>
+
+	<sys:String
+		x:Key="LoadMetadataHint">
+		Connects to the server and loads the databases, tables and columns that the login can read into the database
+		explorer. Needs the server, user and password. Reloading clears the included tables, row sets and column rules.
+	</sys:String>
+
+	<sys:String
+		x:Key="EncryptConnectionHint">
+		Encrypts the connection to SQL Server. Recommended, and required by Azure SQL.
+	</sys:String>
+
+	<sys:String
+		x:Key="TrustServerCertificateHint">
+		Accepts the server's certificate without validating it. Only use this for development servers with a self-signed
+		certificate.
+	</sys:String>
+
+	<!-- Database explorer -->
+	<sys:String
+		x:Key="ExplorerFilterHint">
+		Shows only the databases and tables whose names contain this text. A database whose name matches shows all of its
+		tables.
+	</sys:String>
+
+	<sys:String
+		x:Key="ClearFilterHint">
+		Clears the search text and shows every database and table again.
+	</sys:String>
+
+	<sys:String
+		x:Key="IncludedOnlyHint">
+		Shows only the tables that are included in the generation.
+	</sys:String>
+
+	<sys:String
+		x:Key="IncludeSelectedHint">
+		Includes the selected tables in the generation. A selected database includes all of its visible tables.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExcludeSelectedHint">
+		Excludes the selected tables from the generation. A selected database excludes all of its visible tables.
+	</sys:String>
+
+	<sys:String
+		x:Key="HideSelectedHint">
+		Greys out the selected databases and tables (and collapses the databases) so the tables you are working on stand
+		out. Hidden tables are still generated when they are included.
+	</sys:String>
+
+	<sys:String
+		x:Key="ShowSelectedHint">
+		Shows the selected hidden databases and tables normally again.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExpandSelectedHint">
+		Expands the selected databases to show their tables.
+	</sys:String>
+
+	<sys:String
+		x:Key="CollapseSelectedHint">
+		Collapses the selected databases.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkRowCountHint">
+		Number of rows to generate for each selected table, from 1 to 1,000,000. Press Enter or click Set rows to apply
+		it.
+	</sys:String>
+
+	<sys:String
+		x:Key="ApplyRowCountHint">
+		Sets the number of rows of the selected tables (and of the visible tables of the selected databases) and includes
+		them. Tables with several row sets get this number in every set.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExplorerTreeHint">
+		Click a table to edit its column rules. Ctrl+click adds or removes a row from the selection, Shift+click selects a
+		range, Ctrl+A selects everything and Esc clears the selection. Right-click for the bulk actions.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExplorerRowsHeaderHint">
+		Number of rows to generate for each table. A table with several row sets shows its total, which is edited per row
+		set in the column rules panel.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExplorerVisibilityHeaderHint">
+		Click the eye of a database or table to grey it out (hide it) or to show it normally again. Hiding does not
+		exclude anything from the generation.
+	</sys:String>
+
+	<sys:String
+		x:Key="DatabaseRowHint">
+		Click to select this database for the bulk actions; Ctrl+click or Shift+click to select several rows. Double-click
+		or use the arrow to expand or collapse it.
+	</sys:String>
+
+	<sys:String
+		x:Key="TableIncludeHint">
+		Includes this table in the generation.
+	</sys:String>
+
+	<sys:String
+		x:Key="RowSetBadgeHint">
+		This table has several row sets, each with its own number of rows and column rules. Click the table to edit them.
+	</sys:String>
+
+	<sys:String
+		x:Key="InvalidRowSetsHint">
+		Some column rules of this table need attention. Click the table to see them.
+	</sys:String>
+
+	<sys:String
+		x:Key="SelectAllHint">
+		Selects every visible database and table (Ctrl+A).
+	</sys:String>
+
+	<sys:String
+		x:Key="ClearSelectionHint">
+		Clears the selection (Esc).
+	</sys:String>
+
+	<sys:String
+		x:Key="ExpandAllHint">
+		Expands every database.
+	</sys:String>
+
+	<sys:String
+		x:Key="CollapseAllHint">
+		Collapses every database.
+	</sys:String>
+
+	<sys:String
+		x:Key="ShowAllHint">
+		Shows every hidden database and table normally again.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExcludeAllHint">
+		Excludes every table from the generation.
+	</sys:String>
+
+	<sys:String
+		x:Key="SplitterHint">
+		Drag to resize the database explorer and the column rules panel.
+	</sys:String>
+
+	<!-- Column rules -->
+	<sys:String
+		x:Key="IncludeActiveTableHint">
+		Includes this table in the generation. Its rules can be edited whether or not it is included.
+	</sys:String>
+
+	<sys:String
+		x:Key="AddRowSetHint">
+		Adds a row set: another batch of rows for this table with its own number of rows and column rules, e.g. 10 small
+		shirts followed by 10 large shirts.
+	</sys:String>
+
+	<sys:String
+		x:Key="DuplicateRowSetHint">
+		Copies the selected row set with its number of rows and column rules, so only the differences have to be changed.
+	</sys:String>
+
+	<sys:String
+		x:Key="RemoveRowSetHint">
+		Removes the selected row set. A table always keeps at least one row set.
+	</sys:String>
+
+	<sys:String
+		x:Key="RowSetTabHint">
+		A row set of this table and its number of rows. Each row set generates its own rows with its own column rules. A
+		warning icon means some of its settings need attention.
+	</sys:String>
+
+	<sys:String
+		x:Key="RowSetNameHint">
+		Name of the row set. It labels the row set in the generated script and in error messages.
+	</sys:String>
+
+	<sys:String
+		x:Key="RowSetRowCountHint">
+		Number of rows this row set generates, from 1 to 1,000,000.
+	</sys:String>
+
+	<sys:String
+		x:Key="ColumnRulesGridHint">
+		How each column of the row set is filled. Choose a generation mode per column; only the settings of that mode are
+		shown. Primary key rows are red, foreign key and FTK rows are orange.
+	</sys:String>
+
+	<sys:String
+		x:Key="KeyColumnHint">
+		PK: primary key. FK: foreign key declared in SQL Server. FTK: name ends in FTK, linked by name to the table with
+		the matching ...PK column. ID: identity column numbered by SQL Server.
+	</sys:String>
+
+	<sys:String
+		x:Key="ColumnNameColumnHint">
+		Column name and, for key columns, the table and column whose values it takes.
+	</sys:String>
+
+	<sys:String
+		x:Key="SqlTypeColumnHint">
+		SQL Server data type of the column. Entered values are checked against it.
+	</sys:String>
+
+	<sys:String
+		x:Key="NullableColumnHint">
+		Whether the column accepts NULL.
+	</sys:String>
+
+	<sys:String
+		x:Key="ModeColumnHint">
+		How the values of the column are generated. Only the modes that suit the column's data type and keys are offered.
+	</sys:String>
+
+	<sys:String
+		x:Key="SettingsColumnHint">
+		Settings of the selected generation mode. Only the settings that the mode uses are shown.
+	</sys:String>
+
+	<sys:String
+		x:Key="SampleColumnHint">
+		Sample values generated with the current settings, or the problem that prevents generating them.
+	</sys:String>
+
+	<sys:String
+		x:Key="SequenceStartHint">
+		First value of the sequence: the value of the first row of this row set.
+	</sys:String>
+
+	<sys:String
+		x:Key="SequenceStepHint">
+		Amount added for each following row. Use a negative number to count down.
+	</sys:String>
+
+	<sys:String
+		x:Key="RegexHint">
+		A regular expression that the values must match, e.g. [A-Z]{3}-[0-9]{4}. A random matching value is generated for
+		each row.
+	</sys:String>
+
+	<sys:String
+		x:Key="RegexPresetHint">
+		Fills in a ready-made regular expression.
+	</sys:String>
+
+	<sys:String
+		x:Key="PatternHint">
+		A pattern in plain English, e.g. P FOLLOWED BY SEQ(1-1000) FOLLOWED BY (X OR Y) FOLLOWED BY RAND_NUMBER(0, 99, 2).
+		Click ? for the pattern language reference.
+	</sys:String>
+
+	<sys:String
+		x:Key="PatternHelpHint">
+		Opens the pattern language reference with this pattern in its try-it box.
+	</sys:String>
+
+	<sys:String
+		x:Key="PatternLanguageHint">
+		Opens the reference of the pattern language used by the Pattern generation mode, with examples that you can try
+		out.
+	</sys:String>
+
+	<sys:String
+		x:Key="KeyLegendHint">
+		Row colours of the column rules grid.
+	</sys:String>
+
+	<!-- Output -->
+	<sys:String
+		x:Key="SqlFileModeHint">
+		Writes the INSERT statements to a .sql script that you can review and run yourself.
+	</sys:String>
+
+	<sys:String
+		x:Key="DirectInsertModeHint">
+		Inserts the rows straight into the databases in a single transaction, so nothing is inserted when anything fails.
+	</sys:String>
+
+	<sys:String
+		x:Key="OutputFileHint">
+		Path of the .sql script to write. When the suggested name is kept, a new time-stamped name is suggested after each
+		generation.
+	</sys:String>
+
+	<sys:String
+		x:Key="BrowseOutputHint">
+		Chooses where to save the script.
+	</sys:String>
+
+	<sys:String
+		x:Key="OpenOutputFolderHint">
+		Opens the folder of the output script in File Explorer, with the last generated script selected.
+	</sys:String>
+
+	<sys:String
+		x:Key="ConfirmTestDatabaseHint">
+		Confirms that the databases are test databases that may be changed. Direct insert stays disabled until this is
+		ticked.
+	</sys:String>
+
+	<sys:String
+		x:Key="ClearExistingDataHint">
+		Deletes the existing rows before the new data is inserted. In SQL file mode the DELETE statements are written at
+		the start of the script, in the same transaction as the inserts.
+	</sys:String>
+
+	<sys:String
+		x:Key="ClearIncludedTablesHint">
+		Deletes only from the tables being generated.
+	</sys:String>
+
+	<sys:String
+		x:Key="ClearAllTablesHint">
+		Deletes from every table of the databases that contain the tables being generated.
+	</sys:String>
+
+	<sys:String
+		x:Key="ResetIdentitySeedsHint">
+		Restarts the identity numbering of the cleared tables, so the new rows are numbered from the identity seed again.
+	</sys:String>
+
+	<sys:String
+		x:Key="GenerateHint">
+		Generates the data of the included tables: a .sql script or direct inserts, depending on the output mode.
+	</sys:String>
+
+	<sys:String
+		x:Key="CancelHint">
+		Stops the running operation. Direct inserts that were already made are rolled back.
+	</sys:String>
+
+	<!-- Errors -->
+	<sys:String
+		x:Key="CopyErrorHint">
+		Copies the error, where it happened and the full details to the clipboard.
+	</sys:String>
+
+	<sys:String
+		x:Key="DismissErrorHint">
+		Hides this error.
+	</sys:String>
+
+	<sys:String
+		x:Key="ErrorDetailsHint">
+		The full technical details of the error, including the stack trace.
+	</sys:String>
+
+	<!-- Pattern language reference -->
+	<sys:String
+		x:Key="PatternTryHint">
+		Type a pattern to see the values it generates for the first rows.
+	</sys:String>
+
+	<sys:String
+		x:Key="UseExampleHint">
+		Loads this example into the try-it box.
+	</sys:String>
+
+	<sys:String
+		x:Key="SyntaxTableHint">
+		The building blocks of the pattern language. Keywords are not case-sensitive.
+	</sys:String>
+</ResourceDictionary>

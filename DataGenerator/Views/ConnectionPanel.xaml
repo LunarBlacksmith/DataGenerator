@@ -1,0 +1,145 @@
+﻿<UserControl
+	x:Class              ="DataGenerator.Views.ConnectionPanel"
+	xmlns                ="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x              ="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d              ="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc             ="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	xmlns:infrastructure ="clr-namespace:DataGenerator.Infrastructure"
+	xmlns:viewModels     ="clr-namespace:DataGenerator.ViewModels"
+	mc:Ignorable         ="d"
+	d:DataContext        ="{d:DesignInstance Type=viewModels:MainViewModel}">
+
+	<GroupBox
+		Header ="SQL Server connection"
+		Style  ="{StaticResource ConnectionSectionStyle}">
+		<Grid>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition
+					Width="Auto" />
+				<ColumnDefinition
+					Width="2*" />
+				<ColumnDefinition
+					Width="Auto" />
+				<ColumnDefinition
+					Width="*" />
+				<ColumnDefinition
+					Width="Auto" />
+				<ColumnDefinition
+					Width="*" />
+				<ColumnDefinition
+					Width="Auto" />
+			</Grid.ColumnDefinitions>
+
+			<Grid.RowDefinitions>
+				<RowDefinition
+					Height="Auto" />
+				<RowDefinition
+					Height="Auto" />
+			</Grid.RowDefinitions>
+
+			<Label
+				Grid.Row    ="0"
+				Grid.Column ="0"
+				Content     ="_Server:"
+				Target      ="{Binding ElementName=ServerInput}"
+				ToolTip     ="{StaticResource ServerHint}" />
+
+			<TextBox
+				x:Name      ="ServerInput"
+				Grid.Row    ="0"
+				Grid.Column ="1"
+				MinWidth    ="180"
+				Text        ="{Binding	ServerName,
+												Mode=TwoWay,
+												UpdateSourceTrigger=PropertyChanged}"
+				ToolTip     ="{StaticResource ServerHint}">
+				<TextBox.InputBindings>
+					<KeyBinding
+						Key     ="Enter"
+						Command ="{Binding LoadMetadataCommand}" />
+				</TextBox.InputBindings>
+			</TextBox>
+
+			<Label
+				Grid.Row    ="0"
+				Grid.Column ="2"
+				Content     ="SQL _user:"
+				Target      ="{Binding ElementName=UserInput}"
+				ToolTip     ="{StaticResource UserNameHint}" />
+
+			<TextBox
+				x:Name      ="UserInput"
+				Grid.Row    ="0"
+				Grid.Column ="3"
+				MinWidth    ="120"
+				Text        ="{Binding	UserName,
+												Mode=TwoWay,
+												UpdateSourceTrigger=PropertyChanged}"
+				ToolTip     ="{StaticResource UserNameHint}">
+				<TextBox.InputBindings>
+					<KeyBinding
+						Key     ="Enter"
+						Command ="{Binding LoadMetadataCommand}" />
+				</TextBox.InputBindings>
+			</TextBox>
+
+			<Label
+				Grid.Row    ="0"
+				Grid.Column ="4"
+				Content     ="_Password:"
+				Target      ="{Binding ElementName=PasswordInput}"
+				ToolTip     ="{StaticResource PasswordHint}" />
+
+			<PasswordBox
+				x:Name      ="PasswordInput"
+				Grid.Row    ="0"
+				Grid.Column ="5"
+				MinWidth    ="120"
+				ToolTip     ="{StaticResource PasswordHint}"
+				infrastructure:PasswordBoxBinding.BindPassword  ="True"
+				infrastructure:PasswordBoxBinding.BoundPassword ="{Binding	Password,
+																								Mode=TwoWay,
+																								UpdateSourceTrigger=PropertyChanged}">
+				<PasswordBox.InputBindings>
+					<KeyBinding
+						Key     ="Enter"
+						Command ="{Binding LoadMetadataCommand}" />
+				</PasswordBox.InputBindings>
+			</PasswordBox>
+
+			<Button
+				Grid.Row    ="0"
+				Grid.Column ="6"
+				Style       ="{StaticResource AccentButtonStyle}"
+				Command     ="{Binding LoadMetadataCommand}"
+				Content     ="_Load metadata"
+				ToolTip     ="{StaticResource LoadMetadataHint}"
+				infrastructure:ButtonIcon.Glyph ="&#xE72C;" />
+
+			<WrapPanel
+				Grid.Row        ="1"
+				Grid.Column     ="0"
+				Grid.ColumnSpan ="7">
+				<CheckBox
+					Content   ="_Encrypt connection"
+					IsChecked ="{Binding	EncryptConnection,
+												Mode=TwoWay,
+												UpdateSourceTrigger=PropertyChanged}"
+					ToolTip   ="{StaticResource EncryptConnectionHint}" />
+
+				<CheckBox
+					Content   ="_Trust server certificate"
+					IsChecked ="{Binding	TrustServerCertificate,
+												Mode=TwoWay,
+												UpdateSourceTrigger=PropertyChanged}"
+					ToolTip   ="{StaticResource TrustServerCertificateHint}" />
+
+				<TextBlock
+					Margin       ="8,4"
+					Style        ="{StaticResource SecondaryTextStyle}"
+					Text         ="Credentials remain in process memory and are not written to configuration files."
+					TextWrapping ="Wrap" />
+			</WrapPanel>
+		</Grid>
+	</GroupBox>
+</UserControl>

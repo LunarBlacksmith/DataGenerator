@@ -11,7 +11,7 @@ public sealed class FileDialogService : IFileDialogService
 			AddExtension     = true,
 			CheckPathExists  = true,
 			DefaultExt       = ".sql",
-			FileName         = $"generated-data-{DateTime.Now:yyyyMMdd-HHmmss}.sql",
+			FileName         = SecurePathService.CreateDefaultSqlFileName(),
 			Filter           = "SQL script (*.sql)|*.sql",
 			InitialDirectory = SecurePathService.GetGeneratedDataDirectory(),
 			OverwritePrompt  = true,

@@ -9,5 +9,6 @@ public enum ValueGenerationMode
 	ExistingForeignKey  = 4,
 	GeneratedForeignKey = 5,
 	DatabaseGenerated   = 6,
-	Null                = 7
+	Null                = 7,
+	Pattern             = 8
 }

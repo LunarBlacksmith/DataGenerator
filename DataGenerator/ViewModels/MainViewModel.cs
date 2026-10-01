@@ -1,18 +1,33 @@
-﻿using DataGenerator.Infrastructure;
+﻿using System.ComponentModel;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
+using DataGenerator.Infrastructure;
 using DataGenerator.Models;
 using DataGenerator.Services;
 using Microsoft.Data.SqlClient;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.IO;
 
 namespace DataGenerator.ViewModels;
 
 public sealed class MainViewModel : ObservableObject
 {
-	private readonly ISqlMetadataService    _metadataService;
-	private readonly IDataGenerationService _generationService;
-	private readonly IFileDialogService     _fileDialogService;
+	private const string READY_STATUS            = "Ready.";
+	private const string FAILED_STATUS           = "Operation failed. See the error panel for what happened and where.";
+	private const string CANCELLED_STATUS        = "Generation cancelled.";
+	private const string MASTER_DATABASE         = "master";
+	private const string APPLICATION_NAME        = "DataGenerator";
+	private const int    CONNECT_TIMEOUT_SECONDS = 15;
+	private const int    MAXIMUM_LISTED_ITEMS    = 12;
+
+	private readonly ISqlMetadataService      _metadataService;
+	private readonly IDataGenerationService   _generationService;
+	private readonly IFileDialogService       _fileDialogService;
+	private readonly IDialogService           _dialogService;
+	private readonly IShellService            _shellService;
+	private readonly IClipboardService        _clipboardService;
+	private readonly IHelpService             _helpService;
+	private readonly IExceptionFormatter      _exceptionFormatter;
+	private readonly IForeignTableKeyResolver _foreignTableKeyResolver;
 
 	private CancellationTokenSource? _cancellationTokenSource;
 	private string                   _serverName;
@@ -20,88 +35,75 @@ public sealed class MainViewModel : ObservableObject
 	private string                   _password;
 	private bool                     _encryptConnection;
 	private bool                     _trustServerCertificate;
-	private DatabaseModel?           _selectedDatabase;
-	private TableModel?              _selectedTable;
 	private string                   _outputFilePath;
+	private bool                     _usesDefaultOutputPath;
+	private string?                  _lastGeneratedFilePath;
 	private GenerationMode           _generationMode;
 	private bool                     _confirmTestDatabase;
+	private bool                     _clearExistingData;
+	private DataCleanupScope         _cleanupScope;
+	private bool                     _resetIdentitySeeds;
 	private bool                     _isBusy;
 	private string                   _statusMessage;
-	private string                   _errorMessage;
+	private ErrorReport?             _error;
 
 	#region PROPERTIES
 	#region PUBLIC
-	public ObservableCollection<DatabaseModel> Databases     { get; }
-	public ObservableCollection<RegexProfile>  RegexProfiles { get; }
+	public DatabaseExplorerViewModel Explorer { get; }
 
-	public IReadOnlyList<ValueGenerationMode>  ValueGenerationModes { get; }
-	public IReadOnlyList<GenerationMode>       GenerationModes      { get; }
+	public AsyncRelayCommand LoadMetadataCommand     { get; }
+	public RelayCommand      BrowseOutputCommand     { get; }
+	public RelayCommand      OpenOutputFolderCommand { get; }
+	public AsyncRelayCommand GenerateCommand         { get; }
+	public RelayCommand      CancelCommand           { get; }
+	public RelayCommand      ShowPatternHelpCommand  { get; }
+	public RelayCommand      CopyErrorCommand        { get; }
+	public RelayCommand      DismissErrorCommand     { get; }
 
-	public AsyncRelayCommand LoadMetadataCommand { get; }
-	public RelayCommand      BrowseOutputCommand { get; }
-	public AsyncRelayCommand GenerateCommand     { get; }
-	public RelayCommand      CancelCommand       { get; }
-
-	public string         ServerName
+	public string           ServerName
 	{
 		get => _serverName;
 		set
 		{
-			if (SetProperty(ref _serverName, value))
+			if (SetProperty(ref _serverName, value ?? string.Empty))
 			{
 				RefreshCommands();
 			}
 		}
 	}
-	public string         UserName
+	public string           UserName
 	{
 		get => _userName;
 		set
 		{
-			if (SetProperty(ref _userName, value))
+			if (SetProperty(ref _userName, value ?? string.Empty))
 			{
 				RefreshCommands();
 			}
 		}
 	}
-	public string         Password
+	public string           Password
 	{
 		get => _password;
 		set
 		{
-			if (SetProperty(ref _password, value))
+			if (SetProperty(ref _password, value ?? string.Empty))
 			{
 				RefreshCommands();
 			}
 		}
 	}
-	public bool           EncryptConnection
+	public bool             EncryptConnection
 	{
 		get => _encryptConnection;
 		set => SetProperty(ref _encryptConnection, value);
 	}
-	public bool           TrustServerCertificate
+	public bool             TrustServerCertificate
 	{
 		get => _trustServerCertificate;
 		set => SetProperty(ref _trustServerCertificate, value);
 	}
-	public DatabaseModel? SelectedDatabase
-	{
-		get => _selectedDatabase;
-		set
-		{
-			if (SetProperty(ref _selectedDatabase, value))
-			{
-				SelectedTable = value?.Tables.FirstOrDefault();
-			}
-		}
-	}
-	public TableModel?    SelectedTable
-	{
-		get => _selectedTable;
-		set => SetProperty(ref _selectedTable, value);
-	}
-	public GenerationMode GenerationMode
+	public GenerationMode   GenerationMode
 	{
 		get => _generationMode;
 		set
@@ -114,20 +116,41 @@ public sealed class MainViewModel : ObservableObject
 			}
 		}
 	}
-	public bool           IsSqlFileMode      => GenerationMode == GenerationMode.SqlFile;
-	public bool           IsDirectInsertMode => GenerationMode == GenerationMode.DirectInsert;
-	public string         OutputFilePath
+	public bool             IsSqlFileMode
+	{
+		get => _generationMode == GenerationMode.SqlFile;
+		set
+		{
+			if (value)
+			{
+				GenerationMode = GenerationMode.SqlFile;
+			}
+		}
+	}
+	public bool             IsDirectInsertMode
+	{
+		get => _generationMode == GenerationMode.DirectInsert;
+		set
+		{
+			if (value)
+			{
+				GenerationMode = GenerationMode.DirectInsert;
+			}
+		}
+	}
+	public string           OutputFilePath
 	{
 		get => _outputFilePath;
 		set
 		{
-			if (SetProperty(ref _outputFilePath, value))
+			if (SetProperty(ref _outputFilePath, value ?? string.Empty))
 			{
+				_usesDefaultOutputPath = false;
 				RefreshCommands();
 			}
 		}
 	}
-	public bool           ConfirmTestDatabase
+	public bool             ConfirmTestDatabase
 	{
 		get => _confirmTestDatabase;
 		set
@@ -138,34 +161,92 @@ public sealed class MainViewModel : ObservableObject
 			}
 		}
 	}
-	public bool           IsBusy
+	public bool             ClearExistingData
+	{
+		get => _clearExistingData;
+		set => SetProperty(ref _clearExistingData, value);
+	}
+	public DataCleanupScope CleanupScope
+	{
+		get => _cleanupScope;
+		set
+		{
+			if (SetProperty(ref _cleanupScope, value))
+			{
+				OnPropertyChanged(nameof(ClearIncludedTablesOnly));
+				OnPropertyChanged(nameof(ClearAllTablesInDatabases));
+			}
+		}
+	}
+	public bool             ClearIncludedTablesOnly
+	{
+		get => _cleanupScope == DataCleanupScope.IncludedTables;
+		set
+		{
+			if (value)
+			{
+				CleanupScope = DataCleanupScope.IncludedTables;
+			}
+		}
+	}
+	public bool             ClearAllTablesInDatabases
+	{
+		get => _cleanupScope == DataCleanupScope.AllTablesInDatabases;
+		set
+		{
+			if (value)
+			{
+				CleanupScope = DataCleanupScope.AllTablesInDatabases;
+			}
+		}
+	}
+	public bool             ResetIdentitySeeds
+	{
+		get => _resetIdentitySeeds;
+		set => SetProperty(ref _resetIdentitySeeds, value);
+	}
+	public bool             IsBusy
 	{
 		get => _isBusy;
 		private set
 		{
 			if (SetProperty(ref _isBusy, value))
 			{
+				OnPropertyChanged(nameof(IsIdle));
 				RefreshCommands();
 			}
 		}
 	}
-	public string         StatusMessage
+	public string           StatusMessage
 	{
 		get         => _statusMessage;
 		private set => SetProperty(ref _statusMessage, value);
 	}
-	public string         ErrorMessage
-	{
-		get         => _errorMessage;
-		private set => SetProperty(ref _errorMessage, value);
-	}
+
+	public bool   IsIdle        => !_isBusy;
+	public bool   HasError      => _error is not null;
+	public string ErrorSummary  => _error?.Summary ?? string.Empty;
+	public string ErrorLocation => _error?.Location ?? string.Empty;
+	public string ErrorDetails  => _error?.Details ?? string.Empty;
+
+	public string GenerationSummary
+		=> Explorer.IncludedTableCount == 0
+			? "Include at least one table in the database explorer."
+			: $"{Explorer.IncludedRowCount:N0} rows for {Explorer.IncludedTableCount:N0} table(s)";
 	#endregion PUBLIC
 	#endregion PROPERTIES
 
 	public MainViewModel(
-		ISqlMetadataService    metadataService,
-		IDataGenerationService generationService,
-		IFileDialogService     fileDialogService
+		ISqlMetadataService       metadataService,
+		IDataGenerationService    generationService,
+		IFileDialogService        fileDialogService,
+		IDialogService            dialogService,
+		IShellService             shellService,
+		IClipboardService         clipboardService,
+		IHelpService              helpService,
+		IExceptionFormatter       exceptionFormatter,
+		IForeignTableKeyResolver  foreignTableKeyResolver,
+		DatabaseExplorerViewModel explorer
 	)
 	{
 		_cancellationTokenSource = null;
@@ -174,92 +255,92 @@ public sealed class MainViewModel : ObservableObject
 		_password                = string.Empty;
 		_encryptConnection       = true;
 		_trustServerCertificate  = false;
-		_selectedDatabase        = null;
-		_selectedTable           = null;
-		_outputFilePath          = string.Empty;
+		_outputFilePath          = CreateDefaultOutputFilePath();
+		_usesDefaultOutputPath   = true;
+		_lastGeneratedFilePath   = null;
 		_generationMode          = GenerationMode.SqlFile;
 		_confirmTestDatabase     = false;
+		_clearExistingData       = false;
+		_cleanupScope            = DataCleanupScope.IncludedTables;
+		_resetIdentitySeeds      = true;
 		_isBusy                  = false;
-		_statusMessage           = "Ready.";
-		_errorMessage            = string.Empty;
+		_statusMessage           = READY_STATUS;
+		_error                   = null;
 
-		_metadataService    = metadataService   ?? throw new ArgumentNullException(nameof(metadataService));
-		_generationService  = generationService ?? throw new ArgumentNullException(nameof(generationService));
-		_fileDialogService  = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
+		_metadataService         = metadataService ?? throw new ArgumentNullException(nameof(metadataService));
+		_generationService       = generationService ?? throw new ArgumentNullException(nameof(generationService));
+		_fileDialogService       = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
+		_dialogService           = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+		_shellService            = shellService ?? throw new ArgumentNullException(nameof(shellService));
+		_clipboardService        = clipboardService ?? throw new ArgumentNullException(nameof(clipboardService));
+		_helpService             = helpService ?? throw new ArgumentNullException(nameof(helpService));
+		_exceptionFormatter      = exceptionFormatter ?? throw new ArgumentNullException(nameof(exceptionFormatter));
+		_foreignTableKeyResolver = foreignTableKeyResolver ?? throw new ArgumentNullException(nameof(foreignTableKeyResolver));
+		Explorer                 = explorer ?? throw new ArgumentNullException(nameof(explorer));
 
-		Databases            = [];
-		ValueGenerationModes = Enum.GetValues<ValueGenerationMode>();
-		GenerationModes      = Enum.GetValues<GenerationMode>();
-		LoadMetadataCommand  = new AsyncRelayCommand(LoadMetadataAsync,CanLoadMetadata);
-		BrowseOutputCommand  = new RelayCommand(BrowseOutputFile, CanBrowseOutputFile);
-		GenerateCommand      = new AsyncRelayCommand(GenerateAsync, CanGenerate);
-		CancelCommand        = new RelayCommand(Cancel, CanCancel);
-		RegexProfiles =
-		[
-			new RegexProfile
-				{
-					Name    = "Uppercase code",
-					Pattern = "[A-Z]{8}"
-				},
-				new RegexProfile
-				{
-					Name    = "Asset reference",
-					Pattern = "ASSET-[0-9]{6}"
-				},
-				new RegexProfile
-				{
-					Name    = "Bin location",
-					Pattern = "[A-Z]{2}-[0-9]{3}-[A-Z]{1}"
-				},
-				new RegexProfile
-				{
-					Name    = "Australian test mobile",
-					Pattern = "04[0-9]{8}"
-				}
-		];
+		LoadMetadataCommand     = new AsyncRelayCommand(LoadMetadataAsync, CanLoadMetadata);
+		BrowseOutputCommand     = new RelayCommand(BrowseOutputFile, _ => !IsBusy && IsSqlFileMode);
+		OpenOutputFolderCommand = new RelayCommand(OpenOutputFolder);
+		GenerateCommand         = new AsyncRelayCommand(GenerateAsync, CanGenerate);
+		CancelCommand           = new RelayCommand(Cancel, _ => IsBusy);
+		ShowPatternHelpCommand  = new RelayCommand(parameter => _helpService.ShowPatternLanguageHelp(parameter as string));
+		CopyErrorCommand        = new RelayCommand(CopyError, _ => HasError);
+		DismissErrorCommand     = new RelayCommand(_ => ClearError(), _ => HasError);
+
+		Explorer.GenerationSettingsChanged += OnGenerationSettingsChanged;
 	}
 
-	
-	private bool CanLoadMetadata(object? parameter)
-		=> !IsBusy
-			&& !string.IsNullOrWhiteSpace(ServerName)
-			&& !string.IsNullOrWhiteSpace(UserName)
-			&& !string.IsNullOrWhiteSpace(Password);
+	/// <summary>
+	/// Shows an exception in the error panel with what happened, where it happened and the full details.
+	/// </summary>
+	public void ReportError(Exception exception)
+	{
+		ArgumentNullException.ThrowIfNull(exception);
+
+		ShowError(_exceptionFormatter.Format(exception));
+	}
+
+	private bool CanLoadMetadata(object? parameter) => !IsBusy && HasCompleteConnectionDetails();
 
 	private async Task LoadMetadataAsync(object? parameter)
-		=> await RunBusyOperationAsync(async cancellationToken
-			=> {
-				StatusMessage = "Connecting to SQL Server and loading metadata...";
+	{
+		bool discardsSettings = Explorer.IncludedTableCount > 0;
 
-				string           connectionString = BuildConnectionString("master");
-				Progress<string> progress         = new(message => StatusMessage = message);
+		if (	discardsSettings
+				&& !_dialogService.Confirm(
+						"Reload metadata",
+						"Reloading the metadata clears the included tables, row sets and column rules. Continue?"
+					)
+		)
+		{
+			return;
+		}
 
-				IReadOnlyList<DatabaseModel> databases = await
-					_metadataService
-						.LoadMetadataAsync(
-							connectionString,
-							progress,
-							cancellationToken
-						);
+		await RunBusyOperationAsync(
+			async cancellationToken =>
+			{
+				StatusMessage = "Connecting to SQL Server and loading metadata…";
 
-				UnsubscribeFromTableChanges();
-				Databases.Clear();
+				string           connectionString = BuildConnectionString(MASTER_DATABASE);
+				Progress<string> progress         = new Progress<string>(message => StatusMessage = message);
 
-				foreach (DatabaseModel database in databases)
-				{
-					Databases.Add(database);
-				}
+				IReadOnlyList<DatabaseModel> databases = await _metadataService.LoadMetadataAsync(
+					connectionString,
+					progress,
+					cancellationToken
+				);
 
-				SubscribeToTableChanges();
+				int inferredKeyCount = _foreignTableKeyResolver.ResolveInferredKeys(databases);
 
-				SelectedDatabase = Databases.FirstOrDefault();
-				StatusMessage    = $"Loaded metadata for {Databases.Count} database(s).";
+				Explorer.Load(databases);
 
-				RefreshCommands();
+				StatusMessage = $"Loaded {Explorer.TotalTableCount:N0} table(s) from {databases.Count:N0} database(s)"
+					+ (inferredKeyCount > 0
+						? $" and linked {inferredKeyCount:N0} FTK column(s) to the tables they refer to."
+						: ".");
 			}
 		);
-
-	private bool CanBrowseOutputFile(object? parameter) => !IsBusy && IsSqlFileMode;
+	}
 
 	private void BrowseOutputFile(object? parameter)
 	{
@@ -271,112 +352,240 @@ public sealed class MainViewModel : ObservableObject
 		}
 	}
 
+	private void OpenOutputFolder(object? parameter)
+	{
+		try
+		{
+			string  outputFilePath = _outputFilePath.Trim();
+			string? fileToSelect   = File.Exists(outputFilePath) ? outputFilePath : _lastGeneratedFilePath;
+
+			_shellService.OpenFolder(GetOutputFolder(), File.Exists(fileToSelect) ? fileToSelect : null);
+		}
+		catch (Exception exception) when (	exception is IOException
+														or UnauthorizedAccessException
+														or ArgumentException
+														or NotSupportedException
+														or Win32Exception
+		)
+		{
+			ReportError(exception);
+		}
+	}
+
 	private bool CanGenerate(object? parameter)
 	{
-		bool hasSelectedTables =
-			Databases
-				.SelectMany(database => database.Tables)
-				.Any(table => table.IsSelected);
-
 		bool outputIsConfigured =
 			IsSqlFileMode
 				? !string.IsNullOrWhiteSpace(OutputFilePath)
 				: ConfirmTestDatabase && HasCompleteConnectionDetails();
 
 		return	!IsBusy
-					&& hasSelectedTables
+					&& Explorer.IncludedTableCount > 0
 					&& outputIsConfigured;
 	}
 
 	private async Task GenerateAsync(object? parameter)
-		=> await RunBusyOperationAsync(async cancellationToken
-				=> {
-					List<TableModel> selectedTables =
-						[.. Databases
-								.SelectMany(database => database.Tables)
-								.Where(table => table.IsSelected)
-						];
-
-					ValidateForeignKeySelections(selectedTables);
-
-					GenerationRequest request = new()
-					{
-						Tables           = selectedTables,
-						Mode             = GenerationMode,
-						OutputFilePath   = IsSqlFileMode ? OutputFilePath : null,
-						ConnectionString = IsDirectInsertMode ? BuildConnectionString("master") : null
-					};
-
-					Progress<string> progress = new(message => StatusMessage = message);
-
-					await _generationService.GenerateAsync(
-						request,
-						progress,
-						cancellationToken
-					);
-
-					StatusMessage = IsSqlFileMode
-											? "SQL script generation completed successfully."
-											: "Direct database insertion completed successfully.";
-				}
-			);
-
-	private static void ValidateForeignKeySelections(IReadOnlyCollection<TableModel> selectedTables)
 	{
-		HashSet<string> selectedTableKeys =
-			selectedTables
-				.Select(
-						table => CreateTableKey(
-										table.DatabaseName,
-										table.SchemaName,
-										table.Name
-									)
-				)
-				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		ClearError();
 
-		foreach (TableModel table in selectedTables)
+		IReadOnlyList<TableNodeViewModel>? includedTables = PrepareIncludedTables();
+
+		if (includedTables is null)
 		{
-			foreach (ForeignKeyModel foreignKey in table.ForeignKeys)
-			{
-				ColumnModel? foreignKeyColumn =
-					table
-						.Columns
-						.FirstOrDefault(
-							column =>
-								string.Equals(
-									column.Name,
-									foreignKey.ParentColumn,
-									StringComparison.OrdinalIgnoreCase
-								)
-							)
-						?? throw new InvalidOperationException(
-								$"Foreign key '{foreignKey.Name}' references column '{foreignKey.ParentColumn}', but that "
-								+ "column was not found in the loaded metadata."
-							);
+			return;
+		}
 
-				if (foreignKeyColumn.GenerationMode == ValueGenerationMode.Fixed || foreignKeyColumn.GenerationMode == ValueGenerationMode.Null)
+		await RunBusyOperationAsync(
+			async cancellationToken =>
+			{
+				GenerationRequest request  = CreateRequest(includedTables);
+				Progress<string>  progress = new Progress<string>(message => StatusMessage = message);
+				long              rowCount = request.Plans.Sum(plan => (long)plan.TotalRowCount);
+
+				await _generationService.GenerateAsync(
+					request,
+					progress,
+					cancellationToken
+				);
+
+				if (request.Mode == GenerationMode.DirectInsert)
 				{
-					continue;
+					StatusMessage = $"Inserted {rowCount:N0} row(s) into {request.Plans.Count:N0} table(s) and committed the transaction.";
+					return;
 				}
 
-				string referencedTableKey =
-					CreateTableKey(
-						foreignKey.ReferencedDatabase,
-						foreignKey.ReferencedSchema,
-						foreignKey.ReferencedTable
-					);
+				_lastGeneratedFilePath = Path.GetFullPath(request.OutputFilePath!);
+				StatusMessage          = $"Wrote {rowCount:N0} row(s) for {request.Plans.Count:N0} table(s) to "
+					+ $"{Path.GetFileName(_lastGeneratedFilePath)}. Click 'Open output folder' to find it.";
 
-				if (!selectedTableKeys.Contains(referencedTableKey))
+				if (_usesDefaultOutputPath)
 				{
-					throw new InvalidOperationException(
-						$"{table.FullyQualifiedName}.[{foreignKeyColumn.Name}] references "
-							+ $"[{foreignKey.ReferencedDatabase}].[{foreignKey.ReferencedSchema}].[{foreignKey.ReferencedTable}]. "
-							+ $"Select that referenced table for generation, or configure the foreign-key column with a fixed existing value."
-					);
+					SetDefaultOutputFilePath();
 				}
 			}
+		);
+	}
+
+	/// <summary>
+	/// Resolves keys taken from tables that are not included, validates every rule and confirms data cleanup.
+	/// Returns the tables to generate, or <see langword="null"/> when generation should not start.
+	/// </summary>
+	private IReadOnlyList<TableNodeViewModel>? PrepareIncludedTables()
+	{
+		IReadOnlyList<TableNodeViewModel> includedTables = Explorer.GetIncludedTables();
+
+		if (includedTables.Count == 0)
+		{
+			StatusMessage = "Include at least one table in the database explorer.";
+			return null;
+		}
+
+		IReadOnlyList<MissingReference> missingReferences = GenerationPreflight.FindMissingReferences(Explorer, includedTables);
+
+		if (missingReferences.Count > 0)
+		{
+			DialogChoice choice = _dialogService.AskYesNoCancel(
+				"Generate data for referenced tables?",
+				BuildMissingReferenceMessage(missingReferences)
+			);
+
+			switch (choice)
+			{
+				case DialogChoice.Yes:
+					Explorer.IncludeTables(missingReferences.Select(reference => reference.ReferencedTable).Distinct());
+					includedTables = Explorer.GetIncludedTables();
+					break;
+
+				case DialogChoice.No:
+					UseExistingKeys(missingReferences, includedTables);
+					break;
+
+				default:
+					StatusMessage = CANCELLED_STATUS;
+					return null;
+			}
+		}
+
+		IReadOnlyList<RuleProblem> problems = GenerationPreflight.FindRuleProblems(includedTables);
+
+		if (problems.Count > 0)
+		{
+			ShowRuleProblems(problems);
+			return null;
+		}
+
+		if (IsDirectInsertMode && ClearExistingData && !ConfirmCleanup(includedTables))
+		{
+			StatusMessage = CANCELLED_STATUS;
+			return null;
+		}
+
+		return includedTables;
+	}
+
+	private static void UseExistingKeys(IReadOnlyList<MissingReference> missingReferences, IReadOnlyList<TableNodeViewModel> includedTables)
+	{
+		HashSet<TableNodeViewModel> included = [.. includedTables];
+
+		foreach (MissingReference reference in missingReferences.Where(reference => included.Contains(reference.ReferencingTable)))
+		{
+			reference.Rule.GenerationMode = ValueGenerationMode.ExistingForeignKey;
 		}
 	}
+
+	private static string BuildMissingReferenceMessage(IReadOnlyList<MissingReference> missingReferences)
+	{
+		StringBuilder builder = new StringBuilder("Some columns take their values from rows generated for tables that are not included:");
+		List<IGrouping<TableNodeViewModel, MissingReference>> groups = [.. missingReferences.GroupBy(reference => reference.ReferencedTable)];
+
+		_ = builder.AppendLine();
+
+		foreach (IGrouping<TableNodeViewModel, MissingReference> group in groups.Take(MAXIMUM_LISTED_ITEMS))
+		{
+			string columns = string.Join(
+				", ",
+				group.Select(reference => $"{reference.ReferencingTable.Model.Name}.{reference.Rule.Name}{(reference.Rule.Reference!.IsInferred ? " (FTK)" : string.Empty)}")
+					.Distinct(StringComparer.OrdinalIgnoreCase)
+			);
+
+			_ = builder.AppendLine()
+				.Append($"•  [{group.Key.Database.DisplayName}] {group.Key.DisplayName}  ←  {columns}");
+		}
+
+		if (groups.Count > MAXIMUM_LISTED_ITEMS)
+		{
+			_ = builder.AppendLine().Append($"…and {groups.Count - MAXIMUM_LISTED_ITEMS:N0} more table(s).");
+		}
+
+		_ = builder.AppendLine()
+			.AppendLine()
+			.AppendLine("(FTK) marks columns linked by their name ending in FTK rather than by a SQL Server foreign key.")
+			.AppendLine()
+			.AppendLine("Yes:  also generate data for these tables (their row counts can be changed in the explorer).")
+			.AppendLine("No:  use keys that already exist in these tables instead.")
+			.Append("Cancel:  do not generate yet.");
+
+		return builder.ToString();
+	}
+
+	private void ShowRuleProblems(IReadOnlyList<RuleProblem> problems)
+	{
+		StringBuilder summary = new StringBuilder($"{problems.Count:N0} setting(s) must be fixed before generating:");
+
+		foreach (RuleProblem problem in problems.Take(MAXIMUM_LISTED_ITEMS))
+		{
+			_ = summary.AppendLine().Append($"•  {problem.Location}: {problem.Message}");
+		}
+
+		if (problems.Count > MAXIMUM_LISTED_ITEMS)
+		{
+			_ = summary.AppendLine().Append($"…and {problems.Count - MAXIMUM_LISTED_ITEMS:N0} more (see Details).");
+		}
+
+		ShowError(
+			new ErrorReport
+			{
+				Summary  = summary.ToString(),
+				Location = problems[0].Location,
+				Details  = string.Join(Environment.NewLine, problems.Select(problem => $"{problem.Location}: {problem.Message}"))
+			}
+		);
+
+		Explorer.Reveal(problems[0].Table, problems[0].RowSet);
+		StatusMessage = "Fix the column rules marked in red, then generate again.";
+	}
+
+	private bool ConfirmCleanup(IReadOnlyList<TableNodeViewModel> includedTables)
+	{
+		IReadOnlyList<TableModel> tablesToClear = GetTablesToClear(includedTables);
+		string                    databases     = string.Join(
+			", ",
+			tablesToClear.Select(table => table.DatabaseName).Distinct(StringComparer.OrdinalIgnoreCase)
+		);
+
+		return _dialogService.Confirm(
+			"Delete existing data?",
+			$"All existing rows will be deleted from {tablesToClear.Count:N0} table(s) in {databases} before the new data is inserted."
+				+ $"{Environment.NewLine}{Environment.NewLine}"
+				+ "The deletes run in the same transaction as the inserts, so nothing is deleted if generation fails. Continue?"
+		);
+	}
+
+	private GenerationRequest CreateRequest(IReadOnlyList<TableNodeViewModel> includedTables)
+		=> new GenerationRequest
+		{
+			Plans              = [.. includedTables.Select(table => table.CreatePlan())],
+			Mode               = _generationMode,
+			OutputFilePath     = IsSqlFileMode ? _outputFilePath.Trim() : null,
+			ConnectionString   = IsDirectInsertMode ? BuildConnectionString(MASTER_DATABASE) : null,
+			TablesToClear      = _clearExistingData ? GetTablesToClear(includedTables) : [],
+			ResetIdentitySeeds = _clearExistingData && _resetIdentitySeeds
+		};
+
+	private IReadOnlyList<TableModel> GetTablesToClear(IReadOnlyList<TableNodeViewModel> includedTables)
+		=> _cleanupScope == DataCleanupScope.AllTablesInDatabases
+			? [.. includedTables.Select(table => table.Database).Distinct().SelectMany(database => database.Tables).Select(table => table.Model)]
+			: [.. includedTables.Select(table => table.Model)];
 
 	private bool HasCompleteConnectionDetails()
 		=>	!string.IsNullOrWhiteSpace(ServerName)
@@ -385,7 +594,7 @@ public sealed class MainViewModel : ObservableObject
 
 	private string BuildConnectionString(string databaseName)
 	{
-		SqlConnectionStringBuilder builder = new()
+		SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
 		{
 			DataSource               = ServerName.Trim(),
 			InitialCatalog           = databaseName,
@@ -396,26 +605,58 @@ public sealed class MainViewModel : ObservableObject
 			TrustServerCertificate   = TrustServerCertificate,
 			PersistSecurityInfo      = false,
 			MultipleActiveResultSets = false,
-			ConnectTimeout           = 15,
-			ApplicationName          = "DataGenerator"
+			ConnectTimeout           = CONNECT_TIMEOUT_SECONDS,
+			ApplicationName          = APPLICATION_NAME
 		};
 
 		return builder.ConnectionString;
 	}
 
-	private bool CanCancel(object? parameter) => IsBusy;
+	private string GetOutputFolder()
+	{
+		string outputFilePath = _outputFilePath.Trim();
+
+		if (outputFilePath.Length > 0)
+		{
+			try
+			{
+				string? directory = Path.GetDirectoryName(Path.GetFullPath(outputFilePath));
+
+				if (!string.IsNullOrEmpty(directory) && Directory.Exists(directory))
+				{
+					return directory;
+				}
+			}
+			catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+			{
+				// An unusable path falls back to the default output folder.
+			}
+		}
+
+		return SecurePathService.GetGeneratedDataDirectory();
+	}
+
+	private void SetDefaultOutputFilePath()
+	{
+		_outputFilePath        = CreateDefaultOutputFilePath();
+		_usesDefaultOutputPath = true;
+		OnPropertyChanged(nameof(OutputFilePath));
+	}
+
+	private static string CreateDefaultOutputFilePath()
+		=> Path.Combine(SecurePathService.GetGeneratedDataDirectory(), SecurePathService.CreateDefaultSqlFileName());
 
 	private void Cancel(object? parameter)
 	{
 		_cancellationTokenSource?.Cancel();
-		StatusMessage = "Cancellation requested.";
+		StatusMessage = "Cancellation requested…";
 	}
 
 	private async Task RunBusyOperationAsync(Func<CancellationToken, Task> operation)
 	{
 		ArgumentNullException.ThrowIfNull(operation);
 
-		ErrorMessage             = string.Empty;
+		ClearError();
 		IsBusy                   = true;
 		_cancellationTokenSource = new CancellationTokenSource();
 
@@ -427,62 +668,72 @@ public sealed class MainViewModel : ObservableObject
 		{
 			StatusMessage = "Operation cancelled.";
 		}
-		catch (SqlException exception)
-		{
-			ErrorMessage  = $"SQL Server error {exception.Number}: {exception.Message}";
-			StatusMessage = "Operation failed.";
-		}
-		catch (IOException exception)
-		{
-			ErrorMessage  = $"File error: {exception.Message}";
-			StatusMessage = "Operation failed.";
-		}
-		catch (UnauthorizedAccessException exception)
-		{
-			ErrorMessage  = $"Access denied: {exception.Message}";
-			StatusMessage = "Operation failed.";
-		}
 		catch (Exception exception)
 		{
-			ErrorMessage  = exception.Message;
-			StatusMessage = "Operation failed.";
+			ReportError(exception);
+			StatusMessage = FAILED_STATUS;
 		}
 		finally
 		{
 			_cancellationTokenSource.Dispose();
 			_cancellationTokenSource = null;
-			IsBusy = false;
+			IsBusy                   = false;
 		}
 	}
 
-	private void SubscribeToTableChanges()
+	private void ShowError(ErrorReport report)
 	{
-		foreach (TableModel table in Databases.SelectMany(database => database.Tables))
-		{
-			table.PropertyChanged += OnTablePropertyChanged;
-		}
+		_error = report;
+		OnErrorChanged();
 	}
 
-	private void UnsubscribeFromTableChanges()
+	private void ClearError()
 	{
-		foreach (TableModel table in Databases.SelectMany(database => database.Tables))
+		if (_error is null)
 		{
-			table.PropertyChanged -= OnTablePropertyChanged;
+			return;
 		}
+
+		_error = null;
+		OnErrorChanged();
 	}
 
-	private void OnTablePropertyChanged(object? sender, PropertyChangedEventArgs e)
+	private void OnErrorChanged()
 	{
-		if (	e.PropertyName == nameof(TableModel.IsSelected)
-				|| e.PropertyName == nameof(TableModel.RowCount)
-		)
+		OnPropertyChanged(nameof(HasError));
+		OnPropertyChanged(nameof(ErrorSummary));
+		OnPropertyChanged(nameof(ErrorLocation));
+		OnPropertyChanged(nameof(ErrorDetails));
+		CopyErrorCommand.NotifyCanExecuteChanged();
+		DismissErrorCommand.NotifyCanExecuteChanged();
+	}
+
+	private void CopyError(object? parameter)
+	{
+		if (_error is null)
 		{
-			RefreshCommands();
+			return;
+		}
+
+		string text = $"{_error.Summary}{Environment.NewLine}{Environment.NewLine}Where:{Environment.NewLine}{_error.Location}"
+			+ $"{Environment.NewLine}{Environment.NewLine}Details:{Environment.NewLine}{_error.Details}";
+
+		try
+		{
+			_clipboardService.SetText(text);
+			StatusMessage = "Error details copied to the clipboard.";
+		}
+		catch (ExternalException)
+		{
+			StatusMessage = "The clipboard is in use by another application. Try copying again.";
 		}
 	}
 
-	private static string CreateTableKey(string databaseName, string schemaName, string tableName)
-		=> $"{databaseName}.{schemaName}.{tableName}";
+	private void OnGenerationSettingsChanged(object? sender, EventArgs e)
+	{
+		OnPropertyChanged(nameof(GenerationSummary));
+		GenerateCommand.NotifyCanExecuteChanged();
+	}
 
 	private void RefreshCommands()
 	{

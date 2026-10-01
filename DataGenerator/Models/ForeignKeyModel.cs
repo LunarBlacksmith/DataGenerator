@@ -19,4 +19,16 @@ public sealed class ForeignKeyModel
 	public required string ReferencedTable    { get; init; }
 
 	public required string ReferencedColumn   { get; init; }
+
+	/// <summary>
+	/// True when the relationship was inferred from the "...FTK" / "...PK" column naming convention
+	/// instead of being declared as a foreign key constraint in SQL Server.
+	/// </summary>
+	public bool IsInferred                    { get; init; }
+
+	public string ReferencedTableKey => TableModel.CreateKey(ReferencedDatabase, ReferencedSchema, ReferencedTable);
+
+	public string ReferencedColumnKey => $"{ReferencedTableKey}.{ReferencedColumn}";
+
+	public string ReferencedDisplayName => $"{ReferencedSchema}.{ReferencedTable}.{ReferencedColumn}";
 }

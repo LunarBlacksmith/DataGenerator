@@ -36,6 +36,8 @@ public static class SecurePathService
 		return directory;
 	}
 
+	public static string CreateDefaultSqlFileName() => $"generated-data-{DateTime.Now:yyyyMMdd-HHmmss}.sql";
+
 	public static bool IsInsideApplicationInstallationDirectory(string candidatePath)
 	{
 		if (string.IsNullOrWhiteSpace(candidatePath))
