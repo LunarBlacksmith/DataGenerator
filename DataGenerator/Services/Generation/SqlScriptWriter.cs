@@ -106,6 +106,8 @@ internal sealed class SqlScriptWriter
 			}
 		}
 
+		WritePostGeneration(writer, blueprint);
+
 		writer.WriteLine($"{INDENT}COMMIT TRANSACTION;");
 		writer.WriteLine("END TRY");
 		writer.WriteLine("BEGIN CATCH");
@@ -143,6 +145,15 @@ internal sealed class SqlScriptWriter
 			writer.WriteLine(
 				$"-- WARNING: all existing rows of {FormatCount(blueprint.TablesToClear.Count, "table")} "
 				+ "are deleted before the new rows are inserted."
+			);
+		}
+
+		if (blueprint.PostGeneration is PostGenerationScript postGeneration)
+		{
+			writer.WriteLine("--");
+			writer.WriteLine(
+				$"-- Then runs {FormatCount(postGeneration.Statements.Count, "post-generation statement")} "
+				+ $"in {SqlSyntax.ToCommentText(SqlSyntax.QuoteIdentifier(postGeneration.DatabaseName))} before the commit."
 			);
 		}
 
@@ -220,6 +231,38 @@ internal sealed class SqlScriptWriter
 		}
 
 		writer.WriteLine();
+	}
+
+	/// <summary>
+	/// Writes the stored procedures and SQL the user asked to run after the inserts. Their SQL is written exactly as typed
+	/// (not indented), so text that spans several lines inside quotes is not changed.
+	/// </summary>
+	private static void WritePostGeneration(TextWriter writer, GenerationBlueprint blueprint)
+	{
+		if (blueprint.PostGeneration is not PostGenerationScript postGeneration)
+		{
+			return;
+		}
+
+		writer.WriteLine($"{INDENT}-- Post-generation SQL, run before the transaction is committed");
+		writer.WriteLine($"{INDENT}USE {SqlSyntax.QuoteIdentifier(postGeneration.DatabaseName)};");
+		writer.WriteLine();
+
+		foreach (PostGenerationStatement statement in postGeneration.Statements)
+		{
+			writer.WriteLine($"{INDENT}-- {SqlSyntax.ToCommentText(statement.Description)}");
+
+			if (statement.Kind == PostGenerationStatementKind.StoredProcedure)
+			{
+				writer.WriteLine($"{INDENT}{statement.Sql}");
+			}
+			else
+			{
+				writer.WriteLine(statement.Sql);
+			}
+
+			writer.WriteLine();
+		}
 	}
 
 	private void WritePoolLoad(TextWriter writer, ExistingKeyPool pool)

@@ -45,16 +45,8 @@ public sealed class PatternHelpViewModel : ObservableObject
 
 	public IReadOnlyList<PatternSyntaxHelp> Functions { get; } =
 	[
-		new PatternSyntaxHelp("SEQ(min-max, start, step, digits)", "Counts through min-max for each row, wrapping back to min after max. start (default min), step (default 1) and digits (default: the digits of max, zero-padded; 0 = no padding) are optional.", "SEQ(1-1000, 1) → 0001, 0002, …"),
-		new PatternSyntaxHelp("RAND_NUM(min, max, digits)", "Random whole number from min to max inclusive. digits pads it with leading zeros (no padding by default).", "RAND_NUM(0, 99, 2) → 07"),
-		new PatternSyntaxHelp("RAND_DECIMAL(min, max, decimals)", "Random number with the given decimal places (default 2).", "RAND_DECIMAL(0, 100) → 42.17"),
-		new PatternSyntaxHelp("RAND_LETTERS(length, case)", "Random letters. length can be a range such as 3-6; case is UPPER (default), LOWER or MIXED.", "RAND_LETTERS(3) → QXT"),
-		new PatternSyntaxHelp("RAND_DIGITS(length)", "Random digits, leading zeros allowed.", "RAND_DIGITS(4) → 0381"),
-		new PatternSyntaxHelp("RAND_ALPHANUM(length, case)", "Random letters and digits.", "RAND_ALPHANUM(8) → K3P9Z0QA"),
-		new PatternSyntaxHelp("RAND_DATE('from', 'to', 'format')", "Random date between two quoted dates. format defaults to 'yyyy-MM-dd'.", "RAND_DATE('2024-01-01', '2024-12-31')"),
-		new PatternSyntaxHelp("TODAY(time, 'format')", "Today's date. time is NOW (default: the time the value is generated) or ANY (a random time of today). format defaults to 'yyyy-MM-dd HH:mm:ss'.", "TODAY(ANY, 'yyyy-MM-dd HH:mm')"),
-		new PatternSyntaxHelp("ONE_OF(a, b, …)", "Picks one of the listed values at random.", "ONE_OF('S', 'M', 'L', 'XL')"),
-		new PatternSyntaxHelp("GUID(case)", "A new GUID. case is UPPER (default) or LOWER.", "GUID('LOWER')")
+		.. PatternLanguageReference.FUNCTIONS.Select(entry => new PatternSyntaxHelp(entry.Signature, entry.Description, entry.Example)),
+		new PatternSyntaxHelp("Nested functions", "A function can be an argument of another function; it is evaluated for each row first. Ranges need the comma form.", "RAND_DATE(TODAY(format='yyyy-MM-dd'), '2030-12-31')")
 	];
 
 	public IReadOnlyList<PatternExample> Examples { get; } =
@@ -66,6 +58,8 @@ public sealed class PatternHelpViewModel : ObservableObject
 		new PatternExample("Order number", "'ORD' + RAND_DATE('2024-01-01', '2024-12-31', 'yyyyMMdd') + '-' + SEQ(1-9999)"),
 		new PatternExample("Batch of today", "'BATCH-' + TODAY(format='yyyyMMdd') + '-' + SEQ(1-999)"),
 		new PatternExample("Created today", "TODAY(ANY)"),
+		new PatternExample("Due from today", "RAND_DATE(TODAY(format='yyyy-MM-dd'), '2030-12-31')"),
+		new PatternExample("Based on a column", "COL(Colour) THEN '-' THEN SEQ(1-999)"),
 		new PatternExample("E-mail address", "RAND_LETTERS(5-8, LOWER) + '.' + RAND_LETTERS(6, LOWER) + '@example.com'"),
 		new PatternExample("Australian mobile", "'04' FOLLOWED BY RAND_DIGITS(8)"),
 		new PatternExample("Licence plate", "RAND_LETTERS(3) + '-' + (RAND_DIGITS(1) OR RAND_LETTERS(1)) REPEATED 3 TIMES")
@@ -121,7 +115,8 @@ public sealed class PatternHelpViewModel : ObservableObject
 		{
 			for (int rowIndex = 0; rowIndex < SAMPLE_COUNT; ++rowIndex)
 			{
-				Samples.Add(new PatternSample(rowIndex + 1, _patternGenerator.Generate(_expression, rowIndex)));
+				// The try-it box has no row, so COL(name) shows the column's name in brackets.
+				Samples.Add(new PatternSample(rowIndex + 1, _patternGenerator.Generate(_expression, rowIndex, columnName => $"[{columnName}]")));
 			}
 
 			ErrorMessage = string.Empty;

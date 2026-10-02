@@ -9,15 +9,15 @@ namespace DataGenerator.Services;
 /// </summary>
 public sealed class DataGenerationService : IDataGenerationService
 {
-	private readonly ISqlValueConverter _converter;
-	private readonly RowValueBuilder    _rowValueBuilder;
+	private readonly ISqlValueConverter    _converter;
+	private readonly IColumnValueGenerator _columnValueGenerator;
+	private readonly RowValueBuilder       _rowValueBuilder;
 
 	public DataGenerationService(ISqlValueConverter converter, IColumnValueGenerator columnValueGenerator)
 	{
-		ArgumentNullException.ThrowIfNull(columnValueGenerator);
-
-		_converter       = converter ?? throw new ArgumentNullException(nameof(converter));
-		_rowValueBuilder = new RowValueBuilder(columnValueGenerator);
+		_converter            = converter ?? throw new ArgumentNullException(nameof(converter));
+		_columnValueGenerator = columnValueGenerator ?? throw new ArgumentNullException(nameof(columnValueGenerator));
+		_rowValueBuilder      = new RowValueBuilder(columnValueGenerator);
 	}
 
 	public async Task GenerateAsync(
@@ -30,7 +30,7 @@ public sealed class DataGenerationService : IDataGenerationService
 		ValidateRequest(request);
 
 		GenerationProgress  generationProgress = new GenerationProgress(progress);
-		GenerationBlueprint blueprint          = new GenerationBlueprintBuilder(_converter).Build(request);
+		GenerationBlueprint blueprint          = new GenerationBlueprintBuilder(_converter, _columnValueGenerator).Build(request);
 
 		generationProgress.Report(
 			$"Preparing {blueprint.TotalRowCount:N0} row(s) in {blueprint.RowSetCount:N0} row set(s) for {blueprint.Tables.Count:N0} table(s)…"

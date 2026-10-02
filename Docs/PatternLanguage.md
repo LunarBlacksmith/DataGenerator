@@ -38,6 +38,17 @@ The sequence moves on by one for every row; the random parts are picked again fo
 4. The **?** button next to the box opens the **Pattern language reference** window with your pattern already loaded in **Try a pattern**.
    The **Pattern language** button below the grid opens the same window. Its **Try it** buttons load ready-made examples.
 5. To reuse a pattern in other columns, row sets or sessions, or to share it with colleagues, save it with the column's saved-settings button. See [Saved column settings](SavedSettings.md).
+6. While you type, the functions and keywords that match the word being typed are suggested in a small list under it,
+   e.g. typing `RAND` suggests `RAND_NUM`, `RAND_DATE` and the other `RAND_` functions. The list does not take the focus, so
+   you can keep typing and ignore it. The suggestions also work in the **Try a pattern** box.
+
+   | Key | What it does |
+   |---|---|
+   | ↑ / ↓ | Choose a suggestion. The function's arguments, description and an example are shown below the list. |
+   | Tab, Tab | Insert the chosen suggestion. The first Tab arms it ("Press Tab again to insert …"), the second inserts it, so a single Tab never replaces a word by accident. A function is inserted with its brackets and the caret between them, e.g. `RAND_NUM()`, ready for the arguments; a keyword gets a space after it. Double-clicking a suggestion inserts it too. |
+   | Esc | Close the suggestions. They come back when you type the next letter. |
+
+   Suggestions appear once a word has two letters, and not inside quoted text.
 
 ## Building blocks
 
@@ -110,14 +121,29 @@ RAND_LETTERS(5, case=LOWER)   mixed
 
 Argument values can be:
 
-| Value    | Written as                                                         |
-| -------- | ------------------------------------------------------------------ |
-| A number | `5`, `-3`, `2.5`                                                   |
-| A range  | `1-1000`, `1..1000`, `1 TO 1000`, or two numbers `1, 1000`         |
-| Text     | Quoted (`'2024-12-31'`, `'yyyy-MM-dd'`) or a single word (`LOWER`) |
+| Value      | Written as                                                         |
+| ---------- | ------------------------------------------------------------------ |
+| A number   | `5`, `-3`, `2.5`                                                   |
+| A range    | `1-1000`, `1..1000`, `1 TO 1000`, or two numbers `1, 1000`         |
+| Text       | Quoted (`'2024-12-31'`, `'yyyy-MM-dd'`) or a single word (`LOWER`) |
+| A function | `TODAY(format='yyyy-MM-dd')`, `RAND_NUM(2, 5)`, `COL(Size)`        |
 
 Ranges include both ends and are written smallest first. Negative numbers work in ranges too: `-50-50` and `-50 TO 50` are the same range.
 `SEQ`, `RAND_NUM` and `RAND_DECIMAL` also accept a named range, `range=1-1000`, or both ends named, `min=1, max=1000`. A length can be named too: `length=5-8`.
+
+### Functions inside functions
+
+Any argument can be another function call, including named arguments. The inner function is worked out first for every row and its value is used as the argument, as if it had been typed in:
+
+| Pattern                                               | Means                                                      |
+| ----------------------------------------------------- | ---------------------------------------------------------- |
+| `RAND_DATE(TODAY(format='yyyy-MM-dd'), '2030-12-31')` | A random date from today to the end of 2030                |
+| `RAND_NUM(1, RAND_NUM(2, 5))`                         | A random number from 1 to a maximum that is itself random  |
+| `RAND_LETTERS(length=COL(NameLength))`                | As many letters as the `NameLength` column of the row says |
+| `ONE_OF(TODAY(format='yyyy'), 'none')`                | This year or `none`                                        |
+
+- A range cannot contain a function (`RAND_NUM(1-RAND_NUM(2, 5))`); write its ends as two arguments instead: `RAND_NUM(1, RAND_NUM(2, 5))`.
+- The value of the inner function must suit the argument. For example, `RAND_DATE` needs a date, so `TODAY()` must use a format that reads as a date (its default `'yyyy-MM-dd HH:mm:ss'` and `'yyyy-MM-dd'` both work).
 
 ## Functions
 
@@ -262,6 +288,29 @@ A new random GUID for every row, 36 characters including hyphens.
 
 `GUID()` produces values such as `8E535CA9-0931-41A6-96A9-14F37F118C97`. `GUID(LOWER)` produces values such as `1f384e23-2ec0-43d7-98bd-95870231bbc8`.
 
+### COL(name)
+
+The value of another column of the same row. `COLUMN(name)` means the same.
+
+| Argument | Required | Default | Notes                                                                        |
+| -------- | -------- | ------- | ---------------------------------------------------------------------------- |
+| `name`   | Yes      |         | The column's name, as a word or quoted (`COL(Colour)`, `COL('Unit price')`). |
+
+| Pattern                                   | Example values (when `Colour` is `Red` and `Size` is `42`) |
+| ----------------------------------------- | ---------------------------------------------------------- |
+| `COL(Colour) THEN 'aStringOfText' THEN 2` | `RedaStringOfText2`                                        |
+| `COL(Colour) + '-' + COL(Size)`           | `Red-42`                                                   |
+| `RAND_LETTERS(length=COL(Size))`          | 42 random letters                                          |
+
+- The other column's value is used as text: numbers as plain digits with `.` for decimals (`12.5`), dates as `yyyy-MM-dd` (with ` HH:mm:ss` when they have a time), times as `HH:mm:ss`, `bit` as `1` or `0`, GUIDs in capitals with hyphens, binary as `0x…` hex, and NULL as empty text.
+- The finished value is converted to the column's own type leniently, in the same way as the **Copy of column** generation mode (see [Column types](#column-types)), so `COL(...)` can be used in a number column even when the other column holds text.
+- The other column is generated first, whatever its order in the table. Columns cannot use each other in a loop (`A` uses `B` and `B` uses `A`), and a column cannot use itself.
+- A column whose value SQL Server sets while inserting (an identity, computed, `rowversion` or **Database generated** column) cannot be used, as its value is not known in advance.
+- In a generated SQL script, a key column that refers to rows inserted by the same script has no value yet, so it cannot be used inside a pattern. Use the **Copy of column** mode to copy such a key.
+- The **Try a pattern** box of the reference window has no row, so it shows `COL(Colour)` as `[Colour]`.
+
+To copy another column's value exactly, without a pattern, set the **Generation mode** to **Copy of column** and pick the column in the **Settings** cell.
+
 ## Column types
 
 A pattern always produces text, which is then stored in the column:
@@ -279,6 +328,22 @@ A pattern always produces text, which is then stored in the column:
 | `uniqueidentifier`                                                 | A GUID                                     | `GUID()`                                                |
 
 For date columns, keep the default `yyyy-MM-dd` format or use `'yyyy-MM-dd HH:mm:ss'`. `TODAY()` already uses `'yyyy-MM-dd HH:mm:ss'`; for a `date` column, `TODAY(format='yyyy-MM-dd')` leaves the time out. A format such as `dd/MM/yyyy` is fine for text columns but can be misread as month/day in a date column.
+
+### Values that use other columns
+
+When a pattern uses `COL(...)`, or the column uses the **Copy of column** mode, the value is converted to the column's type leniently instead of being reported as an error:
+
+| Column type                      | Conversion                                                                                                                                                                        |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Whole numbers                    | Decimals are cut to whole numbers. Text keeps only its digits (`'AB-12C3'` → `123`, a leading `-` keeps it negative); no digits → `0`. Values beyond the type's range are capped. |
+| `decimal`, `numeric`, `money`, … | Rounded to the column's scale and capped to its precision. Text keeps only its digits and one decimal point.                                                                      |
+| `bit`                            | `1` for a non-zero number or `true`/`yes`/`y`/`on`, otherwise `0`.                                                                                                                |
+| Text                             | Cut to the column's length.                                                                                                                                                       |
+| Dates                            | Text is read as a date; a number counts days from 1900-01-01. Text that is not a date uses its digits as days. Capped to the type's range.                                        |
+| `time`                           | The time of a date, or text read as a time; otherwise 00:00:00.                                                                                                                   |
+| `uniqueidentifier`               | Text read as a GUID; other text always gives the same GUID made from that text.                                                                                                   |
+| `binary`, `varbinary`            | `0x…` hex text, a GUID's bytes or the text's UTF-8 bytes, cut to the column's length.                                                                                             |
+| Any type                         | NULL stays NULL when the column allows NULL, otherwise the type's default (`0`, empty text, 1900-01-01, …).                                                                       |
 
 ## Row numbers and row sets
 
@@ -320,6 +385,8 @@ Common problems:
 | `SEQ(1-1000, digits=2)`             | 1000 needs 4 digits. Use `digits=4` or more, or `digits=0` for no padding.                                                                |
 | `RAND_LETTERS(3, case=TITLE)`       | `case` must be `UPPER`, `LOWER` or `MIXED`.                                                                                               |
 | `TODAY('dd/MM/yyyy')`               | The first value is the time, `NOW` or `ANY`. Put the format second, `TODAY(NOW, 'dd/MM/yyyy')`, or name it: `TODAY(format='dd/MM/yyyy')`. |
+| `RAND_NUM(1-RAND_NUM(2, 5))`        | A range cannot contain a function. Write the ends as two arguments: `RAND_NUM(1, RAND_NUM(2, 5))`.                                        |
+| `COL(Colour)` on `Colour` itself    | A column cannot use its own value, and columns cannot use each other in a loop. Pick another column.                                      |
 
 ## Examples
 
@@ -333,6 +400,8 @@ Common problems:
 | Order number      | `'ORD' + RAND_DATE('2024-01-01', '2024-12-31', 'yyyyMMdd') + '-' + SEQ(1-9999)`    | `ORD20240605-0001`, `ORD20241127-0002`       |
 | Batch of today    | `'BATCH-' + TODAY(format='yyyyMMdd') + '-' + SEQ(1-999)`                           | `BATCH-20250314-001`, `BATCH-20250314-002`   |
 | Created today     | `TODAY(ANY)`                                                                       | `2025-03-14 17:03:52`, `2025-03-14 02:18:30` |
+| Due from today    | `RAND_DATE(TODAY(format='yyyy-MM-dd'), '2030-12-31')`                              | `2027-08-19`, `2025-11-02`                   |
+| Based on a column | `COL(Colour) THEN '-' THEN SEQ(1-999)`                                             | `Red-001`, `Blue-002`                        |
 | E-mail address    | `RAND_LETTERS(5-8, LOWER) + '.' + RAND_LETTERS(6, LOWER) + '@example.com'`         | `sogxi.blqmdj@example.com`                   |
 | Australian mobile | `'04' FOLLOWED BY RAND_DIGITS(8)`                                                  | `0406793209`, `0465689056`                   |
 | Licence plate     | `RAND_LETTERS(3) + '-' + (RAND_DIGITS(1) OR RAND_LETTERS(1)) REPEATED 3 TIMES`     | `PDS-5E7`, `JZZ-QDN`                         |
@@ -349,7 +418,7 @@ repetition    = primary , { "REPEATED" , count , [ ( "TO" | "-" | ".." ) , count
 primary       = quoted-text | number | word | function | "(" , concatenation , ")" ;
 function      = word , "(" , [ argument , { "," , argument } ] , ")" ;
 argument      = [ word , ( "=" | ":" ) ] , value ;
-value         = quoted-text | word | signed-number , [ ( "-" | ".." | "TO" ) , signed-number ] ;
+value         = function | quoted-text | word | signed-number , [ ( "-" | ".." | "TO" ) , signed-number ] ;
 signed-number = [ "-" ] , number ;
 number        = digit , { digit } , [ "." , digit , { digit } ] ;
 word          = ( letter | digit | "_" ) , { letter | digit | "_" } ;  (* containing at least one letter or "_" *)

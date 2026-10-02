@@ -10,6 +10,48 @@
 	mc:Ignorable         ="d"
 	d:DataContext        ="{d:DesignInstance Type=viewModels:DatabaseExplorerViewModel}">
 	<UserControl.Resources>
+		<!-- Lets the grid columns and the header menu, which are outside the visual tree, reach the column visibility choices -->
+		<infrastructure:BindingProxy
+			x:Key ="RuleGridColumnsProxy"
+			Data  ="{Binding RuleGridColumns}" />
+
+		<!-- Right-click a column header of the grid to hide or show the optional columns -->
+		<ContextMenu
+			x:Key       ="RuleGridColumnsMenu"
+			ItemsSource ="{Binding	Data.Options,
+											Source={StaticResource RuleGridColumnsProxy}}">
+			<ContextMenu.ItemContainerStyle>
+				<Style
+					TargetType="MenuItem">
+					<Setter
+						Property ="Header"
+						Value    ="{Binding DisplayName}" />
+					<Setter
+						Property ="ToolTip"
+						Value    ="{Binding Description}" />
+					<Setter
+						Property ="IsCheckable"
+						Value    ="True" />
+					<Setter
+						Property ="IsChecked"
+						Value    ="{Binding	IsVisible,
+												Mode=TwoWay}" />
+					<Setter
+						Property ="StaysOpenOnClick"
+						Value    ="True" />
+				</Style>
+			</ContextMenu.ItemContainerStyle>
+		</ContextMenu>
+
+		<Style
+			x:Key      ="RuleGridColumnHeaderStyle"
+			TargetType ="DataGridColumnHeader"
+			BasedOn    ="{StaticResource {x:Type DataGridColumnHeader}}">
+			<Setter
+				Property ="ContextMenu"
+				Value    ="{StaticResource RuleGridColumnsMenu}" />
+		</Style>
+
 		<Style
 			x:Key      ="CellTextBoxStyle"
 			TargetType ="TextBox"
@@ -74,9 +116,6 @@
 			<Setter
 				Property ="FontSize"
 				Value    ="12" />
-			<Setter
-				Property ="TextTrimming"
-				Value    ="CharacterEllipsis" />
 
 			<Style.Triggers>
 				<DataTrigger
@@ -87,6 +126,43 @@
 						Value    ="{DynamicResource ErrorBrush}" />
 				</DataTrigger>
 			</Style.Triggers>
+		</Style>
+
+		<!-- A slim scroll bar, so a long sample makes its row only slightly taller -->
+		<Style
+			x:Key      ="SampleScrollViewerStyle"
+			TargetType ="ScrollViewer">
+			<Style.Resources>
+				<Style
+					TargetType ="ScrollBar"
+					BasedOn    ="{StaticResource {x:Type ScrollBar}}">
+					<Style.Triggers>
+						<Trigger
+							Property ="Orientation"
+							Value    ="Horizontal">
+							<Setter
+								Property ="Height"
+								Value    ="12" />
+							<Setter
+								Property ="MinHeight"
+								Value    ="12" />
+							<Setter
+								Property ="Background"
+								Value    ="Transparent" />
+						</Trigger>
+					</Style.Triggers>
+				</Style>
+			</Style.Resources>
+
+			<Setter
+				Property ="Focusable"
+				Value    ="False" />
+			<Setter
+				Property ="HorizontalScrollBarVisibility"
+				Value    ="Auto" />
+			<Setter
+				Property ="VerticalScrollBarVisibility"
+				Value    ="Disabled" />
 		</Style>
 
 		<Style
@@ -243,7 +319,8 @@
 						Style ="{StaticResource CellCodeTextBoxStyle}"
 						Text  ="{Binding	PatternExpression,
 												Mode=TwoWay,
-												UpdateSourceTrigger=PropertyChanged}" />
+												UpdateSourceTrigger=PropertyChanged}"
+						infrastructure:PatternAutoComplete.Provider ="{StaticResource PatternCompletionProvider}" />
 				</Grid>
 
 				<Button
@@ -256,6 +333,34 @@
 															ValidatesOnNotifyDataErrors=False}"
 					ToolTip          ="{StaticResource PatternHelpHint}"
 					infrastructure:ButtonIcon.Glyph ="&#xE897;" />
+			</Grid>
+		</DataTemplate>
+
+		<DataTemplate
+			x:Key    ="CopyColumnSettingsTemplate"
+			DataType ="{x:Type viewModels:ColumnRuleViewModel}">
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition
+						Width="Auto" />
+					<ColumnDefinition
+						Width="*" />
+				</Grid.ColumnDefinitions>
+
+				<TextBlock
+					Grid.Column ="0"
+					Margin      ="0,0,4,0"
+					Style       ="{StaticResource SecondaryTextStyle}"
+					Text        ="Copy" />
+
+				<ComboBox
+					Grid.Column  ="1"
+					Style        ="{StaticResource CellComboBoxStyle}"
+					ItemsSource  ="{Binding CopySourceOptions}"
+					SelectedItem ="{Binding	SourceColumnName,
+													Mode=TwoWay,
+													UpdateSourceTrigger=PropertyChanged}"
+					ToolTip      ="{StaticResource CopyColumnHint}" />
 			</Grid>
 		</DataTemplate>
 
@@ -313,6 +418,14 @@
 					<Setter
 						Property ="ContentTemplate"
 						Value    ="{StaticResource PatternSettingsTemplate}" />
+				</DataTrigger>
+
+				<DataTrigger
+					Binding ="{Binding GenerationMode}"
+					Value   ="{x:Static models:ValueGenerationMode.CopyColumn}">
+					<Setter
+						Property ="ContentTemplate"
+						Value    ="{StaticResource CopyColumnSettingsTemplate}" />
 				</DataTrigger>
 			</Style.Triggers>
 		</Style>
@@ -589,6 +702,8 @@
 									<RowDefinition
 										Height="Auto" />
 									<RowDefinition
+										Height="Auto" />
+									<RowDefinition
 										Height="*" />
 								</Grid.RowDefinitions>
 
@@ -630,6 +745,210 @@
 											infrastructure:TextInputFilter.Kind ="Integer" />
 									</Grid>
 
+									<!-- Saves or loads the settings of every column of this row set as one named configuration -->
+									<Grid
+										Margin      ="10,0,0,0"
+										DataContext ="{Binding	DataContext.SetConfigurations,
+																		RelativeSource={RelativeSource AncestorType=UserControl}}">
+										<ToggleButton
+											x:Name    ="SetConfigurationButton"
+											Content   ="Set configuration"
+											IsChecked ="{Binding	IsMenuOpen,
+																		Mode=TwoWay,
+																		UpdateSourceTrigger=PropertyChanged}"
+											ToolTip   ="{StaticResource SetConfigurationButtonHint}"
+											infrastructure:ButtonIcon.Glyph ="&#xE8F1;">
+											<ToggleButton.Style>
+												<Style
+													TargetType ="ToggleButton"
+													BasedOn    ="{StaticResource ToolbarToggleButtonStyle}">
+													<Style.Triggers>
+														<!-- While the menu is open a click on the button only closes it (instead of closing and reopening it) -->
+														<DataTrigger
+															Binding ="{Binding IsMenuOpen}"
+															Value   ="True">
+															<Setter
+																Property ="IsHitTestVisible"
+																Value    ="False" />
+														</DataTrigger>
+													</Style.Triggers>
+												</Style>
+											</ToggleButton.Style>
+										</ToggleButton>
+
+										<Popup
+											AllowsTransparency ="True"
+											IsOpen             ="{Binding	IsMenuOpen,
+																					Mode=TwoWay,
+																					UpdateSourceTrigger=PropertyChanged}"
+											Placement          ="Bottom"
+											PlacementTarget    ="{Binding ElementName=SetConfigurationButton}"
+											PopupAnimation     ="Fade"
+											StaysOpen          ="False">
+											<Border
+												Style ="{StaticResource PopupMenuBorderStyle}">
+												<StackPanel
+													Width ="360">
+													<TextBlock
+														Style ="{StaticResource PopupHeaderTextStyle}"
+														Text  ="{Binding MenuTitle}" />
+
+													<TextBlock
+														Margin       ="8,0,8,6"
+														Style        ="{StaticResource SecondaryTextStyle}"
+														Text         ="Saves or loads the generation mode and settings of every column of this set at once. To reuse the settings of a single column, use the star button in its Settings cell instead."
+														TextWrapping ="Wrap" />
+
+													<DockPanel
+														Margin ="8,2,8,2">
+														<Label
+															Padding           ="0,0,6,0"
+															VerticalAlignment ="Center"
+															Content           ="Save _as:"
+															Target            ="{Binding ElementName=SetConfigurationNameInput}"
+															ToolTip           ="{StaticResource SaveSetConfigurationHint}" />
+
+														<Button
+															DockPanel.Dock ="Right"
+															Margin         ="6,0,0,0"
+															Style          ="{StaticResource ToolbarButtonStyle}"
+															Command        ="{Binding SaveCommand}"
+															Content        ="Save"
+															ToolTip        ="{StaticResource SaveSetConfigurationHint}"
+															infrastructure:ButtonIcon.Glyph ="&#xE74E;" />
+
+														<TextBox
+															x:Name  ="SetConfigurationNameInput"
+															Text    ="{Binding	NewName,
+																						Mode=TwoWay,
+																						UpdateSourceTrigger=PropertyChanged}"
+															ToolTip ="{StaticResource SaveSetConfigurationHint}">
+															<TextBox.InputBindings>
+																<KeyBinding
+																	Key     ="Enter"
+																	Command ="{Binding SaveCommand}" />
+															</TextBox.InputBindings>
+														</TextBox>
+													</DockPanel>
+
+													<TextBlock
+														Margin       ="8,0,8,2"
+														Foreground   ="{DynamicResource ErrorBrush}"
+														Text         ="{Binding NameError}"
+														TextWrapping ="Wrap"
+														Visibility   ="{Binding	HasNameError,
+																						Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+													<Separator
+														Margin ="4" />
+
+													<TextBlock
+														Style   ="{StaticResource PopupHeaderTextStyle}"
+														Text    ="Load into this set"
+														ToolTip ="{StaticResource LoadSetConfigurationHint}" />
+
+													<TextBlock
+														Margin       ="8,2,8,6"
+														Style        ="{StaticResource SecondaryTextStyle}"
+														Text         ="No saved set configuration has columns of this table yet. Save one above, or import a file someone shared."
+														TextWrapping ="Wrap"
+														Visibility   ="{Binding	HasOptions,
+																						Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+
+													<ScrollViewer
+														MaxHeight                     ="300"
+														HorizontalScrollBarVisibility ="Disabled"
+														VerticalScrollBarVisibility   ="Auto">
+														<ItemsControl
+															ItemsSource ="{Binding Options}">
+															<ItemsControl.ItemTemplate>
+																<DataTemplate
+																	DataType="{x:Type viewModels:RowSetConfigurationOption}">
+																	<Grid>
+																		<Grid.ColumnDefinitions>
+																			<ColumnDefinition
+																				Width="*" />
+																			<ColumnDefinition
+																				Width="Auto" />
+																		</Grid.ColumnDefinitions>
+
+																		<Button
+																			Grid.Column                ="0"
+																			HorizontalContentAlignment ="Stretch"
+																			Style                      ="{StaticResource PopupMenuButtonStyle}"
+																			Command                    ="{Binding	DataContext.LoadCommand,
+																																RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+																			CommandParameter           ="{Binding}"
+																			ToolTip                    ="{Binding ToolTipText}">
+																			<StackPanel>
+																				<StackPanel
+																					Orientation ="Horizontal">
+																					<TextBlock
+																						MaxWidth     ="220"
+																						FontWeight   ="SemiBold"
+																						Text         ="{Binding Name}"
+																						TextTrimming ="CharacterEllipsis" />
+
+																					<TextBlock
+																						Margin     ="6,0,0,0"
+																						Style      ="{StaticResource SecondaryTextStyle}"
+																						Text       ="· this table"
+																						Visibility ="{Binding	IsFromActiveTable,
+																														Converter={StaticResource BooleanToVisibilityConverter}}" />
+																				</StackPanel>
+
+																				<TextBlock
+																					Style        ="{StaticResource SecondaryTextStyle}"
+																					Text         ="{Binding Summary}"
+																					TextTrimming ="CharacterEllipsis" />
+																			</StackPanel>
+																		</Button>
+
+																		<Button
+																			Grid.Column       ="1"
+																			Margin            ="2,0,4,0"
+																			VerticalAlignment ="Center"
+																			Style             ="{StaticResource IconButtonStyle}"
+																			Command           ="{Binding	DataContext.DeleteCommand,
+																													RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+																			CommandParameter  ="{Binding}"
+																			ToolTip           ="{StaticResource DeleteSetConfigurationHint}"
+																			infrastructure:ButtonIcon.Glyph ="&#xE74D;" />
+																	</Grid>
+																</DataTemplate>
+															</ItemsControl.ItemTemplate>
+														</ItemsControl>
+													</ScrollViewer>
+
+													<TextBlock
+														Margin       ="8,2,8,2"
+														Style        ="{StaticResource SecondaryTextStyle}"
+														Text         ="{Binding OtherTablesText}"
+														TextWrapping ="Wrap"
+														Visibility   ="{Binding	HasOtherTables,
+																						Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+													<Separator
+														Margin ="4" />
+
+													<Button
+														Style   ="{StaticResource PopupMenuButtonStyle}"
+														Command ="{Binding ImportCommand}"
+														Content ="Import set configurations…"
+														ToolTip ="{StaticResource ImportSetConfigurationsHint}"
+														infrastructure:ButtonIcon.Glyph ="&#xE8B5;" />
+
+													<Button
+														Style   ="{StaticResource PopupMenuButtonStyle}"
+														Command ="{Binding ExportCommand}"
+														Content ="Export all set configurations…"
+														ToolTip ="{StaticResource ExportSetConfigurationsHint}"
+														infrastructure:ButtonIcon.Glyph ="&#xEDE1;" />
+												</StackPanel>
+											</Border>
+										</Popup>
+									</Grid>
+
 									<StackPanel
 										Margin      ="10,0,0,0"
 										Orientation ="Horizontal"
@@ -644,19 +963,214 @@
 											Foreground        ="{DynamicResource WarningBrush}"
 											Text              ="{Binding ValidationSummary}" />
 									</StackPanel>
+
+									<!-- What happened when a set configuration was last saved or loaded -->
+									<Border
+										Margin       ="10,0,0,0"
+										Padding      ="6,1,2,1"
+										Background   ="{DynamicResource HeaderStripBrush}"
+										CornerRadius ="4"
+										ToolTip      ="{Binding ConfigurationResult.Details}"
+										Visibility   ="{Binding	HasConfigurationResult,
+																		Converter={StaticResource BooleanToVisibilityConverter}}">
+										<StackPanel
+											Orientation ="Horizontal">
+											<TextBlock
+												MaxWidth          ="560"
+												VerticalAlignment ="Center"
+												Text              ="{Binding ConfigurationResult.Text}"
+												TextTrimming      ="CharacterEllipsis">
+												<TextBlock.Style>
+													<Style
+														TargetType ="TextBlock">
+														<Setter
+															Property ="Foreground"
+															Value    ="{DynamicResource TextBrush}" />
+														<Style.Triggers>
+															<DataTrigger
+																Binding ="{Binding ConfigurationResult.IsWarning}"
+																Value   ="True">
+																<Setter
+																	Property ="Foreground"
+																	Value    ="{DynamicResource WarningBrush}" />
+															</DataTrigger>
+														</Style.Triggers>
+													</Style>
+												</TextBlock.Style>
+											</TextBlock>
+
+											<Button
+												Margin  ="4,0,0,0"
+												Style   ="{StaticResource IconButtonStyle}"
+												Command ="{Binding DismissConfigurationResultCommand}"
+												ToolTip ="{StaticResource DismissSetConfigurationResultHint}"
+												infrastructure:ButtonIcon.Glyph ="&#xE711;" />
+										</StackPanel>
+									</Border>
 								</WrapPanel>
+
+								<!-- Changes several selected columns at once -->
+								<Border
+									Grid.Row     ="1"
+									Margin       ="0,2,0,2"
+									Padding      ="4,2"
+									Background   ="{DynamicResource HeaderStripBrush}"
+									CornerRadius ="4"
+									DataContext  ="{Binding BulkEdit}">
+									<StackPanel>
+										<DockPanel
+											MinHeight="32">
+											<Button
+												DockPanel.Dock ="Right"
+												Style          ="{StaticResource ToolbarButtonStyle}"
+												Command        ="{Binding ClearSelectionCommand}"
+												Content        ="Clear"
+												ToolTip        ="{StaticResource BulkClearSelectionHint}" />
+
+											<Button
+												DockPanel.Dock ="Right"
+												Style          ="{StaticResource ToolbarButtonStyle}"
+												Command        ="{Binding SelectAllCommand}"
+												Content        ="Select all"
+												ToolTip        ="{StaticResource BulkSelectAllHint}"
+												infrastructure:ButtonIcon.Glyph ="&#xE8B3;" />
+
+											<TextBlock
+												Margin            ="4,0"
+												VerticalAlignment ="Center"
+												Style             ="{StaticResource SecondaryTextStyle}"
+												Text              ="Tip: Ctrl+click or Shift+click rows (or Select all) to change the mode or settings of several columns at once."
+												TextTrimming      ="CharacterEllipsis"
+												ToolTip           ="{StaticResource BulkSelectionHint}"
+												Visibility        ="{Binding	IsActive,
+																						Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+
+											<WrapPanel
+												Visibility="{Binding	IsActive,
+																			Converter={StaticResource BooleanToVisibilityConverter}}">
+												<TextBlock
+													Margin            ="4,0,10,0"
+													VerticalAlignment ="Center"
+													FontWeight        ="SemiBold"
+													Text              ="{Binding SelectionText}"
+													ToolTip           ="{StaticResource BulkSelectionHint}" />
+
+												<StackPanel
+													Margin      ="0,0,10,0"
+													Orientation ="Horizontal">
+													<TextBlock
+														Margin            ="0,0,2,0"
+														VerticalAlignment ="Center"
+														Text              ="Mode:" />
+
+													<ComboBox
+														Width             ="190"
+														DisplayMemberPath ="DisplayName"
+														ItemsSource       ="{Binding ModeOptions}"
+														SelectedItem      ="{Binding	SelectedModeOption,
+																								Mode=TwoWay}"
+														ToolTip           ="{StaticResource BulkModeHint}">
+														<ComboBox.ItemContainerStyle>
+															<Style
+																TargetType ="ComboBoxItem"
+																BasedOn    ="{StaticResource {x:Type ComboBoxItem}}">
+																<Setter
+																	Property ="ToolTip"
+																	Value    ="{Binding Description}" />
+															</Style>
+														</ComboBox.ItemContainerStyle>
+													</ComboBox>
+
+													<Button
+														Style   ="{StaticResource ToolbarButtonStyle}"
+														Command ="{Binding ApplyModeCommand}"
+														Content ="Set mode"
+														ToolTip ="{StaticResource BulkApplyModeHint}"
+														infrastructure:ButtonIcon.Glyph ="&#xE73E;" />
+												</StackPanel>
+
+												<StackPanel
+													Orientation="Horizontal">
+													<TextBlock
+														Margin            ="0,0,2,0"
+														VerticalAlignment ="Center"
+														Text              ="Settings:" />
+
+													<Grid
+														ToolTip="{StaticResource BulkSettingValueHint}">
+														<TextBox
+															Width      ="220"
+															FontFamily ="{StaticResource CodeFontFamily}"
+															Text       ="{Binding	SettingValue,
+																							Mode=TwoWay,
+																							UpdateSourceTrigger=PropertyChanged}">
+															<TextBox.InputBindings>
+																<KeyBinding
+																	Key     ="Enter"
+																	Command ="{Binding ApplySettingValueCommand}" />
+															</TextBox.InputBindings>
+														</TextBox>
+													</Grid>
+
+													<Button
+														Style   ="{StaticResource ToolbarButtonStyle}"
+														Command ="{Binding ApplySettingValueCommand}"
+														Content ="Set value"
+														ToolTip ="{StaticResource BulkApplySettingValueHint}"
+														infrastructure:ButtonIcon.Glyph ="&#xE73E;" />
+												</StackPanel>
+											</WrapPanel>
+										</DockPanel>
+
+										<TextBlock
+											Margin       ="4,0,4,3"
+											Text         ="{Binding ResultText}"
+											TextWrapping ="Wrap"
+											ToolTip      ="{Binding ResultDetails}">
+											<TextBlock.Style>
+												<Style
+													TargetType ="TextBlock"
+													BasedOn    ="{StaticResource SecondaryTextStyle}">
+													<Style.Triggers>
+														<DataTrigger
+															Binding ="{Binding HasResult}"
+															Value   ="False">
+															<Setter
+																Property ="Visibility"
+																Value    ="Collapsed" />
+														</DataTrigger>
+
+														<DataTrigger
+															Binding ="{Binding ResultHasSkips}"
+															Value   ="True">
+															<Setter
+																Property ="Foreground"
+																Value    ="{DynamicResource WarningBrush}" />
+														</DataTrigger>
+													</Style.Triggers>
+												</Style>
+											</TextBlock.Style>
+										</TextBlock>
+									</StackPanel>
+								</Border>
 
 								<!-- Each grid row has a BindingGroup that makes bindings without an explicit UpdateSourceTrigger wait for a row commit, so every editor in the cells sets UpdateSourceTrigger=PropertyChanged -->
 								<DataGrid
-									Grid.Row    ="1"
-									Margin      ="0,2,0,0"
-									ItemsSource ="{Binding ColumnRules}"
-									RowStyle    ="{StaticResource ColumnRuleRowStyle}"
-									ToolTip     ="{StaticResource ColumnRulesGridHint}">
+									Grid.Row          ="2"
+									Margin            ="0,2,0,0"
+									ColumnHeaderStyle ="{StaticResource RuleGridColumnHeaderStyle}"
+									ItemsSource       ="{Binding ColumnRules}"
+									RowStyle          ="{StaticResource ColumnRuleRowStyle}"
+									SelectionMode     ="Extended"
+									ToolTip           ="{StaticResource ColumnRulesGridHint}"
+									infrastructure:MultiSelection.SelectedItems ="{Binding BulkEdit.SelectedRules}">
 									<DataGrid.Columns>
 										<DataGridTemplateColumn
-											Width    ="68"
-											MinWidth ="68">
+											Width      ="68"
+											MinWidth   ="68"
+											Visibility ="{Binding	Data.Keys.IsVisible,
+																			Source={StaticResource RuleGridColumnsProxy},
+																			Converter={StaticResource BooleanToVisibilityConverter}}">
 											<DataGridTemplateColumn.Header>
 												<TextBlock
 													Text    ="Keys"
@@ -756,8 +1270,11 @@
 										</DataGridTemplateColumn>
 
 										<DataGridTemplateColumn
-											Width    ="Auto"
-											MinWidth ="90">
+											Width      ="Auto"
+											MinWidth   ="90"
+											Visibility ="{Binding	Data.SqlType.IsVisible,
+																			Source={StaticResource RuleGridColumnsProxy},
+																			Converter={StaticResource BooleanToVisibilityConverter}}">
 											<DataGridTemplateColumn.Header>
 												<TextBlock
 													Text    ="SQL type"
@@ -777,8 +1294,11 @@
 										</DataGridTemplateColumn>
 
 										<DataGridTemplateColumn
-											Width    ="70"
-											MinWidth ="70">
+											Width      ="70"
+											MinWidth   ="70"
+											Visibility ="{Binding	Data.Nullable.IsVisible,
+																			Source={StaticResource RuleGridColumnsProxy},
+																			Converter={StaticResource BooleanToVisibilityConverter}}">
 											<DataGridTemplateColumn.Header>
 												<TextBlock
 													Text    ="Nullable"
@@ -962,8 +1482,11 @@
 										</DataGridTemplateColumn>
 
 										<DataGridTemplateColumn
-											Width    ="1.2*"
-											MinWidth ="100">
+											Width      ="1.2*"
+											MinWidth   ="100"
+											Visibility ="{Binding	Data.SampleValues.IsVisible,
+																			Source={StaticResource RuleGridColumnsProxy},
+																			Converter={StaticResource BooleanToVisibilityConverter}}">
 											<DataGridTemplateColumn.Header>
 												<TextBlock
 													Text    ="Sample values"
@@ -973,10 +1496,15 @@
 											<DataGridTemplateColumn.CellTemplate>
 												<DataTemplate
 													DataType="{x:Type viewModels:ColumnRuleViewModel}">
-													<TextBlock
-														Style   ="{StaticResource SampleTextStyle}"
-														Text    ="{Binding PreviewText}"
-														ToolTip ="{Binding PreviewText}" />
+													<!-- Long samples scroll sideways (Shift + mouse wheel or the scroll bar); the plain wheel still scrolls the grid -->
+													<ScrollViewer
+														Style   ="{StaticResource SampleScrollViewerStyle}"
+														ToolTip ="{Binding PreviewText}"
+														infrastructure:HorizontalWheelScroll.IsEnabled ="True">
+														<TextBlock
+															Style ="{StaticResource SampleTextStyle}"
+															Text  ="{Binding PreviewText}" />
+													</ScrollViewer>
 												</DataTemplate>
 											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
@@ -1004,9 +1532,88 @@
 						DockPanel.Dock ="Right"
 						Style          ="{StaticResource ToolbarButtonStyle}"
 						Command        ="{Binding ManageSavedSettingsCommand}"
-						Content        ="Saved settings"
+						Content        ="Saved column settings"
 						ToolTip        ="{StaticResource ManageSavedSettingsHint}"
 						infrastructure:ButtonIcon.Glyph ="&#xE728;" />
+
+					<ToggleButton
+						x:Name         ="GridColumnsButton"
+						DockPanel.Dock ="Right"
+						Content        ="{Binding RuleGridColumns.HiddenColumnsText}"
+						IsChecked      ="{Binding	RuleGridColumns.IsMenuOpen,
+															Mode=TwoWay,
+															UpdateSourceTrigger=PropertyChanged}"
+						ToolTip        ="{StaticResource RuleGridColumnsHint}"
+						infrastructure:ButtonIcon.Glyph ="&#xE8A9;">
+						<ToggleButton.Style>
+							<Style
+								TargetType ="ToggleButton"
+								BasedOn    ="{StaticResource ToolbarToggleButtonStyle}">
+								<Style.Triggers>
+									<!-- While the list is open a click on the button only closes the list (instead of closing and reopening it) -->
+									<DataTrigger
+										Binding ="{Binding RuleGridColumns.IsMenuOpen}"
+										Value   ="True">
+										<Setter
+											Property ="IsHitTestVisible"
+											Value    ="False" />
+									</DataTrigger>
+								</Style.Triggers>
+							</Style>
+						</ToggleButton.Style>
+					</ToggleButton>
+
+					<Popup
+						AllowsTransparency ="True"
+						IsOpen             ="{Binding	RuleGridColumns.IsMenuOpen,
+																Mode=TwoWay,
+																UpdateSourceTrigger=PropertyChanged}"
+						Placement          ="Top"
+						PlacementTarget    ="{Binding ElementName=GridColumnsButton}"
+						PopupAnimation     ="Fade"
+						StaysOpen          ="False">
+						<Border
+							Style ="{StaticResource PopupMenuBorderStyle}">
+							<StackPanel
+								Width ="260">
+								<TextBlock
+									Style ="{StaticResource PopupHeaderTextStyle}"
+									Text  ="Columns shown in the grid" />
+
+								<ItemsControl
+									ItemsSource="{Binding RuleGridColumns.Options}">
+									<ItemsControl.ItemTemplate>
+										<DataTemplate
+											DataType="{x:Type viewModels:RuleGridColumnOption}">
+											<CheckBox
+												Margin    ="8,3"
+												Content   ="{Binding DisplayName}"
+												IsChecked ="{Binding	IsVisible,
+																			Mode=TwoWay,
+																			UpdateSourceTrigger=PropertyChanged}"
+												ToolTip   ="{Binding Description}" />
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+
+								<TextBlock
+									Margin       ="8,4,8,4"
+									Style        ="{StaticResource SecondaryTextStyle}"
+									Text         ="Column, Generation mode and Settings are always shown. Right-clicking a column header gives the same choices."
+									TextWrapping ="Wrap" />
+
+								<Separator
+									Margin ="4" />
+
+								<Button
+									Style   ="{StaticResource PopupMenuButtonStyle}"
+									Command ="{Binding RuleGridColumns.ShowAllCommand}"
+									Content ="Show all columns"
+									ToolTip ="{StaticResource ShowAllRuleGridColumnsHint}"
+									infrastructure:ButtonIcon.Glyph ="&#xE890;" />
+							</StackPanel>
+						</Border>
+					</Popup>
 
 					<StackPanel
 						Background  ="Transparent"

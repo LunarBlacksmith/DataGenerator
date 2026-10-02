@@ -49,8 +49,9 @@ public sealed class MainViewModel : ObservableObject
 
 	#region PROPERTIES
 	#region PUBLIC
-	public DatabaseExplorerViewModel Explorer { get; }
-	public ThemeViewModel            Theme    { get; }
+	public DatabaseExplorerViewModel  Explorer       { get; }
+	public ThemeViewModel             Theme          { get; }
+	public PostGenerationSqlViewModel PostGeneration { get; }
 
 	public AsyncRelayCommand LoadMetadataCommand     { get; }
 	public RelayCommand      BrowseOutputCommand     { get; }
@@ -238,17 +239,18 @@ public sealed class MainViewModel : ObservableObject
 	#endregion PROPERTIES
 
 	public MainViewModel(
-		ISqlMetadataService       metadataService,
-		IDataGenerationService    generationService,
-		IFileDialogService        fileDialogService,
-		IDialogService            dialogService,
-		IShellService             shellService,
-		IClipboardService         clipboardService,
-		IHelpService              helpService,
-		IExceptionFormatter       exceptionFormatter,
-		IForeignTableKeyResolver  foreignTableKeyResolver,
-		DatabaseExplorerViewModel explorer,
-		ThemeViewModel            theme
+		ISqlMetadataService        metadataService,
+		IDataGenerationService     generationService,
+		IFileDialogService         fileDialogService,
+		IDialogService             dialogService,
+		IShellService              shellService,
+		IClipboardService          clipboardService,
+		IHelpService               helpService,
+		IExceptionFormatter        exceptionFormatter,
+		IForeignTableKeyResolver   foreignTableKeyResolver,
+		DatabaseExplorerViewModel  explorer,
+		ThemeViewModel             theme,
+		PostGenerationSqlViewModel postGeneration
 	)
 	{
 		_cancellationTokenSource = null;
@@ -256,7 +258,7 @@ public sealed class MainViewModel : ObservableObject
 		_userName                = string.Empty;
 		_password                = string.Empty;
 		_encryptConnection       = true;
-		_trustServerCertificate  = false;
+		_trustServerCertificate  = true;
 		_outputFilePath          = CreateDefaultOutputFilePath();
 		_usesDefaultOutputPath   = true;
 		_lastGeneratedFilePath   = null;
@@ -280,6 +282,7 @@ public sealed class MainViewModel : ObservableObject
 		_foreignTableKeyResolver = foreignTableKeyResolver ?? throw new ArgumentNullException(nameof(foreignTableKeyResolver));
 		Explorer                 = explorer ?? throw new ArgumentNullException(nameof(explorer));
 		Theme                    = theme ?? throw new ArgumentNullException(nameof(theme));
+		PostGeneration           = postGeneration ?? throw new ArgumentNullException(nameof(postGeneration));
 
 		LoadMetadataCommand     = new AsyncRelayCommand(LoadMetadataAsync, CanLoadMetadata);
 		BrowseOutputCommand     = new RelayCommand(BrowseOutputFile, _ => !IsBusy && IsSqlFileMode);
@@ -291,6 +294,7 @@ public sealed class MainViewModel : ObservableObject
 		DismissErrorCommand     = new RelayCommand(_ => ClearError(), _ => HasError);
 
 		Explorer.GenerationSettingsChanged += OnGenerationSettingsChanged;
+		PostGeneration.Changed             += OnPostGenerationChanged;
 	}
 
 	/// <summary>
@@ -336,6 +340,7 @@ public sealed class MainViewModel : ObservableObject
 				int inferredKeyCount = _foreignTableKeyResolver.ResolveInferredKeys(databases);
 
 				Explorer.Load(databases);
+				PostGeneration.SetDatabases(databases.Select(database => database.Name));
 
 				StatusMessage = $"Loaded {Explorer.TotalTableCount:N0} table(s) from {databases.Count:N0} database(s)"
 					+ (inferredKeyCount > 0
@@ -384,7 +389,8 @@ public sealed class MainViewModel : ObservableObject
 
 		return	!IsBusy
 					&& Explorer.IncludedTableCount > 0
-					&& outputIsConfigured;
+					&& outputIsConfigured
+					&& !PostGeneration.HasProblem;
 	}
 
 	private async Task GenerateAsync(object? parameter)
@@ -582,7 +588,8 @@ public sealed class MainViewModel : ObservableObject
 			OutputFilePath     = IsSqlFileMode ? _outputFilePath.Trim() : null,
 			ConnectionString   = IsDirectInsertMode ? BuildConnectionString(MASTER_DATABASE) : null,
 			TablesToClear      = _clearExistingData ? GetTablesToClear(includedTables) : [],
-			ResetIdentitySeeds = _clearExistingData && _resetIdentitySeeds
+			ResetIdentitySeeds = _clearExistingData && _resetIdentitySeeds,
+			PostGeneration     = PostGeneration.CreateScript()
 		};
 
 	private IReadOnlyList<TableModel> GetTablesToClear(IReadOnlyList<TableNodeViewModel> includedTables)
@@ -734,9 +741,14 @@ public sealed class MainViewModel : ObservableObject
 
 	private void OnGenerationSettingsChanged(object? sender, EventArgs e)
 	{
+		TableNodeViewModel? firstIncludedTable = Explorer.AllTables.FirstOrDefault(table => table.IsIncluded);
+
+		PostGeneration.SuggestDatabase(firstIncludedTable?.Database.Model.Name);
 		OnPropertyChanged(nameof(GenerationSummary));
 		GenerateCommand.NotifyCanExecuteChanged();
 	}
+
+	private void OnPostGenerationChanged(object? sender, EventArgs e) => GenerateCommand.NotifyCanExecuteChanged();
 
 	private void RefreshCommands()
 	{

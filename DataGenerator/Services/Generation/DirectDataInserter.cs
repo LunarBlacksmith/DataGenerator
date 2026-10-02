@@ -10,14 +10,15 @@ namespace DataGenerator.Services.Generation;
 /// </summary>
 internal sealed class DirectDataInserter
 {
-	private const int    COMMAND_TIMEOUT_SECONDS = 120;
-	private const int    CLEANUP_TIMEOUT_SECONDS = 600;
-	private const int    MAXIMUM_PARAMETERS      = 2_000;
-	private const int    MAXIMUM_BATCH_ROWS      = 100;
-	private const byte   DEFAULT_PRECISION       = 18;
-	private const byte   DEFAULT_SCALE           = 0;
-	private const byte   DEFAULT_TIME_SCALE      = 7;
-	private const string INSERTED_KEYS_VARIABLE  = "@dg_inserted";
+	private const int    COMMAND_TIMEOUT_SECONDS         = 120;
+	private const int    CLEANUP_TIMEOUT_SECONDS         = 600;
+	private const int    POST_GENERATION_TIMEOUT_SECONDS = 600;
+	private const int    MAXIMUM_PARAMETERS              = 2_000;
+	private const int    MAXIMUM_BATCH_ROWS              = 100;
+	private const byte   DEFAULT_PRECISION               = 18;
+	private const byte   DEFAULT_SCALE                   = 0;
+	private const byte   DEFAULT_TIME_SCALE              = 7;
+	private const string INSERTED_KEYS_VARIABLE          = "@dg_inserted";
 
 	private readonly ISqlValueConverter _converter;
 	private readonly RowValueBuilder    _rowValueBuilder;
@@ -66,6 +67,8 @@ internal sealed class DirectDataInserter
 					await InsertRowSetAsync(connection, transaction, table, rowSet, progress, cancellationToken);
 				}
 			}
+
+			await RunPostGenerationAsync(connection, transaction, blueprint, progress, cancellationToken);
 
 			cancellationToken.ThrowIfCancellationRequested();
 			progress.Report("Committing the transaction…");
@@ -123,6 +126,74 @@ internal sealed class DirectDataInserter
 			);
 
 			await ExecuteCleanupAsync(connection, transaction, sql, table, cancellationToken);
+		}
+	}
+
+	/// <summary>
+	/// Runs the stored procedures and SQL the user asked to run after the inserts, in the chosen database and inside the
+	/// generation transaction, so a failure rolls back the inserted rows too.
+	/// </summary>
+	private static async Task RunPostGenerationAsync(
+		SqlConnection       connection,
+		SqlTransaction      transaction,
+		GenerationBlueprint blueprint,
+		GenerationProgress  progress,
+		CancellationToken   cancellationToken
+	)
+	{
+		if (blueprint.PostGeneration is not PostGenerationScript postGeneration)
+		{
+			return;
+		}
+
+		string location = $"Post-generation SQL › database {SqlSyntax.QuoteIdentifier(postGeneration.DatabaseName)}";
+
+		await ExecutePostGenerationAsync(
+			connection,
+			transaction,
+			$"USE {SqlSyntax.QuoteIdentifier(postGeneration.DatabaseName)};",
+			location,
+			cancellationToken
+		);
+
+		for (int index = 0; index < postGeneration.Statements.Count; ++index)
+		{
+			PostGenerationStatement statement = postGeneration.Statements[index];
+
+			cancellationToken.ThrowIfCancellationRequested();
+			progress.Report($"Running post-generation SQL {index + 1:N0} of {postGeneration.Statements.Count:N0} ({statement.Name})…");
+
+			await ExecutePostGenerationAsync(
+				connection,
+				transaction,
+				statement.Sql,
+				$"{location} › {statement.Description}",
+				cancellationToken
+			);
+		}
+	}
+
+	private static async Task ExecutePostGenerationAsync(
+		SqlConnection     connection,
+		SqlTransaction    transaction,
+		string            sql,
+		string            location,
+		CancellationToken cancellationToken
+	)
+	{
+		await using SqlCommand command = CreateCommand(connection, transaction, sql, POST_GENERATION_TIMEOUT_SECONDS);
+
+		try
+		{
+			_ = await command.ExecuteNonQueryAsync(cancellationToken);
+		}
+		catch (SqlException exception)
+		{
+			throw new DataGenerationException(
+				$"The post-generation SQL failed, so nothing was saved. {exception.Message}",
+				location,
+				exception
+			);
 		}
 	}
 

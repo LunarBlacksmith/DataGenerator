@@ -47,6 +47,17 @@ internal sealed class RowSetBlueprint
 
 	public required int                        GeneratedKeyGroupCount { get; init; }
 	public required int                        ExistingKeyGroupCount  { get; init; }
+
+	/// <summary>
+	/// Indexes into <see cref="Sources"/> in the order the values are generated, so that columns which use the value of
+	/// another column (Copy of column, COL(...)) come after that column.
+	/// </summary>
+	public required IReadOnlyList<int>         EvaluationOrder        { get; init; }
+
+	/// <summary>
+	/// The index into <see cref="Sources"/> of every inserted column, by column name.
+	/// </summary>
+	public required IReadOnlyDictionary<string, int> SourceIndexesByName { get; init; }
 }
 
 internal sealed class TableBlueprint
@@ -78,6 +89,11 @@ internal sealed class GenerationBlueprint
 	public required IReadOnlyList<TableModel>      TablesToClear      { get; init; }
 
 	public required bool                           ResetIdentitySeeds { get; init; }
+
+	/// <summary>
+	/// Stored procedures or SQL run after the inserts and before the commit; null when there are none.
+	/// </summary>
+	public PostGenerationScript?                   PostGeneration     { get; init; }
 
 	public long TotalRowCount => Tables.Sum(table => table.TotalRowCount);
 

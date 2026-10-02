@@ -9,6 +9,7 @@ public static class SecurePathService
 	private const string GENERATED_DATA_DIRECTORY = "GeneratedData";
 	private const string METADATA_DIRECTORY       = "Metadata";
 	private const string SAVED_SETTINGS_FILE      = "SavedColumnSettings.json";
+	private const string SET_CONFIGURATIONS_FILE  = "SavedSetConfigurations.json";
 	private const string PREFERENCES_FILE         = "Preferences.json";
 
 	public static string GetApplicationDataDirectory()
@@ -39,6 +40,8 @@ public static class SecurePathService
 	}
 
 	public static string GetSavedSettingsFilePath() => Path.Combine(GetApplicationDataDirectory(), SAVED_SETTINGS_FILE);
+
+	public static string GetSetConfigurationsFilePath() => Path.Combine(GetApplicationDataDirectory(), SET_CONFIGURATIONS_FILE);
 
 	public static string GetPreferencesFilePath() => Path.Combine(GetApplicationDataDirectory(), PREFERENCES_FILE);
 

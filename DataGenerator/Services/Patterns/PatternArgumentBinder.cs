@@ -4,20 +4,57 @@ namespace DataGenerator.Services.Patterns;
 
 internal enum PatternArgumentKind
 {
-	Number = 0,
-	Range  = 1,
-	Text   = 2
+	Number     = 0,
+	Range      = 1,
+	Text       = 2,
+	Expression = 3
 }
 
 internal sealed class PatternArgument
 {
-	public required string?             Name       { get; init; }
-	public required PatternArgumentKind Kind       { get; init; }
-	public required string              Text       { get; init; }
-	public required int                 Position   { get; init; }
-	public decimal                      Number     { get; init; }
-	public decimal                      RangeStart { get; init; }
-	public decimal                      RangeEnd   { get; init; }
+	private static readonly CultureInfo INVARIANT = CultureInfo.InvariantCulture;
+
+	public required string?             Name        { get; init; }
+	public required PatternArgumentKind Kind        { get; init; }
+	public required string              Text        { get; init; }
+	public required int                 Position    { get; init; }
+	public decimal                      Number      { get; init; }
+	public decimal                      RangeStart  { get; init; }
+	public decimal                      RangeEnd    { get; init; }
+
+	/// <summary>
+	/// The nested function call of an <see cref="PatternArgumentKind.Expression"/> argument, e.g. TODAY() in RAND_DATE(TODAY(), '2030-12-31').
+	/// </summary>
+	public PatternNode?                 Expression  { get; init; }
+
+	/// <summary>
+	/// Whether the value was produced by a nested function call. Such a value is accepted wherever text is expected,
+	/// even when it looks like a number (e.g. TODAY(format='yyyyMMdd')).
+	/// </summary>
+	public bool                         IsEvaluated { get; init; }
+
+	/// <summary>
+	/// The argument with the value its nested function call produced: a number when the value is a number, otherwise text.
+	/// </summary>
+	public PatternArgument WithEvaluatedValue(string value)
+	{
+		bool isNumber = decimal.TryParse(
+			value,
+			NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+			INVARIANT,
+			out decimal number
+		);
+
+		return new PatternArgument
+		{
+			Name        = Name,
+			Kind        = isNumber ? PatternArgumentKind.Number : PatternArgumentKind.Text,
+			Text        = value,
+			Position    = Position,
+			Number      = isNumber ? number : 0,
+			IsEvaluated = true
+		};
+	}
 }
 
 /// <summary>
@@ -155,7 +192,7 @@ internal sealed class PatternArgumentBinder
 			return null;
 		}
 
-		return argument.Kind == PatternArgumentKind.Text
+		return argument.Kind == PatternArgumentKind.Text || argument.IsEvaluated
 			? argument.Text
 			: throw new PatternSyntaxException($"{_functionName}: {parameterName} must be text, e.g. '{argument.Text}'.", argument.Position);
 	}

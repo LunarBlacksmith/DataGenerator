@@ -19,16 +19,19 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 	private readonly ISqlValueConverter     _converter;
 	private readonly IRegexValueGenerator   _regexGenerator;
 	private readonly IPatternValueGenerator _patternGenerator;
+	private readonly IColumnValueCaster     _caster;
 
 	public ColumnValueGenerator(
 		ISqlValueConverter     converter,
 		IRegexValueGenerator   regexGenerator,
-		IPatternValueGenerator patternGenerator
+		IPatternValueGenerator patternGenerator,
+		IColumnValueCaster     caster
 	)
 	{
 		_converter        = converter ?? throw new ArgumentNullException(nameof(converter));
 		_regexGenerator   = regexGenerator ?? throw new ArgumentNullException(nameof(regexGenerator));
 		_patternGenerator = patternGenerator ?? throw new ArgumentNullException(nameof(patternGenerator));
+		_caster           = caster ?? throw new ArgumentNullException(nameof(caster));
 	}
 
 	public bool CanGenerate(ValueGenerationMode mode)
@@ -37,9 +40,22 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 			or ValueGenerationMode.Sequence
 			or ValueGenerationMode.Regex
 			or ValueGenerationMode.Pattern
+			or ValueGenerationMode.CopyColumn
 			or ValueGenerationMode.Null;
 
-	public object? Generate(ColumnRule rule, long rowIndex)
+	public IReadOnlyList<string> GetReferencedColumns(ColumnRule rule)
+	{
+		ArgumentNullException.ThrowIfNull(rule);
+
+		return rule.GenerationMode switch
+		{
+			ValueGenerationMode.CopyColumn => string.IsNullOrWhiteSpace(rule.SourceColumnName) ? [] : [rule.SourceColumnName.Trim()],
+			ValueGenerationMode.Pattern    => _patternGenerator.GetColumnReferences(rule.PatternExpression),
+			_                              => []
+		};
+	}
+
+	public object? Generate(ColumnRule rule, long rowIndex, IRowValueLookup? rowValues = null)
 	{
 		ArgumentNullException.ThrowIfNull(rule);
 
@@ -56,9 +72,10 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 				column,
 				_regexGenerator.Generate(rule.RegexPattern, _converter.GetMaximumTextLength(column) ?? UNLIMITED_TEXT_LENGTH)
 			),
-			ValueGenerationMode.Pattern  => _converter.ConvertGeneratedText(column, _patternGenerator.Generate(rule.PatternExpression, rowIndex)),
-			ValueGenerationMode.Random   => GenerateRandomValue(column),
-			_                            => throw new InvalidOperationException(
+			ValueGenerationMode.Pattern    => GeneratePatternValue(rule, rowIndex, rowValues),
+			ValueGenerationMode.CopyColumn => _caster.Cast(column, GetRowValues(rule, rowValues).GetValue(rule.SourceColumnName.Trim())),
+			ValueGenerationMode.Random     => GenerateRandomValue(column),
+			_                              => throw new InvalidOperationException(
 				$"Values for [{column.Name}] in '{rule.GenerationMode}' mode are resolved while the data is generated."
 			)
 		};
@@ -86,6 +103,32 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 			_                           => $"Random values are not supported for {_converter.GetDisplayType(column)}"
 		};
 	}
+
+	/// <remarks>
+	/// Patterns that use other columns are converted leniently, because the other column's value may not suit this column's
+	/// type (e.g. text copied into an int column keeps only its digits). Other patterns must produce a valid value.
+	/// </remarks>
+	private object? GeneratePatternValue(ColumnRule rule, long rowIndex, IRowValueLookup? rowValues)
+	{
+		if (_patternGenerator.GetColumnReferences(rule.PatternExpression).Count == 0)
+		{
+			return _converter.ConvertGeneratedText(rule.Column, _patternGenerator.Generate(rule.PatternExpression, rowIndex));
+		}
+
+		IRowValueLookup lookup = GetRowValues(rule, rowValues);
+		string          text   = _patternGenerator.Generate(
+			rule.PatternExpression,
+			rowIndex,
+			columnName => _caster.ToText(lookup.GetValue(columnName))
+		);
+
+		return _caster.Cast(rule.Column, text);
+	}
+
+	private static IRowValueLookup GetRowValues(ColumnRule rule, IRowValueLookup? rowValues)
+		=> rowValues ?? throw new InvalidOperationException(
+			$"Column [{rule.Column.Name}] uses the value of another column, which is only available while rows are generated."
+		);
 
 	private object GenerateRandomValue(ColumnModel column)
 	{

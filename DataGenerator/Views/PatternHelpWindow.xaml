@@ -242,7 +242,8 @@
 						Text         ="{Binding	Expression,
 														Mode=TwoWay,
 														UpdateSourceTrigger=PropertyChanged}"
-						TextWrapping ="Wrap" />
+						TextWrapping ="Wrap"
+						infrastructure:PatternAutoComplete.Provider ="{StaticResource PatternCompletionProvider}" />
 				</Grid>
 
 				<TextBlock

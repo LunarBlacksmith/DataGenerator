@@ -1,22 +1,14 @@
 ﻿using System.Globalization;
+using System.Text;
 
 namespace DataGenerator.Services.Patterns;
 
 internal static class PatternFunctionFactory
 {
-	public static readonly IReadOnlyList<string> FUNCTION_NAMES =
-	[
-		"SEQ",
-		"RAND_NUM",
-		"RAND_DECIMAL",
-		"RAND_LETTERS",
-		"RAND_DIGITS",
-		"RAND_ALPHANUM",
-		"RAND_DATE",
-		"TODAY",
-		"ONE_OF",
-		"GUID"
-	];
+	// Every function must be described in PatternLanguageReference, which the reference window and suggestions use.
+	public static readonly IReadOnlyList<string> FUNCTION_NAMES = [.. PatternLanguageReference.FUNCTIONS.Select(entry => entry.Name)];
+
+	private static readonly string[] FUNCTION_ALIASES = ["SEQUENCE", "COLUMN"];
 
 	private const int    MAXIMUM_TEXT_LENGTH = 1000;
 	private const int    MAXIMUM_DECIMALS    = 10;
@@ -32,8 +24,23 @@ internal static class PatternFunctionFactory
 
 	public static PatternNode Create(PatternToken nameToken, IReadOnlyList<PatternArgument> arguments)
 	{
-		string                functionName = nameToken.Text.ToUpperInvariant();
-		PatternArgumentBinder binder       = new PatternArgumentBinder(functionName, arguments, nameToken.Position);
+		string functionName = nameToken.Text.ToUpperInvariant();
+
+		if (!FUNCTION_NAMES.Contains(functionName) && !FUNCTION_ALIASES.Contains(functionName))
+		{
+			throw new PatternSyntaxException(
+				$"Unknown function '{nameToken.Text}'. Available functions: {string.Join(", ", FUNCTION_NAMES)}. "
+					+ "To use the word as text, put it in quotes.",
+				nameToken.Position
+			);
+		}
+
+		if (arguments.Any(argument => argument.Kind == PatternArgumentKind.Expression))
+		{
+			return CreateDynamic(nameToken, arguments);
+		}
+
+		PatternArgumentBinder binder = new PatternArgumentBinder(functionName, arguments, nameToken.Position);
 
 		return functionName switch
 		{
@@ -47,12 +54,34 @@ internal static class PatternFunctionFactory
 			"TODAY"             => CreateToday(binder),
 			"ONE_OF"            => CreateOneOf(binder),
 			"GUID"              => CreateGuid(binder),
-			_                   => throw new PatternSyntaxException(
-				$"Unknown function '{nameToken.Text}'. Available functions: {string.Join(", ", FUNCTION_NAMES)}. "
-					+ "To use the word as text, put it in quotes.",
-				nameToken.Position
-			)
+			_                   => CreateColumnReference(binder)
 		};
+	}
+
+	/// <summary>
+	/// A function whose arguments include nested function calls. When the nested calls do not depend on other columns,
+	/// they are tried once now so that mistakes such as a wrong parameter are reported while the pattern is typed.
+	/// </summary>
+	private static PatternNode CreateDynamic(PatternToken nameToken, IReadOnlyList<PatternArgument> arguments)
+	{
+		DynamicFunctionPatternNode node              = new DynamicFunctionPatternNode(nameToken, arguments);
+		List<string>               referencedColumns = [];
+
+		node.CollectColumnReferences(referencedColumns);
+
+		if (referencedColumns.Count == 0)
+		{
+			try
+			{
+				node.Append(new StringBuilder(), new PatternContext(0, new Random(0), TimeProvider.System));
+			}
+			catch (InvalidOperationException exception)
+			{
+				throw new PatternSyntaxException(exception.Message, nameToken.Position);
+			}
+		}
+
+		return node;
 	}
 
 	private static PatternNode CreateSequence(PatternArgumentBinder binder)
@@ -200,6 +229,19 @@ internal static class PatternFunctionFactory
 
 		binder.EnsureComplete("case");
 		return new GuidPatternNode(letterCase == "UPPER");
+	}
+
+	private static PatternNode CreateColumnReference(PatternArgumentBinder binder)
+	{
+		string columnName = binder.RequireText("name", "COL(Colour) or COL('Shirt colour')").Trim();
+
+		if (columnName.Length == 0)
+		{
+			throw binder.Error("the column name is empty, e.g. COL(Colour).");
+		}
+
+		binder.EnsureComplete("name");
+		return new ColumnReferencePatternNode(columnName);
 	}
 
 	/// <summary>

@@ -254,6 +254,22 @@ internal sealed class PatternParser
 
 		PatternToken valueToken = Current;
 
+		if (valueToken.Kind == PatternTokenKind.Word && Next.Kind == PatternTokenKind.LeftParenthesis)
+		{
+			Advance();
+
+			PatternNode expression = ParseFunction(valueToken);
+
+			return new PatternArgument
+			{
+				Name       = name,
+				Kind       = PatternArgumentKind.Expression,
+				Text       = $"{valueToken.Text.ToUpperInvariant()}(…)",
+				Position   = position,
+				Expression = expression
+			};
+		}
+
 		if (valueToken.Kind is PatternTokenKind.Text or PatternTokenKind.Word)
 		{
 			Advance();
@@ -306,6 +322,15 @@ internal sealed class PatternParser
 		}
 
 		PatternToken token = Current;
+
+		if (token.Kind == PatternTokenKind.Word && Next.Kind == PatternTokenKind.LeftParenthesis)
+		{
+			throw new PatternSyntaxException(
+				$"A function cannot be one end of a range inside {nameToken.Text.ToUpperInvariant()}(...). "
+				+ $"Separate the two values with a comma instead, e.g. {nameToken.Text.ToUpperInvariant()}(1, {token.Text.ToUpperInvariant()}(...)).",
+				token.Position
+			);
+		}
 
 		if (token.Kind != PatternTokenKind.Number)
 		{

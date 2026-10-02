@@ -173,3 +173,93 @@ internal sealed class GuidPatternNode : PatternNode
 		_ = builder.Append(_upperCase ? text.ToUpperInvariant() : text);
 	}
 }
+
+/// <summary>
+/// The value of another column of the same row, e.g. COL(Colour).
+/// </summary>
+internal sealed class ColumnReferencePatternNode : PatternNode
+{
+	private readonly string _columnName;
+
+	public ColumnReferencePatternNode(string columnName)
+	{
+		_columnName = columnName;
+	}
+
+	public override void Append(StringBuilder builder, PatternContext context)
+	{
+		_ = builder.Append(context.GetColumnValue(_columnName));
+		PatternContext.EnsureLength(builder);
+	}
+
+	public override void CollectColumnReferences(ICollection<string> columnNames)
+	{
+		if (!columnNames.Contains(_columnName, StringComparer.OrdinalIgnoreCase))
+		{
+			columnNames.Add(_columnName);
+		}
+	}
+}
+
+/// <summary>
+/// A function with nested function calls as arguments, e.g. RAND_DATE(TODAY(), '2030-12-31'). The nested calls are
+/// evaluated for every value, then the function is created with their results.
+/// </summary>
+internal sealed class DynamicFunctionPatternNode : PatternNode
+{
+	private const char KEY_SEPARATOR = '\u001F';
+
+	private readonly PatternToken                   _nameToken;
+	private readonly IReadOnlyList<PatternArgument> _arguments;
+	private CachedFunction?                         _lastFunction;
+
+	public DynamicFunctionPatternNode(PatternToken nameToken, IReadOnlyList<PatternArgument> arguments)
+	{
+		_nameToken = nameToken;
+		_arguments = arguments;
+	}
+
+	public override void Append(StringBuilder builder, PatternContext context)
+	{
+		List<PatternArgument> evaluatedArguments = new List<PatternArgument>(_arguments.Count);
+		StringBuilder         keyBuilder         = new StringBuilder();
+
+		foreach (PatternArgument argument in _arguments)
+		{
+			PatternArgument evaluatedArgument = argument;
+
+			if (argument.Expression is not null)
+			{
+				StringBuilder valueBuilder = new StringBuilder();
+
+				argument.Expression.Append(valueBuilder, context);
+				evaluatedArgument = argument.WithEvaluatedValue(valueBuilder.ToString());
+			}
+
+			evaluatedArguments.Add(evaluatedArgument);
+			_ = keyBuilder.Append(evaluatedArgument.Text).Append(KEY_SEPARATOR);
+		}
+
+		// Nested values such as TODAY() rarely change between rows, so the last created function is reused.
+		string          key      = keyBuilder.ToString();
+		CachedFunction? function = Volatile.Read(ref _lastFunction);
+
+		if (function is null || !string.Equals(function.Key, key, StringComparison.Ordinal))
+		{
+			function = new CachedFunction(key, PatternFunctionFactory.Create(_nameToken, evaluatedArguments));
+			Volatile.Write(ref _lastFunction, function);
+		}
+
+		function.Node.Append(builder, context);
+	}
+
+	public override void CollectColumnReferences(ICollection<string> columnNames)
+	{
+		foreach (PatternArgument argument in _arguments)
+		{
+			argument.Expression?.CollectColumnReferences(columnNames);
+		}
+	}
+
+	private sealed record CachedFunction(string Key, PatternNode Node);
+}

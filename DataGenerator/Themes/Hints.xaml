@@ -35,8 +35,8 @@
 
 	<sys:String
 		x:Key="TrustServerCertificateHint">
-		Accepts the server's certificate without validating it. Only use this for development servers with a self-signed
-		certificate.
+		Accepts the server's certificate without validating it. Ticked by default because test and development servers
+		usually have a self-signed certificate; untick it for servers with a trusted certificate.
 	</sys:String>
 
 	<!-- Database explorer -->
@@ -214,7 +214,49 @@
 	<sys:String
 		x:Key="ColumnRulesGridHint">
 		How each column of the row set is filled. Choose a generation mode per column; only the settings of that mode are
-		shown. Primary key rows are red, foreign key and FTK rows are orange.
+		shown. Primary key rows are red, foreign key and FTK rows are orange. Right-click a column header to hide or show
+		the Keys, SQL type, Nullable and Sample values columns. Ctrl+click or Shift+click rows to select several columns
+		and change them together with the bar above the grid.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkSelectionHint">
+		Select two or more columns in the grid (Ctrl+click, Shift+click or Ctrl+A) to change their generation mode or
+		settings value in one go. Columns that cannot take a change are skipped and listed afterwards.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkModeHint">
+		The generation mode to give every selected column. The count shows how many of the selected columns support the
+		mode; for example NULL is only offered to nullable columns, and the others are left unchanged.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkApplyModeHint">
+		Gives every selected column that supports it the chosen generation mode. Unsupported columns keep their mode.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkSettingValueHint">
+		The settings value to give every selected column, applied to the setting of each column's own mode: the fixed
+		value, the pattern, the regular expression, the column to copy, or for Sequence "start" or "start; step". Press
+		Enter to apply.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkApplySettingValueHint">
+		Applies the settings value to every selected column. A column whose mode has no setting is skipped, and a column
+		for which the value is not valid (such as letters for a numeric column) keeps its previous value.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkSelectAllHint">
+		Selects every column of this row set.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkClearSelectionHint">
+		Clears the column selection.
 	</sys:String>
 
 	<sys:String
@@ -250,7 +292,8 @@
 
 	<sys:String
 		x:Key="SampleColumnHint">
-		Sample values generated with the current settings, or the problem that prevents generating them.
+		Sample values generated with the current settings, or the problem that prevents generating them. Long samples
+		scroll sideways: use the scroll bar under them or Shift + mouse wheel.
 	</sys:String>
 
 	<sys:String
@@ -277,7 +320,15 @@
 	<sys:String
 		x:Key="PatternHint">
 		A pattern in plain English, e.g. P FOLLOWED BY SEQ(1-1000) FOLLOWED BY (X OR Y) FOLLOWED BY RAND_NUM(0, 99, 2).
-		Click ? for the pattern language reference.
+		Use COL(Name) for the value of another column of the same row. Click ? for the pattern language reference.
+		While you type, matching functions and keywords are suggested under the word: ↑ and ↓ choose one, and pressing Tab
+		twice inserts it.
+	</sys:String>
+
+	<sys:String
+		x:Key="CopyColumnHint">
+		The column of the same row whose value is copied. The value is converted to this column's type, e.g. text copied
+		into a number column keeps only its digits (0 if there are none), and long text is cut to the column's length.
 	</sys:String>
 
 	<sys:String
@@ -351,6 +402,16 @@
 	</sys:String>
 
 	<sys:String
+		x:Key="PostGenerationSqlHint">
+		Optional. Runs after all the rows are inserted, in the same transaction and before the commit, so if it fails nothing is saved. Type one stored procedure name per line (e.g. dbo.RebuildTotals or [Sales].[usp_Refresh]; EXEC is added for you), or any SQL, which runs exactly as typed. A name after SQL is only treated as a stored procedure when that SQL ends with a semicolon or a blank line. GO cannot be used.
+	</sys:String>
+
+	<sys:String
+		x:Key="PostGenerationDatabaseHint">
+		The database the post-generation SQL runs in, so names without a database (e.g. dbo.RebuildTotals) are found there. Follows the database of the included tables until you choose one.
+	</sys:String>
+
+	<sys:String
 		x:Key="GenerateHint">
 		Generates the data of the included tables: a .sql script or direct inserts, depending on the output mode.
 	</sys:String>
@@ -379,7 +440,14 @@
 	<!-- Pattern language reference -->
 	<sys:String
 		x:Key="PatternTryHint">
-		Type a pattern to see the values it generates for the first rows.
+		Type a pattern to see the values it generates for the first rows. While you type, matching functions and keywords are
+		suggested: ↑ and ↓ choose one, and pressing Tab twice inserts it.
+	</sys:String>
+
+	<sys:String
+		x:Key="PatternSuggestionsHint">
+		Functions and keywords that match the word you are typing. ↑ and ↓ choose one; press Tab twice (or double-click it)
+		to insert it, or press Esc to close the suggestions. A function is inserted with its brackets, ready for its arguments.
 	</sys:String>
 
 	<sys:String
@@ -406,8 +474,62 @@
 
 	<sys:String
 		x:Key="ManageSavedSettingsHint">
-		Opens the saved settings: rename or delete them, choose which ones are applied automatically, and import or export
-		them to share them with colleagues working on the same project.
+		Opens the saved column settings: rename or delete them, choose which ones are applied automatically, and import or
+		export them to share them with colleagues working on the same project. Each saved column setting holds the settings
+		of one column; to save or load every column of a row set at once, use Set configuration above the grid.
+	</sys:String>
+
+	<sys:String
+		x:Key="SetConfigurationButtonHint">
+		Saves the generation mode and settings of every column of this row set as one named set configuration, or loads a
+		saved one into this row set. Loading replaces the settings of every column the configuration has; the other columns
+		keep theirs. Set configurations are kept apart from the saved settings of single columns (the star button in each
+		Settings cell), so loading one never happens by accident.
+	</sys:String>
+
+	<sys:String
+		x:Key="SaveSetConfigurationHint">
+		The name to save the settings of every column of this row set under. Press Enter or click Save. Saving under an
+		existing name asks before replacing it. The number of rows and the name of the row set are not part of it.
+	</sys:String>
+
+	<sys:String
+		x:Key="LoadSetConfigurationHint">
+		Click a set configuration to load it into this row set, after confirming. Columns are matched by name, so a
+		configuration saved from another table can be loaded too; only its columns that exist here are changed. Settings
+		that do not suit a column are left as they were and reported next to the button.
+	</sys:String>
+
+	<sys:String
+		x:Key="DeleteSetConfigurationHint">
+		Deletes this set configuration, after confirming. Row sets that already loaded it keep their settings.
+	</sys:String>
+
+	<sys:String
+		x:Key="ImportSetConfigurationsHint">
+		Adds the set configurations of a file exported from this application, e.g. by a colleague working on the same
+		project. If some of them already exist you choose whether to replace yours.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExportSetConfigurationsHint">
+		Saves every set configuration to a file, so colleagues can import them and generate data that follows the same rules.
+	</sys:String>
+
+	<sys:String
+		x:Key="DismissSetConfigurationResultHint">
+		Hides this message.
+	</sys:String>
+
+	<sys:String
+		x:Key="RuleGridColumnsHint">
+		Choose which of the Keys, SQL type, Nullable and Sample values columns the column rules grid shows. The choice
+		applies to every row set and is remembered the next time the application starts.
+	</sys:String>
+
+	<sys:String
+		x:Key="ShowAllRuleGridColumnsHint">
+		Shows every column of the column rules grid again.
 	</sys:String>
 
 	<sys:String

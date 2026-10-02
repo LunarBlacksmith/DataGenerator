@@ -16,4 +16,9 @@ public sealed class GenerationRequest
 	/// Resets the identity seed of every cleared table so new rows start numbering from the original seed again.
 	/// </summary>
 	public bool                                        ResetIdentitySeeds { get; init; }
+
+	/// <summary>
+	/// Stored procedures or SQL that run after the inserts and before the commit; null when there are none.
+	/// </summary>
+	public PostGenerationScript?                       PostGeneration     { get; init; }
 }

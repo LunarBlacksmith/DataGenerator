@@ -35,6 +35,11 @@ public sealed class GenerationModeOption
 			"Random text that matches a simple regular expression, e.g. [A-Z]{3}-[0-9]{4}."
 		),
 		new GenerationModeOption(
+			ValueGenerationMode.CopyColumn,
+			"Copy of column",
+			"The value of another column of the same row, converted to this column's type (e.g. text copied into a number column keeps only its digits)."
+		),
+		new GenerationModeOption(
 			ValueGenerationMode.GeneratedForeignKey,
 			"Generated key",
 			"A key of a row generated for the referenced table in the same run. The referenced table must be included."

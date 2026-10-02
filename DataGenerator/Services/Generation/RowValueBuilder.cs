@@ -17,11 +17,12 @@ internal sealed class RowValueBuilder
 	/// <param name="rowIndex">Zero-based index of the row within its row set.</param>
 	public object?[] Build(TableBlueprint table, RowSetBlueprint rowSet, long rowIndex)
 	{
-		object?[] values           = new object?[rowSet.Sources.Count];
-		int[]     generatedChoices = CreateChoices(rowSet.GeneratedKeyGroupCount);
-		int[]     existingChoices  = CreateChoices(rowSet.ExistingKeyGroupCount);
+		object?[]      values           = new object?[rowSet.Sources.Count];
+		int[]          generatedChoices = CreateChoices(rowSet.GeneratedKeyGroupCount);
+		int[]          existingChoices  = CreateChoices(rowSet.ExistingKeyGroupCount);
+		RowValueLookup lookup           = new RowValueLookup(rowSet, values);
 
-		for (int index = 0; index < rowSet.Sources.Count; ++index)
+		foreach (int index in rowSet.EvaluationOrder)
 		{
 			ValueSource source = rowSet.Sources[index];
 
@@ -31,8 +32,10 @@ internal sealed class RowValueBuilder
 				{
 					ValueSourceKind.GeneratedKey => GetGeneratedKey(source, generatedChoices),
 					ValueSourceKind.ExistingKey  => GetExistingKey(source, existingChoices),
-					_                            => _valueGenerator.Generate(source.Rule, rowIndex)
+					_                            => _valueGenerator.Generate(source.Rule, rowIndex, lookup)
 				};
+
+				lookup.MarkGenerated(index);
 			}
 			catch (Exception exception) when (exception is not OperationCanceledException and not DataGenerationException)
 			{
@@ -88,6 +91,37 @@ internal sealed class RowValueBuilder
 		}
 
 		return keys.GetValue(choices[source.GroupIndex], source.ColumnIndex);
+	}
+
+	/// <summary>
+	/// The values generated so far for the row, for rules that use the value of another column.
+	/// </summary>
+	private sealed class RowValueLookup : IRowValueLookup
+	{
+		private readonly RowSetBlueprint _rowSet;
+		private readonly object?[]       _values;
+		private readonly bool[]          _isGenerated;
+
+		public RowValueLookup(RowSetBlueprint rowSet, object?[] values)
+		{
+			_rowSet      = rowSet;
+			_values      = values;
+			_isGenerated = new bool[values.Length];
+		}
+
+		public void MarkGenerated(int index) => _isGenerated[index] = true;
+
+		public object? GetValue(string columnName)
+		{
+			if (!_rowSet.SourceIndexesByName.TryGetValue(columnName, out int index))
+			{
+				throw new InvalidOperationException($"Column [{columnName}] is not inserted by this row set, so its value cannot be used.");
+			}
+
+			return _isGenerated[index]
+				? _values[index]
+				: throw new InvalidOperationException($"The value of column [{columnName}] has not been generated yet.");
+		}
 	}
 
 	private static object? GetExistingKey(ValueSource source, int[] choices)

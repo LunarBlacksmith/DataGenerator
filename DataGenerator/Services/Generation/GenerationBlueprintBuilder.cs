@@ -7,11 +7,13 @@ namespace DataGenerator.Services.Generation;
 /// </summary>
 internal sealed class GenerationBlueprintBuilder
 {
-	private readonly ISqlValueConverter _converter;
+	private readonly ISqlValueConverter    _converter;
+	private readonly IColumnValueGenerator _valueGenerator;
 
-	public GenerationBlueprintBuilder(ISqlValueConverter converter)
+	public GenerationBlueprintBuilder(ISqlValueConverter converter, IColumnValueGenerator valueGenerator)
 	{
-		_converter = converter ?? throw new ArgumentNullException(nameof(converter));
+		_converter      = converter ?? throw new ArgumentNullException(nameof(converter));
+		_valueGenerator = valueGenerator ?? throw new ArgumentNullException(nameof(valueGenerator));
 	}
 
 	public GenerationBlueprint Build(GenerationRequest request)
@@ -57,7 +59,8 @@ internal sealed class GenerationBlueprintBuilder
 			Tables             = tables,
 			ExistingKeyPools   = [.. pools.Values],
 			TablesToClear      = TableDependencySorter.SortForDeletion(request.TablesToClear),
-			ResetIdentitySeeds = request.ResetIdentitySeeds
+			ResetIdentitySeeds = request.ResetIdentitySeeds,
+			PostGeneration     = request.PostGeneration is { Statements.Count: > 0 } ? request.PostGeneration : null
 		};
 	}
 
@@ -108,14 +111,134 @@ internal sealed class GenerationBlueprintBuilder
 					);
 				}
 
-				string? problem = FindRuleProblem(rule, plansByKey);
+				string? problem = FindRuleProblem(rule, plansByKey) ?? FindReferenceProblem(rule, rowSet.Rules);
 
 				if (problem is not null)
 				{
 					throw new DataGenerationException(problem, DescribeLocation(plan.Table, rowSet, null, rule.Column));
 				}
 			}
+
+			_ = SortByReferences(rowSet.Rules, out List<string> cycle);
+
+			if (cycle.Count > 0)
+			{
+				throw new DataGenerationException(
+					$"The columns use each other's values in a loop ({string.Join(" → ", cycle)}), so none of them can be generated first. "
+						+ "Change one of them to another mode.",
+					DescribeLocation(plan.Table, rowSet)
+				);
+			}
 		}
+	}
+
+	private string? FindReferenceProblem(ColumnRule rule, IReadOnlyList<ColumnRule> rules)
+	{
+		if (rule.GenerationMode == ValueGenerationMode.CopyColumn && string.IsNullOrWhiteSpace(rule.SourceColumnName))
+		{
+			return "Choose the column to copy the value from.";
+		}
+
+		foreach (string columnName in _valueGenerator.GetReferencedColumns(rule))
+		{
+			ColumnRule? referencedRule = rules.FirstOrDefault(item => string.Equals(item.Column.Name, columnName, StringComparison.OrdinalIgnoreCase));
+
+			if (referencedRule is null)
+			{
+				return $"The column uses the value of [{columnName}], but the table has no column with that name.";
+			}
+
+			if (ReferenceEquals(referencedRule, rule))
+			{
+				return "The column cannot use its own value. Choose another column.";
+			}
+
+			if (referencedRule.GenerationMode == ValueGenerationMode.DatabaseGenerated)
+			{
+				return $"The column uses the value of [{columnName}], but SQL Server generates that value while inserting the row, "
+					+ "so it is not known in advance. Choose another column, or another mode for "
+					+ $"[{columnName}].";
+			}
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// Orders the rules so that every rule comes after the columns whose values it uses (Kahn's algorithm). When the rules
+	/// use each other in a loop, <paramref name="cycle"/> receives the column names of the loop.
+	/// </summary>
+	private int[] SortByReferences(IReadOnlyList<ColumnRule> rules, out List<string> cycle)
+	{
+		Dictionary<string, int> indexesByName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+		for (int index = 0; index < rules.Count; ++index)
+		{
+			_ = indexesByName.TryAdd(rules[index].Column.Name, index);
+		}
+
+		int[]       remainingReferences = new int[rules.Count];
+		List<int>[] dependents          = new List<int>[rules.Count];
+		List<int>[] references          = new List<int>[rules.Count];
+
+		for (int index = 0; index < rules.Count; ++index)
+		{
+			dependents[index] = [];
+			references[index] = [];
+		}
+
+		for (int index = 0; index < rules.Count; ++index)
+		{
+			foreach (string columnName in _valueGenerator.GetReferencedColumns(rules[index]))
+			{
+				if (indexesByName.TryGetValue(columnName, out int referencedIndex) && !references[index].Contains(referencedIndex))
+				{
+					references[index].Add(referencedIndex);
+					dependents[referencedIndex].Add(index);
+					++remainingReferences[index];
+				}
+			}
+		}
+
+		Queue<int> ready = new Queue<int>(Enumerable.Range(0, rules.Count).Where(index => remainingReferences[index] == 0));
+		List<int>  order = new List<int>(rules.Count);
+
+		while (ready.Count > 0)
+		{
+			int index = ready.Dequeue();
+
+			order.Add(index);
+
+			foreach (int dependent in dependents[index])
+			{
+				if (--remainingReferences[dependent] == 0)
+				{
+					ready.Enqueue(dependent);
+				}
+			}
+		}
+
+		cycle = order.Count == rules.Count ? [] : FindCycle(rules, references, remainingReferences);
+
+		return [.. order];
+	}
+
+	private static List<string> FindCycle(IReadOnlyList<ColumnRule> rules, List<int>[] references, int[] remainingReferences)
+	{
+		// Every unsorted rule still uses another unsorted rule, so following those references must return to a visited rule.
+		List<int> path    = [];
+		int       current = Array.FindIndex(remainingReferences, count => count > 0);
+
+		while (!path.Contains(current))
+		{
+			path.Add(current);
+			current = references[current].First(index => remainingReferences[index] > 0);
+		}
+
+		List<string> cycle = [.. path.Skip(path.IndexOf(current)).Select(index => rules[index].Column.Name)];
+
+		cycle.Add(rules[current].Column.Name);
+		return cycle;
 	}
 
 	private string? FindRuleProblem(ColumnRule rule, Dictionary<string, TableGenerationPlan> plansByKey)
@@ -272,13 +395,22 @@ internal sealed class GenerationBlueprintBuilder
 			? []
 			: [.. keys.Columns.Select(column => sources.FindIndex(source => IsSameColumn(source.Rule.Column, column)))];
 
+		Dictionary<string, int> sourceIndexesByName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+		for (int index = 0; index < sources.Count; ++index)
+		{
+			_ = sourceIndexesByName.TryAdd(sources[index].Rule.Column.Name, index);
+		}
+
 		return new RowSetBlueprint
 		{
 			Plan                   = rowSet,
 			Sources                = sources,
 			KeySourceIndexes       = keySourceIndexes,
 			GeneratedKeyGroupCount = generatedGroups.Count,
-			ExistingKeyGroupCount  = existingGroupCount
+			ExistingKeyGroupCount  = existingGroupCount,
+			EvaluationOrder        = SortByReferences(insertRules, out _),
+			SourceIndexesByName    = sourceIndexesByName
 		};
 	}
 

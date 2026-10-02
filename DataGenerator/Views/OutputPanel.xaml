@@ -9,6 +9,42 @@
 	mc:Ignorable         ="d"
 	d:DataContext        ="{d:DesignInstance Type=viewModels:MainViewModel}">
 
+	<UserControl.Resources>
+		<Style
+			x:Key      ="PostGenerationWatermarkStyle"
+			TargetType ="TextBlock"
+			BasedOn    ="{StaticResource SecondaryTextStyle}">
+			<Setter
+				Property ="Visibility"
+				Value    ="Collapsed" />
+
+			<Style.Triggers>
+				<DataTrigger
+					Binding ="{Binding PostGeneration.Text}"
+					Value   ="">
+					<Setter
+						Property ="Visibility"
+						Value    ="Visible" />
+				</DataTrigger>
+			</Style.Triggers>
+		</Style>
+
+		<Style
+			x:Key      ="PostGenerationSummaryStyle"
+			TargetType ="TextBlock"
+			BasedOn    ="{StaticResource SecondaryTextStyle}">
+			<Style.Triggers>
+				<DataTrigger
+					Binding ="{Binding PostGeneration.HasProblem}"
+					Value   ="True">
+					<Setter
+						Property ="Foreground"
+						Value    ="{DynamicResource WarningBrush}" />
+				</DataTrigger>
+			</Style.Triggers>
+		</Style>
+	</UserControl.Resources>
+
 	<GroupBox
 		Header ="Generation output"
 		Style  ="{StaticResource OutputSectionStyle}">
@@ -23,6 +59,8 @@
 			</Grid.ColumnDefinitions>
 
 			<Grid.RowDefinitions>
+				<RowDefinition
+					Height="Auto" />
 				<RowDefinition
 					Height="Auto" />
 				<RowDefinition
@@ -149,8 +187,91 @@
 					ToolTip   ="{StaticResource ResetIdentitySeedsHint}" />
 			</WrapPanel>
 
+			<!-- What runs after the inserts, inside the same transaction -->
+			<Label
+				Grid.Row          ="3"
+				Grid.Column       ="0"
+				Margin            ="0,6,0,0"
+				VerticalAlignment ="Top"
+				Content           ="Finally run:" />
+
+			<Grid
+				Grid.Row    ="3"
+				Grid.Column ="1">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition
+						Width="*" />
+					<ColumnDefinition
+						Width="Auto" />
+					<ColumnDefinition
+						Width="Auto" />
+				</Grid.ColumnDefinitions>
+
+				<Grid.RowDefinitions>
+					<RowDefinition
+						Height="Auto" />
+					<RowDefinition
+						Height="Auto" />
+				</Grid.RowDefinitions>
+
+				<TextBox
+					Grid.Row                      ="0"
+					Grid.Column                   ="0"
+					MinHeight                     ="27"
+					MaxHeight                     ="96"
+					VerticalContentAlignment      ="Top"
+					AcceptsReturn                 ="True"
+					FontFamily                    ="{StaticResource CodeFontFamily}"
+					HorizontalScrollBarVisibility ="Auto"
+					VerticalScrollBarVisibility   ="Auto"
+					TextWrapping                  ="NoWrap"
+					Text                          ="{Binding	PostGeneration.Text,
+																		Mode=TwoWay,
+																		UpdateSourceTrigger=PropertyChanged}"
+					ToolTip                       ="{StaticResource PostGenerationSqlHint}" />
+
+				<TextBlock
+					Grid.Row         ="0"
+					Grid.Column      ="0"
+					Margin            ="11,8,8,0"
+					VerticalAlignment ="Top"
+					Style             ="{StaticResource PostGenerationWatermarkStyle}"
+					FontStyle         ="Italic"
+					IsHitTestVisible  ="False"
+					Text              ="Optional: stored procedure names (one per line, e.g. dbo.RebuildTotals) or SQL to run before the commit"
+					TextTrimming      ="CharacterEllipsis" />
+
+				<Label
+					Grid.Row          ="0"
+					Grid.Column       ="1"
+					Margin            ="8,6,0,0"
+					VerticalAlignment ="Top"
+					Content           ="in database:" />
+
+				<ComboBox
+					Grid.Row          ="0"
+					Grid.Column       ="2"
+					MinWidth          ="160"
+					VerticalAlignment ="Top"
+					ItemsSource       ="{Binding PostGeneration.DatabaseNames}"
+					SelectedItem      ="{Binding	PostGeneration.DatabaseName,
+															Mode=TwoWay}"
+					ToolTip           ="{StaticResource PostGenerationDatabaseHint}" />
+
+				<TextBlock
+					Grid.Row        ="1"
+					Grid.Column     ="0"
+					Grid.ColumnSpan ="3"
+					Margin          ="4,0,4,2"
+					Style           ="{StaticResource PostGenerationSummaryStyle}"
+					Text            ="{Binding PostGeneration.Summary}"
+					TextWrapping    ="Wrap"
+					Visibility      ="{Binding	PostGeneration.HasSummary,
+														Converter={StaticResource BooleanToVisibilityConverter}}" />
+			</Grid>
+
 			<TextBlock
-				Grid.Row     ="3"
+				Grid.Row     ="4"
 				Grid.Column  ="1"
 				Margin       ="4,2,4,0"
 				Style        ="{StaticResource SecondaryTextStyle}"
@@ -160,7 +281,7 @@
 			<!-- Actions -->
 			<StackPanel
 				Grid.Row          ="0"
-				Grid.RowSpan      ="4"
+				Grid.RowSpan      ="5"
 				Grid.Column       ="2"
 				Margin            ="12,0,0,0"
 				VerticalAlignment ="Center">

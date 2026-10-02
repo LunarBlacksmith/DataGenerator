@@ -2045,4 +2045,143 @@
 			Property ="FontWeight"
 			Value    ="SemiBold" />
 	</Style>
+
+	<!-- The suggestions shown under a pattern while it is typed (see PatternAutoComplete) -->
+	<Style
+		x:Key      ="PatternCompletionItemStyle"
+		TargetType ="ListBoxItem">
+		<Setter
+			Property ="Focusable"
+			Value    ="False" />
+		<Setter
+			Property ="Padding"
+			Value    ="6,3" />
+		<Setter
+			Property ="Foreground"
+			Value    ="{DynamicResource TextBrush}" />
+		<Setter
+			Property ="Template">
+			<Setter.Value>
+				<ControlTemplate
+					TargetType="ListBoxItem">
+					<Border
+						x:Name          ="ItemBorder"
+						Padding         ="{TemplateBinding Padding}"
+						Background      ="Transparent"
+						BorderBrush     ="Transparent"
+						BorderThickness ="1"
+						CornerRadius    ="3">
+						<ContentPresenter />
+					</Border>
+
+					<ControlTemplate.Triggers>
+						<Trigger
+							Property ="IsMouseOver"
+							Value    ="True">
+							<Setter
+								TargetName ="ItemBorder"
+								Property   ="Background"
+								Value      ="{DynamicResource HoverOverlayBrush}" />
+						</Trigger>
+
+						<Trigger
+							Property ="IsSelected"
+							Value    ="True">
+							<Setter
+								TargetName ="ItemBorder"
+								Property   ="Background"
+								Value      ="{DynamicResource SelectedRowBrush}" />
+							<Setter
+								TargetName ="ItemBorder"
+								Property   ="BorderBrush"
+								Value      ="{DynamicResource SelectedRowBorderBrush}" />
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<DataTemplate
+		x:Key="PatternCompletionPopupTemplate">
+		<Border
+			Width   ="380"
+			Style   ="{StaticResource PopupMenuBorderStyle}"
+			ToolTip ="{StaticResource PatternSuggestionsHint}">
+			<StackPanel>
+				<ListBox
+					MaxHeight          ="168"
+					Background         ="Transparent"
+					BorderThickness    ="0"
+					Focusable          ="False"
+					ItemContainerStyle ="{StaticResource PatternCompletionItemStyle}"
+					ItemsSource        ="{Binding Items}"
+					SelectedItem       ="{Binding	SelectedEntry,
+															Mode=TwoWay}"
+					ScrollViewer.HorizontalScrollBarVisibility ="Disabled">
+					<ListBox.ItemTemplate>
+						<DataTemplate>
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition
+										Width="*" />
+									<ColumnDefinition
+										Width="Auto" />
+								</Grid.ColumnDefinitions>
+
+								<TextBlock
+									Grid.Column ="0"
+									FontFamily  ="{StaticResource CodeFontFamily}"
+									FontWeight  ="SemiBold"
+									Text        ="{Binding Name}" />
+
+								<TextBlock
+									Grid.Column ="1"
+									Margin      ="12,0,0,0"
+									FontSize    ="11"
+									Style       ="{StaticResource SecondaryTextStyle}"
+									Text        ="{Binding Kind}" />
+							</Grid>
+						</DataTemplate>
+					</ListBox.ItemTemplate>
+				</ListBox>
+
+				<Border
+					Margin          ="0,4,0,0"
+					Padding         ="6,4"
+					BorderBrush     ="{DynamicResource SectionBorderBrush}"
+					BorderThickness ="0,1,0,0">
+					<StackPanel>
+						<TextBlock
+							FontFamily   ="{StaticResource CodeFontFamily}"
+							Text         ="{Binding SelectedEntry.Signature}"
+							TextWrapping ="Wrap" />
+
+						<TextBlock
+							Margin       ="0,2,0,0"
+							Text         ="{Binding SelectedEntry.Description}"
+							TextWrapping ="Wrap" />
+
+						<TextBlock
+							Margin       ="0,2,0,0"
+							FontFamily   ="{StaticResource CodeFontFamily}"
+							Style        ="{StaticResource SecondaryTextStyle}"
+							Text         ="{Binding	SelectedEntry.Example,
+															StringFormat='e.g. {0}'}"
+							TextWrapping ="Wrap" />
+					</StackPanel>
+				</Border>
+
+				<Border
+					Padding      ="6,3"
+					Background   ="{DynamicResource HeaderStripBrush}"
+					CornerRadius ="3">
+					<TextBlock
+						FontSize ="11"
+						Style    ="{StaticResource SecondaryTextStyle}"
+						Text     ="{Binding KeyHintText}" />
+				</Border>
+			</StackPanel>
+		</Border>
+	</DataTemplate>
 </ResourceDictionary>

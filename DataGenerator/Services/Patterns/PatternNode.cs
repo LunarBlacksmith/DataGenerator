@@ -6,11 +6,14 @@ internal sealed class PatternContext
 {
 	public const int MAXIMUM_OUTPUT_LENGTH = 100_000;
 
-	public PatternContext(long rowIndex, Random random, TimeProvider timeProvider)
+	private readonly Func<string, string>? _columnValues;
+
+	public PatternContext(long rowIndex, Random random, TimeProvider timeProvider, Func<string, string>? columnValues = null)
 	{
-		RowIndex     = rowIndex;
-		Random       = random;
-		TimeProvider = timeProvider;
+		RowIndex      = rowIndex;
+		Random        = random;
+		TimeProvider  = timeProvider;
+		_columnValues = columnValues;
 	}
 
 	public long         RowIndex     { get; }
@@ -21,6 +24,21 @@ internal sealed class PatternContext
 	/// The local date and time at the moment a value is generated.
 	/// </summary>
 	public DateTime Now => TimeProvider.GetLocalNow().DateTime;
+
+	/// <summary>
+	/// The value of another column of the row being generated, as text (used by COL).
+	/// </summary>
+	public string GetColumnValue(string columnName)
+	{
+		if (_columnValues is null)
+		{
+			throw new InvalidOperationException(
+				$"COL({columnName}) uses the value of another column of the same row, so it only works in the Pattern mode of a column rule."
+			);
+		}
+
+		return _columnValues(columnName);
+	}
 
 	public static void EnsureLength(StringBuilder builder)
 	{
@@ -34,6 +52,13 @@ internal sealed class PatternContext
 internal abstract class PatternNode
 {
 	public abstract void Append(StringBuilder builder, PatternContext context);
+
+	/// <summary>
+	/// Adds the names of the columns the node takes values from with COL(...).
+	/// </summary>
+	public virtual void CollectColumnReferences(ICollection<string> columnNames)
+	{
+	}
 }
 
 internal sealed class LiteralPatternNode : PatternNode
@@ -64,6 +89,14 @@ internal sealed class ConcatenationPatternNode : PatternNode
 			part.Append(builder, context);
 		}
 	}
+
+	public override void CollectColumnReferences(ICollection<string> columnNames)
+	{
+		foreach (PatternNode part in _parts)
+		{
+			part.CollectColumnReferences(columnNames);
+		}
+	}
 }
 
 internal sealed class ChoicePatternNode : PatternNode
@@ -77,6 +110,14 @@ internal sealed class ChoicePatternNode : PatternNode
 
 	public override void Append(StringBuilder builder, PatternContext context)
 		=> _options[context.Random.Next(_options.Count)].Append(builder, context);
+
+	public override void CollectColumnReferences(ICollection<string> columnNames)
+	{
+		foreach (PatternNode option in _options)
+		{
+			option.CollectColumnReferences(columnNames);
+		}
+	}
 }
 
 internal sealed class RepetitionPatternNode : PatternNode
@@ -102,4 +143,6 @@ internal sealed class RepetitionPatternNode : PatternNode
 			PatternContext.EnsureLength(builder);
 		}
 	}
+
+	public override void CollectColumnReferences(ICollection<string> columnNames) => _node.CollectColumnReferences(columnNames);
 }

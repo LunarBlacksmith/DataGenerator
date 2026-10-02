@@ -13,5 +13,16 @@ public interface IPatternValueGenerator
 	/// </summary>
 	string Generate(string expression, long rowIndex);
 
+	/// <summary>
+	/// Generates a value whose COL(name) calls are answered by <paramref name="columnValues"/>, which returns the
+	/// value of another column of the same row as text.
+	/// </summary>
+	string Generate(string expression, long rowIndex, Func<string, string>? columnValues);
+
+	/// <summary>
+	/// The names of the columns used with COL(...) in the expression, or none when the expression is invalid.
+	/// </summary>
+	IReadOnlyList<string> GetColumnReferences(string expression);
+
 	bool TryValidate(string expression, out string errorMessage);
 }

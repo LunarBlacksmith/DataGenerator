@@ -3,6 +3,9 @@
 A saved setting remembers how a column is generated (its **Generation mode** and the values in its **Settings** cell) under a name, so that it can be used again for other columns, other row sets and later sessions.
 Saved settings can be exported to a file and imported by colleagues, so that everybody generating test data for the same project follows the same rules.
 
+To save or load the settings of **every column of a row set at once**, use a [set configuration](#set-configurations) instead.
+Saved column settings and set configurations are kept apart, in different menus and different files, so loading one can never be mistaken for the other.
+
 ## Contents
 
 - [Saving a column's settings](#saving-a-columns-settings)
@@ -12,6 +15,7 @@ Saved settings can be exported to a file and imported by colleagues, so that eve
 - [Sharing settings with colleagues](#sharing-settings-with-colleagues)
 - [Where the settings are kept](#where-the-settings-are-kept)
 - [File format](#file-format)
+- [Set configurations](#set-configurations)
 
 ## Saving a column's settings
 
@@ -52,7 +56,7 @@ It replaces the settings of every matching column in every open row set, includi
 
 ## Managing saved settings
 
-Open the manager with the **Saved settings** button below the **Column rules** grid, or with **Manage saved settings…** in any column's saved-settings menu.
+Open the manager with the **Saved column settings** button below the **Column rules** grid, or with **Manage saved settings…** in any column's saved-settings menu.
 
 | Control                                   | What it does                                                                                        |
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
@@ -101,6 +105,7 @@ Saved and exported files are indented JSON, so they can be reviewed and compared
       "sequenceStep": "1",
       "regexPattern": "",
       "patternExpression": "'P' + SEQ(1, 1000, 1) + ('X' OR 'Y')",
+      "sourceColumnName": "",
       "tableName": null,
       "columnName": "Code",
       "applyAutomatically": true
@@ -112,11 +117,84 @@ Saved and exported files are indented JSON, so they can be reviewed and compared
 | Property             | Meaning                                                                                                   |
 | -------------------- | --------------------------------------------------------------------------------------------------------- |
 | `name`               | The setting's name (at most 100 characters, unique regardless of casing).                                 |
-| `generationMode`     | The generation mode, for example `Random`, `Fixed`, `Sequence`, `Regex`, `Pattern` or `Null`.             |
+| `generationMode`     | The generation mode, for example `Random`, `Fixed`, `Sequence`, `Regex`, `Pattern`, `CopyColumn` or `Null`. |
 | `fixedValue`         | The value of a **Fixed** column.                                                                          |
 | `sequenceStart`, `sequenceStep` | The start and step of a **Sequence** column.                                                   |
 | `regexPattern`       | The regular expression of a **Regex** column.                                                             |
 | `patternExpression`  | The pattern of a **Pattern** column; see [the pattern language](PatternLanguage.md).                       |
+| `sourceColumnName`   | The column copied by a **Copy of column** column.                                                         |
 | `tableName`          | The table (`schema.table`) the setting was saved for, or `null` for every column with the name.           |
 | `columnName`         | The column the setting was saved for.                                                                     |
 | `applyAutomatically` | Whether the setting is applied automatically to its target.                                               |
+
+## Set configurations
+
+A set configuration remembers the **Generation mode** and **Settings** of every column of a row set under one name.
+Use it when a whole row set should be generated the same way again, in a later session, in another row set or by a colleague.
+
+| Saved column setting                                        | Set configuration                                                   |
+| ----------------------------------------------------------- | ------------------------------------------------------------------- |
+| One column                                                  | Every column of a row set                                           |
+| Saved and applied with the star button in a **Settings** cell | Saved and loaded with **Set configuration** above the grid        |
+| Can be applied automatically                                | Only loaded when you pick it                                        |
+| `SavedColumnSettings.json`                                  | `SavedSetConfigurations.json`                                       |
+
+### Saving a set configuration
+
+1. Set up the columns of the row set.
+2. Click **Set configuration** above the grid. The name is filled in with the table and row set name; change it if you like.
+3. Click **Save** or press Enter. Using an existing name asks before replacing it.
+
+The number of rows and the name of the row set are not saved; only the columns are.
+Columns whose values SQL Server always chooses, such as identity columns, are left out; they are never changed by loading a configuration either.
+
+### Loading a set configuration
+
+Click **Set configuration** in the row set to change, and click a configuration under **Load into this set**.
+The app says how many columns will change and asks first. Then:
+
+- Columns are matched **by name** (casing is ignored). Each matching column gets the saved mode and settings, replacing its own.
+- Columns the configuration does not have keep their settings.
+- A setting that does not suit a column (for example text in a **Fixed** value of an `int` column, or **NULL** for a column that does not allow it) is not applied; the column keeps its settings.
+- A short report appears next to the button. Hover over it to see which columns were left unchanged and why. Click × to hide it.
+
+Configurations saved from the same table are listed first. Configurations from other tables are listed if they share at least one column name, so a configuration can be reused for similar tables.
+Columns that use a saved column setting lose that link when a configuration is loaded, because their settings now come from the configuration.
+
+### Sharing set configurations
+
+Use **Import set configurations…** and **Export all set configurations…** at the bottom of the **Set configuration** menu.
+When imported names already exist you choose between replacing yours and importing only the new ones.
+Exported files can only be imported as set configurations; a file of saved column settings is refused by the set configuration import, and the other way round.
+
+The configurations are kept next to the saved column settings in:
+
+```
+%LOCALAPPDATA%\LocalTools\DataGenerator\SavedSetConfigurations.json
+```
+
+If the file cannot be read when the app starts, it is renamed to `SavedSetConfigurations.unreadable-<date>-<time>.json` and the app says where it was kept.
+
+```json
+{
+  "formatVersion": 1,
+  "setConfigurations": [
+    {
+      "name": "dbo.Shirt – Large shirts",
+      "tableName": "dbo.Shirt",
+      "savedAt": "2026-10-01T09:30:00+01:00",
+      "columns": [
+        {
+          "name": "Size",
+          "generationMode": "Fixed",
+          "fixedValue": "XL",
+          "columnName": "Size"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Each entry of `columns` has the same properties as a saved column setting (see [File format](#file-format)); `columnName` is the column it is loaded into.
+

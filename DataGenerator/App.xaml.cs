@@ -12,8 +12,9 @@ namespace DataGenerator;
 /// </summary>
 public partial class App : Application
 {
-	private const string UNEXPECTED_ERROR_TITLE     = "Unexpected error";
-	private const string SAVED_SETTINGS_ERROR_TITLE = "Saved settings";
+	private const string UNEXPECTED_ERROR_TITLE         = "Unexpected error";
+	private const string SAVED_SETTINGS_ERROR_TITLE     = "Saved column settings";
+	private const string SET_CONFIGURATIONS_ERROR_TITLE = "Set configurations";
 
 	private readonly IExceptionFormatter _exceptionFormatter = new ExceptionFormatter();
 	private readonly IDialogService      _dialogService      = new DialogService();
@@ -29,15 +30,19 @@ public partial class App : Application
 		ISqlValueConverter          converter            = new SqlValueConverter();
 		IRegexValueGenerator        regexGenerator       = new RegexValueGenerator();
 		IPatternValueGenerator      patternGenerator     = new PatternValueGenerator();
-		IColumnValueGenerator       columnValueGenerator = new ColumnValueGenerator(converter, regexGenerator, patternGenerator);
+		IColumnValueCaster          columnValueCaster    = new ColumnValueCaster(converter);
+		IColumnValueGenerator       columnValueGenerator = new ColumnValueGenerator(converter, regexGenerator, patternGenerator, columnValueCaster);
 		IFileDialogService          fileDialogService    = new FileDialogService();
 		SavedSettingsLibrary        savedSettings        = new SavedSettingsLibrary(new JsonSavedSettingsStore(SecurePathService.GetSavedSettingsFilePath()));
 		ISavedSettingsWindowService savedSettingsWindows = new SavedSettingsWindowService(savedSettings, _dialogService, fileDialogService);
 		string?                     savedSettingsWarning = savedSettings.Load();
+		RowSetConfigurationLibrary  setConfigurations    = new RowSetConfigurationLibrary(new JsonRowSetConfigurationStore(SecurePathService.GetSetConfigurationsFilePath()));
+		string?                     setConfigWarning     = setConfigurations.Load();
+		IUserPreferencesStore       preferencesStore     = new JsonUserPreferencesStore(SecurePathService.GetPreferencesFilePath());
 
 		ThemeViewModel theme = new ThemeViewModel(
 			new ThemeService(this),
-			new JsonUserPreferencesStore(SecurePathService.GetPreferencesFilePath()),
+			preferencesStore,
 			_dialogService
 		);
 
@@ -57,6 +62,8 @@ public partial class App : Application
 			new ColumnRuleFactory(ruleServices),
 			savedSettings,
 			savedSettingsWindows,
+			new RuleGridColumnsViewModel(preferencesStore, _dialogService),
+			new RowSetConfigurationsViewModel(setConfigurations, _dialogService, fileDialogService),
 			_dialogService
 		);
 
@@ -71,7 +78,8 @@ public partial class App : Application
 			_exceptionFormatter,
 			new ForeignTableKeyResolver(),
 			explorer,
-			theme
+			theme,
+			new PostGenerationSqlViewModel(new PostGenerationSqlParser())
 		);
 
 		MainWindow window = new MainWindow
@@ -85,6 +93,11 @@ public partial class App : Application
 		if (savedSettingsWarning is not null)
 		{
 			_dialogService.ShowError(SAVED_SETTINGS_ERROR_TITLE, savedSettingsWarning);
+		}
+
+		if (setConfigWarning is not null)
+		{
+			_dialogService.ShowError(SET_CONFIGURATIONS_ERROR_TITLE, setConfigWarning);
 		}
 	}
 

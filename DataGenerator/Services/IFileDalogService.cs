@@ -7,4 +7,8 @@ public interface IFileDialogService
 	string? SelectSettingsFileToImport();
 
 	string? SelectSettingsExportFile();
+
+	string? SelectSetConfigurationsFileToImport();
+
+	string? SelectSetConfigurationsExportFile();
 }

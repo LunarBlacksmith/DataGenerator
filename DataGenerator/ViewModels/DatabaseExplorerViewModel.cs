@@ -30,16 +30,20 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	private bool                _hasPendingSettingsChange;
 
 	public DatabaseExplorerViewModel(
-		ColumnRuleFactory           ruleFactory,
-		SavedSettingsLibrary        savedSettings,
-		ISavedSettingsWindowService savedSettingsWindows,
-		IDialogService              dialogService
+		ColumnRuleFactory             ruleFactory,
+		SavedSettingsLibrary          savedSettings,
+		ISavedSettingsWindowService   savedSettingsWindows,
+		RuleGridColumnsViewModel      ruleGridColumns,
+		RowSetConfigurationsViewModel setConfigurations,
+		IDialogService                dialogService
 	)
 	{
 		_ruleFactory              = ruleFactory ?? throw new ArgumentNullException(nameof(ruleFactory));
 		_savedSettings            = savedSettings ?? throw new ArgumentNullException(nameof(savedSettings));
 		_savedSettingsWindows     = savedSettingsWindows ?? throw new ArgumentNullException(nameof(savedSettingsWindows));
 		_dialogService            = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+		RuleGridColumns           = ruleGridColumns ?? throw new ArgumentNullException(nameof(ruleGridColumns));
+		SetConfigurations         = setConfigurations ?? throw new ArgumentNullException(nameof(setConfigurations));
 		_selectedNodes            = [];
 		_tablesByKey              = new Dictionary<string, TableNodeViewModel>(StringComparer.OrdinalIgnoreCase);
 		_selectionAnchor          = null;
@@ -122,6 +126,16 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	public RelayCommand ManageSavedSettingsCommand { get; }
 
 	/// <summary>
+	/// Which optional columns of the column rules grid are shown.
+	/// </summary>
+	public RuleGridColumnsViewModel RuleGridColumns { get; }
+
+	/// <summary>
+	/// Saves and loads the settings of every column of the row set being edited as one named configuration.
+	/// </summary>
+	public RowSetConfigurationsViewModel SetConfigurations { get; }
+
+	/// <summary>
 	/// The table whose row sets and column rules are shown for editing (the last table that was clicked).
 	/// </summary>
 	public TableNodeViewModel? ActiveTable
@@ -148,6 +162,7 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 			}
 
 			OnPropertyChanged(nameof(HasActiveTable));
+			SetConfigurations.SetTable(value);
 			RefreshRowSetCommands();
 		}
 	}
@@ -638,6 +653,7 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		AddRowSetCommand.NotifyCanExecuteChanged();
 		DuplicateRowSetCommand.NotifyCanExecuteChanged();
 		RemoveRowSetCommand.NotifyCanExecuteChanged();
+		SetConfigurations.RefreshCommands();
 	}
 
 	private void ApplyFilter()

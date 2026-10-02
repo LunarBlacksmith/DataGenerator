@@ -3,6 +3,7 @@
 	xmlns                ="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x              ="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:infrastructure ="clr-namespace:DataGenerator.Infrastructure"
+	xmlns:services       ="clr-namespace:DataGenerator.Services"
 	ShutdownMode         ="OnMainWindowClose">
 	<Application.Resources>
 		<ResourceDictionary>
@@ -22,6 +23,10 @@
 
 			<infrastructure:InverseBooleanToVisibilityConverter
 				x:Key="InverseBooleanToVisibilityConverter" />
+
+			<!-- Suggests pattern functions and keywords in the text boxes that use PatternAutoComplete.Provider -->
+			<services:PatternCompletionProvider
+				x:Key="PatternCompletionProvider" />
 		</ResourceDictionary>
 	</Application.Resources>
 </Application>

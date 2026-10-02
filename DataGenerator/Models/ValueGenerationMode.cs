@@ -10,5 +10,6 @@ public enum ValueGenerationMode
 	GeneratedForeignKey = 5,
 	DatabaseGenerated   = 6,
 	Null                = 7,
-	Pattern             = 8
+	Pattern             = 8,
+	CopyColumn          = 9
 }
