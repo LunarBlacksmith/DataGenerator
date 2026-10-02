@@ -14,6 +14,8 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	private static readonly CultureInfo INVARIANT = CultureInfo.InvariantCulture;
 
 	private readonly ColumnRuleFactory                        _ruleFactory;
+	private readonly SavedSettingsLibrary                     _savedSettings;
+	private readonly ISavedSettingsWindowService              _savedSettingsWindows;
 	private readonly IDialogService                           _dialogService;
 	private readonly HashSet<TreeNodeViewModel>               _selectedNodes;
 	private readonly Dictionary<string, TableNodeViewModel>   _tablesByKey;
@@ -27,9 +29,16 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	private int                 _bulkUpdateDepth;
 	private bool                _hasPendingSettingsChange;
 
-	public DatabaseExplorerViewModel(ColumnRuleFactory ruleFactory, IDialogService dialogService)
+	public DatabaseExplorerViewModel(
+		ColumnRuleFactory           ruleFactory,
+		SavedSettingsLibrary        savedSettings,
+		ISavedSettingsWindowService savedSettingsWindows,
+		IDialogService              dialogService
+	)
 	{
 		_ruleFactory              = ruleFactory ?? throw new ArgumentNullException(nameof(ruleFactory));
+		_savedSettings            = savedSettings ?? throw new ArgumentNullException(nameof(savedSettings));
+		_savedSettingsWindows     = savedSettingsWindows ?? throw new ArgumentNullException(nameof(savedSettingsWindows));
 		_dialogService            = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 		_selectedNodes            = [];
 		_tablesByKey              = new Dictionary<string, TableNodeViewModel>(StringComparer.OrdinalIgnoreCase);
@@ -61,6 +70,8 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		DuplicateRowSetCommand  = new RelayCommand(_ => DuplicateRowSet(), _ => _activeTable?.SelectedRowSet is not null);
 		RemoveRowSetCommand     = new RelayCommand(_ => RemoveRowSet(), _ => _activeTable?.CanRemoveRowSet == true);
 
+		ManageSavedSettingsCommand = new RelayCommand(_ => _savedSettingsWindows.ShowManager());
+
 		_selectionCommands =
 		[
 			ClearSelectionCommand,
@@ -72,6 +83,9 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 			ExcludeSelectedCommand,
 			ApplyRowCountCommand
 		];
+
+		_savedSettings.Changed                         += OnSavedSettingsChanged;
+		_savedSettings.ApplyAutomaticSettingsRequested += OnApplyAutomaticSettingsRequested;
 	}
 
 	/// <summary>
@@ -104,6 +118,8 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	public RelayCommand AddRowSetCommand        { get; }
 	public RelayCommand DuplicateRowSetCommand  { get; }
 	public RelayCommand RemoveRowSetCommand     { get; }
+
+	public RelayCommand ManageSavedSettingsCommand { get; }
 
 	/// <summary>
 	/// The table whose row sets and column rules are shown for editing (the last table that was clicked).
@@ -720,6 +736,37 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 				OnGenerationSettingsChanged();
 			}
 		}
+	}
+
+	private IEnumerable<ColumnRuleViewModel> GetAllColumnRules()
+		=> AllTables.SelectMany(table => table.RowSets).SelectMany(rowSet => rowSet.ColumnRules);
+
+	private void OnSavedSettingsChanged(object? sender, EventArgs e)
+	{
+		foreach (ColumnRuleViewModel rule in GetAllColumnRules())
+		{
+			rule.RefreshAppliedSetting();
+		}
+	}
+
+	private void OnApplyAutomaticSettingsRequested(object? sender, ApplyAutomaticSettingsEventArgs e)
+	{
+		int updatedColumnCount = 0;
+
+		RunBulkUpdate(
+			() =>
+			{
+				foreach (ColumnRuleViewModel rule in GetAllColumnRules())
+				{
+					if (rule.ApplyAutomaticSetting())
+					{
+						++updatedColumnCount;
+					}
+				}
+			}
+		);
+
+		e.UpdatedColumnCount += updatedColumnCount;
 	}
 
 	private void OnTableSettingsChanged(object? sender, EventArgs e)

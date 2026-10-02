@@ -2,7 +2,7 @@
 
 /// <summary>
 /// Generates text from the plain-English pattern language, for example
-/// <c>P FOLLOWED BY SEQ(1-1000) FOLLOWED BY (X OR Y) FOLLOWED BY RAND_NUMBER(0, 99, 2)</c>.
+/// <c>P FOLLOWED BY SEQ(1-1000) FOLLOWED BY (X OR Y) FOLLOWED BY RAND_NUM(0, 99, 2)</c>.
 /// See Docs/PatternLanguage.md for the full reference.
 /// </summary>
 public interface IPatternValueGenerator

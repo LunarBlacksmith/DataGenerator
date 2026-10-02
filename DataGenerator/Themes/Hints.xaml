@@ -276,7 +276,7 @@
 
 	<sys:String
 		x:Key="PatternHint">
-		A pattern in plain English, e.g. P FOLLOWED BY SEQ(1-1000) FOLLOWED BY (X OR Y) FOLLOWED BY RAND_NUMBER(0, 99, 2).
+		A pattern in plain English, e.g. P FOLLOWED BY SEQ(1-1000) FOLLOWED BY (X OR Y) FOLLOWED BY RAND_NUM(0, 99, 2).
 		Click ? for the pattern language reference.
 	</sys:String>
 
@@ -390,5 +390,127 @@
 	<sys:String
 		x:Key="SyntaxTableHint">
 		The building blocks of the pattern language. Keywords are not case-sensitive.
+	</sys:String>
+	<!-- Saved settings -->
+	<sys:String
+		x:Key="SaveSettingsHint">
+		Saves the generation mode and the settings of this column under a name, so they can be applied to other columns,
+		row sets and sessions, or shared with colleagues by exporting them. Only the settings of the current mode are saved.
+	</sys:String>
+
+	<sys:String
+		x:Key="ApplySavedSettingHint">
+		Click a saved setting to use its generation mode and settings for this column. Only the saved settings whose mode
+		suits the column's SQL type are listed; the ones saved for a column with the same name come first.
+	</sys:String>
+
+	<sys:String
+		x:Key="ManageSavedSettingsHint">
+		Opens the saved settings: rename or delete them, choose which ones are applied automatically, and import or export
+		them to share them with colleagues working on the same project.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingNameHint">
+		The name of the saved setting, e.g. 'Shirt codes' or 'Customer e-mail'. Saving under an existing name replaces
+		that saved setting.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingValuesHint">
+		The generation mode and the settings that will be saved.
+	</sys:String>
+
+	<sys:String
+		x:Key="ApplyNeverHint">
+		The saved setting is only used when you pick it from the saved-settings menu of a column.
+	</sys:String>
+
+	<sys:String
+		x:Key="ApplyToThisColumnHint">
+		The saved setting is applied automatically to this column of this table whenever a new row set is created for it,
+		e.g. after loading the metadata again.
+	</sys:String>
+
+	<sys:String
+		x:Key="ApplyToEveryColumnWithNameHint">
+		The saved setting is applied automatically to every column with this name, in any table, whenever a new row set is
+		created. A saved setting for a column of a specific table takes precedence.
+	</sys:String>
+
+	<sys:String
+		x:Key="ConfirmSaveSettingHint">
+		Saves the setting. Saved settings are kept on this computer for future sessions.
+	</sys:String>
+
+	<sys:String
+		x:Key="CancelDialogHint">
+		Closes this window without saving.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingsGridHint">
+		The saved column settings. Click a name to rename it; tick Automatic to apply a setting automatically to
+		the columns it was saved for.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingModeColumnHint">
+		The generation mode the saved setting uses.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingSummaryColumnHint">
+		The settings that are saved for the generation mode.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingAutomaticColumnHint">
+		Ticked: the saved setting is applied automatically to the columns it was saved for whenever a new row set is
+		created. Only one automatic saved setting can exist for the same column.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingTargetColumnHint">
+		The column (and table) the saved setting is applied to automatically, when Automatic is ticked.
+	</sys:String>
+
+	<sys:String
+		x:Key="DeleteSavedSettingHint">
+		Deletes the selected saved setting. Columns that use it keep their current settings.
+	</sys:String>
+
+	<sys:String
+		x:Key="ImportSavedSettingsHint">
+		Adds the saved settings of a file exported by a colleague (or by you on another computer).
+	</sys:String>
+
+	<sys:String
+		x:Key="ExportSavedSettingsHint">
+		Writes every saved setting to a file that colleagues can import, e.g. to commit next to the project or to share by
+		e-mail.
+	</sys:String>
+
+	<sys:String
+		x:Key="ApplyAutomaticSettingsHint">
+		Applies the automatic saved settings to the columns of the row sets that are already open. New row sets get them
+		automatically.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingsFileHint">
+		The file the saved settings are kept in on this computer.
+	</sys:String>
+
+	<sys:String
+		x:Key="CloseWindowHint">
+		Closes this window. Changes are already saved.
+	</sys:String>
+
+	<!-- Appearance -->
+	<sys:String
+		x:Key="ThemeToggleHint">
+		Switches between the light and dark colour themes. The choice is remembered for the next time the application starts;
+		until one is made, the application follows the Windows app theme.
 	</sys:String>
 </ResourceDictionary>

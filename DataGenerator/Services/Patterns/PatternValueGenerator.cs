@@ -8,13 +8,25 @@ public sealed class PatternValueGenerator : IPatternValueGenerator
 	private const int MAXIMUM_CACHE_SIZE = 256;
 
 	private readonly ConcurrentDictionary<string, PatternNode> _cache = new ConcurrentDictionary<string, PatternNode>(StringComparer.Ordinal);
+	private readonly TimeProvider                              _timeProvider;
+
+	public PatternValueGenerator()
+		: this(TimeProvider.System)
+	{
+	}
+
+	/// <param name="timeProvider">The clock of TODAY(); replaceable so the current date can be fixed in tests.</param>
+	public PatternValueGenerator(TimeProvider timeProvider)
+	{
+		_timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+	}
 
 	public string Generate(string expression, long rowIndex)
 	{
 		PatternNode   node    = GetOrParse(expression);
 		StringBuilder builder = new StringBuilder();
 
-		node.Append(builder, new PatternContext(rowIndex, Random.Shared));
+		node.Append(builder, new PatternContext(rowIndex, Random.Shared, _timeProvider));
 		return builder.ToString();
 	}
 

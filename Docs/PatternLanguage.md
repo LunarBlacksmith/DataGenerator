@@ -3,7 +3,7 @@
 The pattern language describes the value of a column in plain English, for example:
 
 ```
-P FOLLOWED BY SEQ(1-1000, 1) FOLLOWED BY (X OR Y) FOLLOWED BY (RAND_NUMBER(0, 99, 2))
+P FOLLOWED BY SEQ(1-1000, 1) FOLLOWED BY (X OR Y) FOLLOWED BY (RAND_NUM(0, 99, 2))
 ```
 
 | Row | Example value |
@@ -37,6 +37,7 @@ The sequence moves on by one for every row; the random parts are picked again fo
 3. Mistakes are outlined in red. Hover over the box to see what is wrong and where.
 4. The **?** button next to the box opens the **Pattern language reference** window with your pattern already loaded in **Try a pattern**.
    The **Pattern language** button below the grid opens the same window. Its **Try it** buttons load ready-made examples.
+5. To reuse a pattern in other columns, row sets or sessions, or to share it with colleagues, save it with the column's saved-settings button. See [Saved column settings](SavedSettings.md).
 
 ## Building blocks
 
@@ -57,7 +58,7 @@ Rules for text:
 - Use single or double quotes. To put the quote character itself inside the text, double it or use the other kind of quote: `'O''Brien'` and `"O'Brien"` both produce `O'Brien`.
 - The keywords `FOLLOWED`, `BY`, `THEN`, `OR`, `REPEATED`, `TO` and `TIMES` must be quoted to be used as text: `'OR'`.
 - A word followed by `(` is a function call. Quote the word if you mean text: `'Box' + '(' + 1 + ')'`.
-- Keywords and function names are not case-sensitive: `followed by`, `Seq(...)` and `rand_number(...)` all work. Text keeps its case.
+- Keywords and function names are not case-sensitive: `followed by`, `Seq(...)` and `rand_num(...)` all work. Text keeps its case.
 
 ## Combining parts
 
@@ -116,7 +117,7 @@ Argument values can be:
 | Text     | Quoted (`'2024-12-31'`, `'yyyy-MM-dd'`) or a single word (`LOWER`) |
 
 Ranges include both ends and are written smallest first. Negative numbers work in ranges too: `-50-50` and `-50 TO 50` are the same range.
-`SEQ`, `RAND_NUMBER` and `RAND_DECIMAL` also accept a named range, `range=1-1000`, or both ends named, `min=1, max=1000`. A length can be named too: `length=5-8`.
+`SEQ`, `RAND_NUM` and `RAND_DECIMAL` also accept a named range, `range=1-1000`, or both ends named, `min=1, max=1000`. A length can be named too: `length=5-8`.
 
 ## Functions
 
@@ -141,7 +142,7 @@ Counts through the range, one step per row. After the end of the range it wraps 
 
 `digits` must be at least as wide as the widest number in the range, so every value has the same width. Negative numbers keep their minus sign in front of the padding: `-05`.
 
-### RAND_NUMBER(range, digits)
+### RAND_NUM(range, digits)
 
 A random whole number from the range, including both ends.
 
@@ -150,11 +151,11 @@ A random whole number from the range, including both ends.
 | `range`  | Yes      |            | Whole numbers, e.g. `0, 99` or `0-99`.                                     |
 | `digits` | No       | No padding | Zero-pads the number to this width, e.g. `7` becomes `07` with `digits=2`. |
 
-| Pattern                  | Example values    |
-| ------------------------ | ----------------- |
-| `RAND_NUMBER(1, 500)`    | `45`, `364`, `91` |
-| `RAND_NUMBER(0, 99, 2)`  | `07`, `45`, `73`  |
-| `RAND_NUMBER(-50 TO 50)` | `6`, `-37`, `28`  |
+| Pattern               | Example values    |
+| --------------------- | ----------------- |
+| `RAND_NUM(1, 500)`    | `45`, `364`, `91` |
+| `RAND_NUM(0, 99, 2)`  | `07`, `45`, `73`  |
+| `RAND_NUM(-50 TO 50)` | `6`, `-37`, `28`  |
 
 ### RAND_DECIMAL(range, decimals)
 
@@ -188,7 +189,7 @@ Random letters A to Z.
 
 ### RAND_DIGITS(length)
 
-Random digits 0 to 9. Unlike `RAND_NUMBER`, the result can start with zeros.
+Random digits 0 to 9. Unlike `RAND_NUM`, the result can start with zeros.
 
 | Argument | Required | Default | Notes                                   |
 | -------- | -------- | ------- | --------------------------------------- |
@@ -222,6 +223,25 @@ Useful format codes: `yyyy` year, `MM` month, `dd` day, `HH` hour (24-hour), `mm
 
 Dates must be quoted. Without quotes, `2024-01-01` would be read as a range of numbers.
 
+### TODAY(time, format)
+
+Today's date on the computer that generates the data. By default it has the time at which the value is generated; `ANY` picks a random time of the day instead.
+
+| Argument | Required | Default                 | Notes                                                                                                                                            |
+| -------- | -------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `time`   | No       | `NOW`                   | `NOW`: the date and time at the moment the value is generated. `ANY`: a random time from 00:00:00 to 23:59:59 today, picked again for every row. |
+| `format` | No       | `'yyyy-MM-dd HH:mm:ss'` | A quoted [.NET date format][DATE-FORMATS].                                                                                                       |
+
+| Pattern                                                  | Example values (generated on 14 March 2025 at 09:41:07) |
+| -------------------------------------------------------- | ------------------------------------------------------- |
+| `TODAY()`                                                | `2025-03-14 09:41:07`                                   |
+| `TODAY(ANY)`                                             | `2025-03-14 17:03:52`, `2025-03-14 02:18:30`            |
+| `TODAY(NOW, 'yyyy-MM-dd')`                               | `2025-03-14`                                            |
+| `TODAY(time=ANY, format='dd/MM/yyyy HH:mm')`             | `14/03/2025 21:47`, `14/03/2025 06:05`                  |
+| `'BATCH-' + TODAY(format='yyyyMMdd') + '-' + SEQ(1-999)` | `BATCH-20250314-001`, `BATCH-20250314-002`              |
+
+The date is worked out when the data is generated. A generated SQL file contains those values, so running the file on a later day still inserts the day it was generated.
+
 ### ONE_OF(value, value, …)
 
 Picks one of the listed values at random, each with the same chance. The values can be quoted text, words or numbers.
@@ -249,16 +269,16 @@ A pattern always produces text, which is then stored in the column:
 - **Text columns** (`char`, `varchar`, `nchar`, `nvarchar`, `text`, `ntext`, `sysname`) store the text as it is. A value longer than the column allows is reported as an error. It is never cut short.
 - **Other columns** convert the text to the column's type, so the pattern must produce something that type accepts:
 
-| Column type                                                        | The pattern must produce                   | For example                                                |
-| ------------------------------------------------------------------ | ------------------------------------------ | ---------------------------------------------------------- |
-| `tinyint`, `smallint`, `int`, `bigint`                             | A whole number inside the type's range     | `RAND_NUMBER(1, 500)`                                      |
-| `decimal`, `numeric`, `money`, `smallmoney`, `float`, `real`       | A number that fits the precision and scale | `RAND_DECIMAL(0, 999, 2)`                                  |
-| `bit`                                                              | `1`, `0`, `true`, `false`, `yes` or `no`   | `(1 OR 0)`                                                 |
-| `date`, `datetime`, `datetime2`, `smalldatetime`, `datetimeoffset` | A date in an unambiguous form              | `RAND_DATE('2024-01-01', '2024-12-31')`                    |
-| `time`                                                             | A time of day                              | `RAND_NUMBER(8, 17, 2) + ':' + ONE_OF('00', '30') + ':00'` |
-| `uniqueidentifier`                                                 | A GUID                                     | `GUID()`                                                   |
+| Column type                                                        | The pattern must produce                   | For example                                             |
+| ------------------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------- |
+| `tinyint`, `smallint`, `int`, `bigint`                             | A whole number inside the type's range     | `RAND_NUM(1, 500)`                                      |
+| `decimal`, `numeric`, `money`, `smallmoney`, `float`, `real`       | A number that fits the precision and scale | `RAND_DECIMAL(0, 999, 2)`                               |
+| `bit`                                                              | `1`, `0`, `true`, `false`, `yes` or `no`   | `(1 OR 0)`                                              |
+| `date`, `datetime`, `datetime2`, `smalldatetime`, `datetimeoffset` | A date in an unambiguous form              | `RAND_DATE('2024-01-01', '2024-12-31')`                 |
+| `time`                                                             | A time of day                              | `RAND_NUM(8, 17, 2) + ':' + ONE_OF('00', '30') + ':00'` |
+| `uniqueidentifier`                                                 | A GUID                                     | `GUID()`                                                |
 
-For date columns, keep the default `yyyy-MM-dd` format or use `'yyyy-MM-dd HH:mm:ss'`. A format such as `dd/MM/yyyy` is fine for text columns but can be misread as month/day in a date column.
+For date columns, keep the default `yyyy-MM-dd` format or use `'yyyy-MM-dd HH:mm:ss'`. `TODAY()` already uses `'yyyy-MM-dd HH:mm:ss'`; for a `date` column, `TODAY(format='yyyy-MM-dd')` leaves the time out. A format such as `dd/MM/yyyy` is fine for text columns but can be misread as month/day in a date column.
 
 ## Row numbers and row sets
 
@@ -275,7 +295,7 @@ For date columns, keep the default `yyyy-MM-dd` format or use `'yyyy-MM-dd HH:mm
 | `RAND_LETTERS`, `RAND_DIGITS`, `RAND_ALPHANUM` length | 0 to 1,000                          |
 | `digits`                                              | 0 to 19                             |
 | `decimals`                                            | 0 to 10                             |
-| Whole numbers in `SEQ` and `RAND_NUMBER`              | -10<sup>18</sup> to 10<sup>18</sup> |
+| Whole numbers in `SEQ` and `RAND_NUM`                 | -10<sup>18</sup> to 10<sup>18</sup> |
 | One generated value                                   | 100,000 characters                  |
 
 ## Errors
@@ -288,31 +308,34 @@ Expected BY after FOLLOWED. (at position 12)
 
 Common problems:
 
-| Pattern                             | Problem and fix                                                                                   |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `P SEQ(1-10)`                       | Parts must be joined: `P FOLLOWED BY SEQ(1-10)` or `P + SEQ(1-10)`.                               |
-| `'ID' + -`                          | Symbols must be quoted: `'ID' + '-'`.                                                             |
-| `TO`                                | Keywords must be quoted to be used as text: `'TO'`.                                               |
-| `SEQ(1-10`                          | The function is missing its closing `)`.                                                          |
-| `RAND_DATE(2024-01-01, 2024-12-31)` | Dates must be quoted: `RAND_DATE('2024-01-01', '2024-12-31')`.                                    |
-| `FOO(1)`                            | There is no function called `FOO`. Quote the word if you mean text: `'FOO(1)'`.                   |
-| `SEQ(10-1)`                         | The range is reversed. Write the smaller number first: `SEQ(1-10)`. To count down, use `step=-1`. |
-| `SEQ(1-1000, digits=2)`             | 1000 needs 4 digits. Use `digits=4` or more, or `digits=0` for no padding.                        |
-| `RAND_LETTERS(3, case=TITLE)`       | `case` must be `UPPER`, `LOWER` or `MIXED`.                                                       |
+| Pattern                             | Problem and fix                                                                                                                           |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `P SEQ(1-10)`                       | Parts must be joined: `P FOLLOWED BY SEQ(1-10)` or `P + SEQ(1-10)`.                                                                       |
+| `'ID' + -`                          | Symbols must be quoted: `'ID' + '-'`.                                                                                                     |
+| `TO`                                | Keywords must be quoted to be used as text: `'TO'`.                                                                                       |
+| `SEQ(1-10`                          | The function is missing its closing `)`.                                                                                                  |
+| `RAND_DATE(2024-01-01, 2024-12-31)` | Dates must be quoted: `RAND_DATE('2024-01-01', '2024-12-31')`.                                                                            |
+| `FOO(1)`                            | There is no function called `FOO`. Quote the word if you mean text: `'FOO(1)'`.                                                           |
+| `SEQ(10-1)`                         | The range is reversed. Write the smaller number first: `SEQ(1-10)`. To count down, use `step=-1`.                                         |
+| `SEQ(1-1000, digits=2)`             | 1000 needs 4 digits. Use `digits=4` or more, or `digits=0` for no padding.                                                                |
+| `RAND_LETTERS(3, case=TITLE)`       | `case` must be `UPPER`, `LOWER` or `MIXED`.                                                                                               |
+| `TODAY('dd/MM/yyyy')`               | The first value is the time, `NOW` or `ANY`. Put the format second, `TODAY(NOW, 'dd/MM/yyyy')`, or name it: `TODAY(format='dd/MM/yyyy')`. |
 
 ## Examples
 
-| Purpose           | Pattern                                                                               | Example values                         |
-| ----------------- | ------------------------------------------------------------------------------------- | -------------------------------------- |
-| Product code      | `P FOLLOWED BY SEQ(1-1000, 1) FOLLOWED BY (X OR Y) FOLLOWED BY RAND_NUMBER(0, 99, 2)` | `P0001Y81`, `P0002X53`                 |
-| Asset tag         | `'ASSET-' FOLLOWED BY SEQ(1-999999, digits=6)`                                        | `ASSET-000001`, `ASSET-000002`         |
-| Customer name     | `'Customer ' + SEQ(1-100000, digits=0)`                                               | `Customer 1`, `Customer 2`             |
-| Bin location      | `RAND_LETTERS(2) + '-' + RAND_DIGITS(3) + '-' + (A OR B OR C)`                        | `WE-542-B`, `CP-687-C`                 |
-| Shirt size        | `ONE_OF('XS', 'S', 'M', 'L', 'XL')`                                                   | `XS`, `M`                              |
-| Order number      | `'ORD' + RAND_DATE('2024-01-01', '2024-12-31', 'yyyyMMdd') + '-' + SEQ(1-9999)`       | `ORD20240605-0001`, `ORD20241127-0002` |
-| E-mail address    | `RAND_LETTERS(5-8, LOWER) + '.' + RAND_LETTERS(6, LOWER) + '@example.com'`            | `sogxi.blqmdj@example.com`             |
-| Australian mobile | `'04' FOLLOWED BY RAND_DIGITS(8)`                                                     | `0406793209`, `0465689056`             |
-| Licence plate     | `RAND_LETTERS(3) + '-' + (RAND_DIGITS(1) OR RAND_LETTERS(1)) REPEATED 3 TIMES`        | `PDS-5E7`, `JZZ-QDN`                   |
+| Purpose           | Pattern                                                                            | Example values                               |
+| ----------------- | ---------------------------------------------------------------------------------- | -------------------------------------------- |
+| Product code      | `P FOLLOWED BY SEQ(1-1000, 1) FOLLOWED BY (X OR Y) FOLLOWED BY RAND_NUM(0, 99, 2)` | `P0001Y81`, `P0002X53`                       |
+| Asset tag         | `'ASSET-' FOLLOWED BY SEQ(1-999999, digits=6)`                                     | `ASSET-000001`, `ASSET-000002`               |
+| Customer name     | `'Customer ' + SEQ(1-100000, digits=0)`                                            | `Customer 1`, `Customer 2`                   |
+| Bin location      | `RAND_LETTERS(2) + '-' + RAND_DIGITS(3) + '-' + (A OR B OR C)`                     | `WE-542-B`, `CP-687-C`                       |
+| Shirt size        | `ONE_OF('XS', 'S', 'M', 'L', 'XL')`                                                | `XS`, `M`                                    |
+| Order number      | `'ORD' + RAND_DATE('2024-01-01', '2024-12-31', 'yyyyMMdd') + '-' + SEQ(1-9999)`    | `ORD20240605-0001`, `ORD20241127-0002`       |
+| Batch of today    | `'BATCH-' + TODAY(format='yyyyMMdd') + '-' + SEQ(1-999)`                           | `BATCH-20250314-001`, `BATCH-20250314-002`   |
+| Created today     | `TODAY(ANY)`                                                                       | `2025-03-14 17:03:52`, `2025-03-14 02:18:30` |
+| E-mail address    | `RAND_LETTERS(5-8, LOWER) + '.' + RAND_LETTERS(6, LOWER) + '@example.com'`         | `sogxi.blqmdj@example.com`                   |
+| Australian mobile | `'04' FOLLOWED BY RAND_DIGITS(8)`                                                  | `0406793209`, `0465689056`                   |
+| Licence plate     | `RAND_LETTERS(3) + '-' + (RAND_DIGITS(1) OR RAND_LETTERS(1)) REPEATED 3 TIMES`     | `PDS-5E7`, `JZZ-QDN`                         |
 
 ## Grammar
 

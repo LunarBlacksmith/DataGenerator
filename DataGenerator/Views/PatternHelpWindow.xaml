@@ -13,8 +13,8 @@
 	Height                ="720"
 	MinWidth              ="720"
 	MinHeight             ="450"
-	Background            ="{StaticResource WindowBackgroundBrush}"
-	Foreground            ="{StaticResource TextBrush}"
+	Background            ="{DynamicResource WindowBackgroundBrush}"
+	Foreground            ="{DynamicResource TextBrush}"
 	ShowInTaskbar         ="False"
 	UseLayoutRounding     ="True"
 	WindowStartupLocation ="CenterOwner">
@@ -33,7 +33,7 @@
 				Value    ="SemiBold" />
 			<Setter
 				Property ="Foreground"
-				Value    ="{StaticResource SectionHeaderTextBrush}" />
+				Value    ="{DynamicResource SectionHeaderTextBrush}" />
 		</Style>
 
 		<Style
@@ -73,10 +73,10 @@
 				Value    ="8,5" />
 			<Setter
 				Property ="Background"
-				Value    ="{StaticResource HeaderStripBrush}" />
+				Value    ="{DynamicResource HeaderStripBrush}" />
 			<Setter
 				Property ="BorderBrush"
-				Value    ="{StaticResource GridLineBrush}" />
+				Value    ="{DynamicResource GridLineBrush}" />
 			<Setter
 				Property ="BorderThickness"
 				Value    ="1" />
@@ -88,7 +88,7 @@
 				Value    ="SemiBold" />
 			<Setter
 				Property ="TextElement.Foreground"
-				Value    ="{StaticResource SectionHeaderTextBrush}" />
+				Value    ="{DynamicResource SectionHeaderTextBrush}" />
 		</Style>
 
 		<Style
@@ -102,7 +102,7 @@
 				Value    ="2" />
 			<Setter
 				Property ="BorderBrush"
-				Value    ="{StaticResource GridLineBrush}" />
+				Value    ="{DynamicResource GridLineBrush}" />
 			<Setter
 				Property ="BorderThickness"
 				Value    ="1,0,1,0" />
@@ -116,10 +116,10 @@
 				Value    ="8,5" />
 			<Setter
 				Property ="Background"
-				Value    ="{StaticResource RowBrush}" />
+				Value    ="{DynamicResource RowBrush}" />
 			<Setter
 				Property ="BorderBrush"
-				Value    ="{StaticResource GridLineBrush}" />
+				Value    ="{DynamicResource GridLineBrush}" />
 			<Setter
 				Property ="BorderThickness"
 				Value    ="0,0,0,1" />
@@ -163,7 +163,7 @@
 					<TextBlock
 						Grid.Column ="2"
 						Style       ="{StaticResource CodeTextStyle}"
-						Foreground  ="{StaticResource SecondaryTextBrush}"
+						Foreground  ="{DynamicResource SecondaryTextBrush}"
 						Text        ="{Binding Example}" />
 				</Grid>
 			</Border>
@@ -176,7 +176,7 @@
 					<Setter
 						TargetName ="Row"
 						Property   ="Background"
-						Value      ="{StaticResource AlternateRowBrush}" />
+						Value      ="{DynamicResource AlternateRowBrush}" />
 				</DataTrigger>
 			</DataTemplate.Triggers>
 		</DataTemplate>
@@ -247,7 +247,7 @@
 
 				<TextBlock
 					Margin       ="4,2,4,4"
-					Foreground   ="{StaticResource ErrorBrush}"
+					Foreground   ="{DynamicResource ErrorBrush}"
 					Text         ="{Binding ErrorMessage}"
 					TextWrapping ="Wrap"
 					Visibility   ="{Binding	HasError,
@@ -268,8 +268,8 @@
 							<Border
 								Margin          ="4"
 								Padding         ="8,3"
-								Background      ="{StaticResource RowBrush}"
-								BorderBrush     ="{StaticResource SectionBorderBrush}"
+								Background      ="{DynamicResource RowBrush}"
+								BorderBrush     ="{DynamicResource SectionBorderBrush}"
 								BorderThickness ="1"
 								CornerRadius    ="4">
 								<StackPanel
@@ -410,7 +410,7 @@
 									<Setter
 										TargetName ="Row"
 										Property   ="Background"
-										Value      ="{StaticResource AlternateRowBrush}" />
+										Value      ="{DynamicResource AlternateRowBrush}" />
 								</DataTrigger>
 							</DataTemplate.Triggers>
 						</DataTemplate>

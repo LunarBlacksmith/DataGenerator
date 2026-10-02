@@ -131,6 +131,32 @@ internal sealed class RandomDatePatternNode : PatternNode
 	}
 }
 
+/// <summary>
+/// Today's date, either with the time the value is generated (NOW) or with a random time of the day (ANY).
+/// </summary>
+internal sealed class TodayPatternNode : PatternNode
+{
+	private readonly bool   _anyTime;
+	private readonly string _format;
+
+	public TodayPatternNode(bool anyTime, string format)
+	{
+		_anyTime = anyTime;
+		_format  = format;
+	}
+
+	public override void Append(StringBuilder builder, PatternContext context)
+	{
+		DateTime now   = context.Now;
+		DateTime value =
+			_anyTime
+				? now.Date.AddTicks(context.Random.NextInt64(TimeSpan.TicksPerDay))
+				: now;
+
+		_ = builder.Append(value.ToString(_format, CultureInfo.InvariantCulture));
+	}
+}
+
 internal sealed class GuidPatternNode : PatternNode
 {
 	private readonly bool _upperCase;

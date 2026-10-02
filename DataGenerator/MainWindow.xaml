@@ -4,6 +4,7 @@
 	xmlns:x               ="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:d               ="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mc              ="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	xmlns:infrastructure  ="clr-namespace:DataGenerator.Infrastructure"
 	xmlns:viewModels      ="clr-namespace:DataGenerator.ViewModels"
 	xmlns:views           ="clr-namespace:DataGenerator.Views"
 	mc:Ignorable          ="d"
@@ -13,8 +14,8 @@
 	Height                ="850"
 	MinWidth              ="900"
 	MinHeight             ="600"
-	Background            ="{StaticResource WindowBackgroundBrush}"
-	Foreground            ="{StaticResource TextBrush}"
+	Background            ="{DynamicResource WindowBackgroundBrush}"
+	Foreground            ="{DynamicResource TextBrush}"
 	UseLayoutRounding     ="True"
 	WindowStartupLocation ="CenterScreen">
 
@@ -93,10 +94,21 @@
 		<Border
 			Grid.Row        ="1"
 			Padding         ="10,4"
-			Background      ="{StaticResource StatusBarBrush}"
-			BorderBrush     ="{StaticResource StatusBarBorderBrush}"
+			Background      ="{DynamicResource StatusBarBrush}"
+			BorderBrush     ="{DynamicResource StatusBarBorderBrush}"
 			BorderThickness ="0,1,0,0">
 			<DockPanel>
+				<ToggleButton
+					DockPanel.Dock ="Right"
+					Margin         ="10,0,0,0"
+					Padding        ="6,1"
+					Content        ="Dark theme"
+					IsChecked      ="{Binding	Theme.IsDarkTheme,
+														Mode=TwoWay}"
+					Style          ="{StaticResource ToolbarToggleButtonStyle}"
+					ToolTip        ="{StaticResource ThemeToggleHint}"
+					infrastructure:ButtonIcon.Glyph ="&#xE708;" />
+
 				<ProgressBar
 					DockPanel.Dock  ="Right"
 					Width           ="140"

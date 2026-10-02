@@ -8,6 +8,8 @@ public static class SecurePathService
 	private const string APPLICATION_DIRECTORY    = "DataGenerator";
 	private const string GENERATED_DATA_DIRECTORY = "GeneratedData";
 	private const string METADATA_DIRECTORY       = "Metadata";
+	private const string SAVED_SETTINGS_FILE      = "SavedColumnSettings.json";
+	private const string PREFERENCES_FILE         = "Preferences.json";
 
 	public static string GetApplicationDataDirectory()
 	{
@@ -35,6 +37,10 @@ public static class SecurePathService
 		_ = Directory.CreateDirectory(directory);
 		return directory;
 	}
+
+	public static string GetSavedSettingsFilePath() => Path.Combine(GetApplicationDataDirectory(), SAVED_SETTINGS_FILE);
+
+	public static string GetPreferencesFilePath() => Path.Combine(GetApplicationDataDirectory(), PREFERENCES_FILE);
 
 	public static string CreateDefaultSqlFileName() => $"generated-data-{DateTime.Now:yyyyMMdd-HHmmss}.sql";
 

@@ -8,7 +8,7 @@
 		<ResourceDictionary>
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceDictionary
-					Source="Themes/Brushes.xaml" />
+					Source="Themes/Brushes.Light.xaml" />
 
 				<ResourceDictionary
 					Source="Themes/Hints.xaml" />

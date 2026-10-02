@@ -7,12 +7,13 @@ internal static class PatternFunctionFactory
 	public static readonly IReadOnlyList<string> FUNCTION_NAMES =
 	[
 		"SEQ",
-		"RAND_NUMBER",
+		"RAND_NUM",
 		"RAND_DECIMAL",
 		"RAND_LETTERS",
 		"RAND_DIGITS",
 		"RAND_ALPHANUM",
 		"RAND_DATE",
+		"TODAY",
 		"ONE_OF",
 		"GUID"
 	];
@@ -21,10 +22,13 @@ internal static class PatternFunctionFactory
 	private const int    MAXIMUM_DECIMALS    = 10;
 	private const int    MAXIMUM_DIGITS      = 19;
 	private const int    NO_PADDING          = 0;
-	private const string DEFAULT_DATE_FORMAT = "yyyy-MM-dd";
-	private const string UPPER_LETTERS       = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	private const string LOWER_LETTERS       = "abcdefghijklmnopqrstuvwxyz";
-	private const string DIGITS              = "0123456789";
+	private const string DEFAULT_DATE_FORMAT      = "yyyy-MM-dd";
+	private const string DEFAULT_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+	private const string TIME_NOW                 = "NOW";
+	private const string TIME_ANY                 = "ANY";
+	private const string UPPER_LETTERS            = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	private const string LOWER_LETTERS            = "abcdefghijklmnopqrstuvwxyz";
+	private const string DIGITS                   = "0123456789";
 
 	public static PatternNode Create(PatternToken nameToken, IReadOnlyList<PatternArgument> arguments)
 	{
@@ -34,12 +38,13 @@ internal static class PatternFunctionFactory
 		return functionName switch
 		{
 			"SEQ" or "SEQUENCE" => CreateSequence(binder),
-			"RAND_NUMBER"       => CreateRandomNumber(binder),
+			"RAND_NUM"          => CreateRandomNumber(binder),
 			"RAND_DECIMAL"      => CreateRandomDecimal(binder),
 			"RAND_LETTERS"      => CreateRandomText(binder, "RAND_LETTERS(5)", includeLetters: true, includeDigits: false),
 			"RAND_DIGITS"       => CreateRandomText(binder, "RAND_DIGITS(4)", includeLetters: false, includeDigits: true),
 			"RAND_ALPHANUM"     => CreateRandomText(binder, "RAND_ALPHANUM(8)", includeLetters: true, includeDigits: true),
 			"RAND_DATE"         => CreateRandomDate(binder),
+			"TODAY"             => CreateToday(binder),
 			"ONE_OF"            => CreateOneOf(binder),
 			"GUID"              => CreateGuid(binder),
 			_                   => throw new PatternSyntaxException(
@@ -76,7 +81,7 @@ internal static class PatternFunctionFactory
 
 	private static PatternNode CreateRandomNumber(PatternArgumentBinder binder)
 	{
-		(decimal rangeStart, decimal rangeEnd) = binder.RequireRange("RAND_NUMBER(0, 99)");
+		(decimal rangeStart, decimal rangeEnd) = binder.RequireRange("RAND_NUM(0, 99)");
 
 		long minimum = binder.ToWholeNumber(rangeStart, "the range start");
 		long maximum = binder.ToWholeNumber(rangeEnd, "the range end");
@@ -147,17 +152,28 @@ internal static class PatternFunctionFactory
 			throw binder.Error($"the first date ({minimumText}) must not be after the second date ({maximumText}).");
 		}
 
-		try
-		{
-			_ = minimum.ToString(format, CultureInfo.InvariantCulture);
-		}
-		catch (FormatException)
-		{
-			throw binder.Error($"'{format}' is not a valid date format. Try 'yyyy-MM-dd' or 'dd/MM/yyyy HH:mm'.");
-		}
-
+		EnsureValidDateFormat(binder, format);
 		binder.EnsureComplete("min", "max", "format");
 		return new RandomDatePatternNode(minimum, maximum, format);
+	}
+
+	private static PatternNode CreateToday(PatternArgumentBinder binder)
+	{
+		string timeText = binder.OptionalText("time") ?? TIME_NOW;
+		string time     = timeText.ToUpperInvariant();
+		string format   = binder.OptionalText("format") ?? DEFAULT_DATE_TIME_FORMAT;
+
+		if (time is not (TIME_NOW or TIME_ANY))
+		{
+			throw binder.Error(
+				$"time must be NOW (the time the value is generated) or ANY (a random time of today), not '{timeText}'. "
+				+ "A format goes second, e.g. TODAY(NOW, 'dd/MM/yyyy'), or is named, e.g. TODAY(format='dd/MM/yyyy')."
+			);
+		}
+
+		EnsureValidDateFormat(binder, format);
+		binder.EnsureComplete("time", "format");
+		return new TodayPatternNode(time == TIME_ANY, format);
 	}
 
 	private static PatternNode CreateOneOf(PatternArgumentBinder binder)
@@ -216,6 +232,18 @@ internal static class PatternFunctionFactory
 		}
 
 		return digits;
+	}
+
+	private static void EnsureValidDateFormat(PatternArgumentBinder binder, string format)
+	{
+		try
+		{
+			_ = DateTime.Now.ToString(format, CultureInfo.InvariantCulture);
+		}
+		catch (FormatException)
+		{
+			throw binder.Error($"'{format}' is not a valid date format. Try 'yyyy-MM-dd' or 'dd/MM/yyyy HH:mm'.");
+		}
 	}
 
 	private static DateTime ParseDate(PatternArgumentBinder binder, string text)

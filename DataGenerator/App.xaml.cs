@@ -12,7 +12,8 @@ namespace DataGenerator;
 /// </summary>
 public partial class App : Application
 {
-	private const string UNEXPECTED_ERROR_TITLE = "Unexpected error";
+	private const string UNEXPECTED_ERROR_TITLE     = "Unexpected error";
+	private const string SAVED_SETTINGS_ERROR_TITLE = "Saved settings";
 
 	private readonly IExceptionFormatter _exceptionFormatter = new ExceptionFormatter();
 	private readonly IDialogService      _dialogService      = new DialogService();
@@ -25,25 +26,52 @@ public partial class App : Application
 
 		DispatcherUnhandledException += OnDispatcherUnhandledException;
 
-		ISqlValueConverter     converter            = new SqlValueConverter();
-		IRegexValueGenerator   regexGenerator       = new RegexValueGenerator();
-		IPatternValueGenerator patternGenerator     = new PatternValueGenerator();
-		IColumnValueGenerator  columnValueGenerator = new ColumnValueGenerator(converter, regexGenerator, patternGenerator);
-		ColumnRuleServices     ruleServices         = new ColumnRuleServices(converter, columnValueGenerator, patternGenerator, RegexProfile.DEFAULT_PROFILES);
+		ISqlValueConverter          converter            = new SqlValueConverter();
+		IRegexValueGenerator        regexGenerator       = new RegexValueGenerator();
+		IPatternValueGenerator      patternGenerator     = new PatternValueGenerator();
+		IColumnValueGenerator       columnValueGenerator = new ColumnValueGenerator(converter, regexGenerator, patternGenerator);
+		IFileDialogService          fileDialogService    = new FileDialogService();
+		SavedSettingsLibrary        savedSettings        = new SavedSettingsLibrary(new JsonSavedSettingsStore(SecurePathService.GetSavedSettingsFilePath()));
+		ISavedSettingsWindowService savedSettingsWindows = new SavedSettingsWindowService(savedSettings, _dialogService, fileDialogService);
+		string?                     savedSettingsWarning = savedSettings.Load();
 
-		DatabaseExplorerViewModel explorer = new DatabaseExplorerViewModel(new ColumnRuleFactory(ruleServices), _dialogService);
+		ThemeViewModel theme = new ThemeViewModel(
+			new ThemeService(this),
+			new JsonUserPreferencesStore(SecurePathService.GetPreferencesFilePath()),
+			_dialogService
+		);
+
+		// Applied before any window is created, so nothing is ever drawn in the wrong colours.
+		theme.ApplySavedTheme();
+
+		ColumnRuleServices ruleServices = new ColumnRuleServices(
+			converter,
+			columnValueGenerator,
+			patternGenerator,
+			RegexProfile.DEFAULT_PROFILES,
+			savedSettings,
+			savedSettingsWindows
+		);
+
+		DatabaseExplorerViewModel explorer = new DatabaseExplorerViewModel(
+			new ColumnRuleFactory(ruleServices),
+			savedSettings,
+			savedSettingsWindows,
+			_dialogService
+		);
 
 		_mainViewModel = new MainViewModel(
 			new SqlMetadataService(),
 			new DataGenerationService(converter, columnValueGenerator),
-			new FileDialogService(),
+			fileDialogService,
 			_dialogService,
 			new ShellService(),
 			new ClipboardService(),
 			new HelpService(patternGenerator),
 			_exceptionFormatter,
 			new ForeignTableKeyResolver(),
-			explorer
+			explorer,
+			theme
 		);
 
 		MainWindow window = new MainWindow
@@ -53,6 +81,11 @@ public partial class App : Application
 
 		MainWindow = window;
 		window.Show();
+
+		if (savedSettingsWarning is not null)
+		{
+			_dialogService.ShowError(SAVED_SETTINGS_ERROR_TITLE, savedSettingsWarning);
+		}
 	}
 
 	/// <summary>

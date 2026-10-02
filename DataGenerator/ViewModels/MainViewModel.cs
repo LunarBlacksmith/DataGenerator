@@ -50,6 +50,7 @@ public sealed class MainViewModel : ObservableObject
 	#region PROPERTIES
 	#region PUBLIC
 	public DatabaseExplorerViewModel Explorer { get; }
+	public ThemeViewModel            Theme    { get; }
 
 	public AsyncRelayCommand LoadMetadataCommand     { get; }
 	public RelayCommand      BrowseOutputCommand     { get; }
@@ -246,7 +247,8 @@ public sealed class MainViewModel : ObservableObject
 		IHelpService              helpService,
 		IExceptionFormatter       exceptionFormatter,
 		IForeignTableKeyResolver  foreignTableKeyResolver,
-		DatabaseExplorerViewModel explorer
+		DatabaseExplorerViewModel explorer,
+		ThemeViewModel            theme
 	)
 	{
 		_cancellationTokenSource = null;
@@ -277,6 +279,7 @@ public sealed class MainViewModel : ObservableObject
 		_exceptionFormatter      = exceptionFormatter ?? throw new ArgumentNullException(nameof(exceptionFormatter));
 		_foreignTableKeyResolver = foreignTableKeyResolver ?? throw new ArgumentNullException(nameof(foreignTableKeyResolver));
 		Explorer                 = explorer ?? throw new ArgumentNullException(nameof(explorer));
+		Theme                    = theme ?? throw new ArgumentNullException(nameof(theme));
 
 		LoadMetadataCommand     = new AsyncRelayCommand(LoadMetadataAsync, CanLoadMetadata);
 		BrowseOutputCommand     = new RelayCommand(BrowseOutputFile, _ => !IsBusy && IsSqlFileMode);

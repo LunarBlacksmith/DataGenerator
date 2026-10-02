@@ -2,6 +2,7 @@
 using System.Text;
 using DataGenerator.Infrastructure;
 using DataGenerator.Models;
+using DataGenerator.Services;
 
 namespace DataGenerator.ViewModels;
 
@@ -18,17 +19,28 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 	private readonly ColumnRuleServices _services;
 
-	private ValueGenerationMode _generationMode;
-	private string              _fixedValue        = string.Empty;
-	private string              _sequenceStartText = DEFAULT_SEQUENCE;
-	private string              _sequenceStepText  = DEFAULT_SEQUENCE;
-	private string              _regexPattern      = string.Empty;
-	private string              _patternExpression = string.Empty;
-	private string?             _previewText;
-	private bool                _previewIsError;
+	private ValueGenerationMode               _generationMode;
+	private string                            _fixedValue        = string.Empty;
+	private string                            _sequenceStartText = DEFAULT_SEQUENCE;
+	private string                            _sequenceStepText  = DEFAULT_SEQUENCE;
+	private string                            _regexPattern      = string.Empty;
+	private string                            _patternExpression = string.Empty;
+	private string?                           _previewText;
+	private bool                              _previewIsError;
+	private string?                           _appliedSettingName;
+	private bool                              _isApplyingSetting;
+	private bool                              _isSavedSettingsMenuOpen;
+	private IReadOnlyList<SavedSettingOption> _savedSettingOptions = [];
 
-	public ColumnRuleViewModel(ColumnModel column, ForeignKeyModel? reference, bool isSelfReference, ColumnRuleServices services)
+	public ColumnRuleViewModel(
+		string             tableName,
+		ColumnModel        column,
+		ForeignKeyModel?   reference,
+		bool               isSelfReference,
+		ColumnRuleServices services
+	)
 	{
+		TableName       = tableName ?? throw new ArgumentNullException(nameof(tableName));
 		Column          = column ?? throw new ArgumentNullException(nameof(column));
 		_services       = services ?? throw new ArgumentNullException(nameof(services));
 		Reference       = reference;
@@ -40,8 +52,17 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		FixedValueInputKind = GetFixedValueInputKind(Category);
 		SequenceInputKind   = Category == SqlTypeCategory.Integer ? TextInputKind.Integer : TextInputKind.Decimal;
 
+		SaveSettingsCommand        = new RelayCommand(_ => SaveSettings(), _ => CanChangeMode && !HasErrors);
+		ApplySavedSettingCommand   = new RelayCommand(ApplySavedSetting);
+		ManageSavedSettingsCommand = new RelayCommand(_ => ManageSavedSettings());
+
 		Validate();
 	}
+
+	/// <summary>
+	/// The schema.table the column belongs to.
+	/// </summary>
+	public string TableName { get; }
 
 	public ColumnModel                         Column              { get; }
 	public ForeignKeyModel?                    Reference           { get; }
@@ -50,6 +71,10 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	public IReadOnlyList<GenerationModeOption> AvailableModes      { get; }
 	public TextInputKind                       FixedValueInputKind { get; }
 	public TextInputKind                       SequenceInputKind   { get; }
+
+	public RelayCommand SaveSettingsCommand        { get; }
+	public RelayCommand ApplySavedSettingCommand   { get; }
+	public RelayCommand ManageSavedSettingsCommand { get; }
 
 	public string Name              => Column.Name;
 	public string SqlTypeDisplay    => _services.Converter.GetDisplayType(Column);
@@ -210,7 +235,153 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		_                            => null
 	};
 
+	/// <summary>
+	/// The saved setting the column uses, or <see langword="null"/> once its settings were changed by hand.
+	/// </summary>
+	public string? AppliedSettingName
+	{
+		get => _appliedSettingName;
+		private set
+		{
+			if (SetProperty(ref _appliedSettingName, value))
+			{
+				OnPropertyChanged(nameof(HasAppliedSetting));
+				OnPropertyChanged(nameof(SavedSettingsButtonHint));
+			}
+		}
+	}
+
+	public bool HasAppliedSetting => _appliedSettingName is not null;
+
+	public string SavedSettingsButtonHint
+		=> _appliedSettingName is null
+			? "Saved settings: save this column's mode and settings for reuse, or apply settings you or a colleague saved earlier."
+			: $"Uses the saved setting '{_appliedSettingName}'. Click to save, apply or manage saved settings.";
+
+	/// <summary>
+	/// Whether the saved-settings menu is open. Opening it lists the saved settings that suit the column.
+	/// </summary>
+	public bool IsSavedSettingsMenuOpen
+	{
+		get => _isSavedSettingsMenuOpen;
+		set
+		{
+			if (value && !_isSavedSettingsMenuOpen)
+			{
+				LoadSavedSettingOptions();
+			}
+
+			_ = SetProperty(ref _isSavedSettingsMenuOpen, value);
+		}
+	}
+
+	/// <summary>
+	/// The saved settings whose mode the column supports; the ones saved for a column with the same name come first.
+	/// </summary>
+	public IReadOnlyList<SavedSettingOption> SavedSettingOptions
+	{
+		get => _savedSettingOptions;
+		private set
+		{
+			if (SetProperty(ref _savedSettingOptions, value))
+			{
+				OnPropertyChanged(nameof(HasSavedSettingOptions));
+			}
+		}
+	}
+
+	public bool HasSavedSettingOptions => _savedSettingOptions.Count > 0;
+
 	public bool IsModeAvailable(ValueGenerationMode mode) => AvailableModes.Any(option => option.Mode == mode);
+
+	/// <summary>
+	/// Uses the mode and settings of a saved setting. Settings of other modes keep their values.
+	/// </summary>
+	public bool ApplySetting(SavedColumnSetting setting)
+	{
+		ArgumentNullException.ThrowIfNull(setting);
+
+		if (!IsModeAvailable(setting.GenerationMode))
+		{
+			return false;
+		}
+
+		_isApplyingSetting = true;
+
+		try
+		{
+			switch (setting.GenerationMode)
+			{
+				case ValueGenerationMode.Fixed:
+					FixedValue = setting.FixedValue;
+					break;
+
+				case ValueGenerationMode.Sequence:
+					SequenceStartText = setting.SequenceStart;
+					SequenceStepText  = setting.SequenceStep;
+					break;
+
+				case ValueGenerationMode.Regex:
+					RegexPattern = setting.RegexPattern;
+					break;
+
+				case ValueGenerationMode.Pattern:
+					PatternExpression = setting.PatternExpression;
+					break;
+			}
+
+			GenerationMode = setting.GenerationMode;
+		}
+		finally
+		{
+			_isApplyingSetting = false;
+		}
+
+		AppliedSettingName = setting.Name;
+		return true;
+	}
+
+	/// <summary>
+	/// Uses the saved setting that applies automatically to this column, if there is one.
+	/// Returns whether the column changed.
+	/// </summary>
+	public bool ApplyAutomaticSetting()
+	{
+		SavedColumnSetting? setting = _services.SavedSettings.FindAutomatic(TableName, Column.Name);
+
+		if (setting is null || (setting.Name == _appliedSettingName && setting.HasSameValues(CaptureSetting())))
+		{
+			return false;
+		}
+
+		return ApplySetting(setting);
+	}
+
+	/// <summary>
+	/// Updates <see cref="AppliedSettingName"/> after saved settings were renamed, changed or deleted.
+	/// </summary>
+	public void RefreshAppliedSetting()
+	{
+		if (_appliedSettingName is not null)
+		{
+			AppliedSettingName = _services.SavedSettings.FindEquivalent(CaptureSetting(), _appliedSettingName)?.Name;
+		}
+	}
+
+	/// <summary>
+	/// The mode and the settings of that mode, ready to be saved.
+	/// </summary>
+	public SavedColumnSetting CaptureSetting() => new SavedColumnSetting
+	{
+		GenerationMode    = _generationMode,
+		FixedValue        = _generationMode == ValueGenerationMode.Fixed ? _fixedValue : string.Empty,
+		SequenceStart     = _generationMode == ValueGenerationMode.Sequence ? _sequenceStartText.Trim() : DEFAULT_SEQUENCE,
+		SequenceStep      = _generationMode == ValueGenerationMode.Sequence ? _sequenceStepText.Trim() : DEFAULT_SEQUENCE,
+		RegexPattern      = _generationMode == ValueGenerationMode.Regex ? _regexPattern : string.Empty,
+		PatternExpression = _generationMode == ValueGenerationMode.Pattern ? _patternExpression : string.Empty,
+		TableName         = TableName,
+		ColumnName        = Column.Name
+	};
 
 	public void CopyFrom(ColumnRuleViewModel source)
 	{
@@ -222,6 +393,8 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		RegexPattern      = source.RegexPattern;
 		PatternExpression = source.PatternExpression;
 		GenerationMode    = source.GenerationMode;
+
+		AppliedSettingName = source.AppliedSettingName;
 	}
 
 	public void RefreshPreview()
@@ -243,12 +416,58 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		Reference         = Reference
 	};
 
-	protected override void OnErrorsChanged() => OnPropertyChanged(nameof(ValidationError));
+	protected override void OnErrorsChanged()
+	{
+		OnPropertyChanged(nameof(ValidationError));
+		SaveSettingsCommand.NotifyCanExecuteChanged();
+	}
 
 	private void OnSettingsChanged()
 	{
+		if (!_isApplyingSetting)
+		{
+			AppliedSettingName = null;
+		}
+
 		Validate();
 		RefreshPreview();
+	}
+
+	private void LoadSavedSettingOptions()
+		=> SavedSettingOptions =
+		[
+			.. _services.SavedSettings.Settings
+				.Where(setting => IsModeAvailable(setting.GenerationMode))
+				.Select(setting => new SavedSettingOption(setting, string.Equals(setting.ColumnName, Column.Name, StringComparison.OrdinalIgnoreCase)))
+				.OrderByDescending(option => option.IsSavedForColumn)
+		];
+
+	private void SaveSettings()
+	{
+		IsSavedSettingsMenuOpen = false;
+
+		SaveColumnSettingViewModel dialog = new SaveColumnSettingViewModel(CaptureSetting(), _services.SavedSettings, _appliedSettingName);
+
+		if (_services.SavedSettingsWindows.ShowSaveDialog(dialog))
+		{
+			AppliedSettingName = dialog.SavedName;
+		}
+	}
+
+	private void ApplySavedSetting(object? parameter)
+	{
+		IsSavedSettingsMenuOpen = false;
+
+		if (parameter is SavedSettingOption option)
+		{
+			_ = ApplySetting(option.Setting);
+		}
+	}
+
+	private void ManageSavedSettings()
+	{
+		IsSavedSettingsMenuOpen = false;
+		_services.SavedSettingsWindows.ShowManager();
 	}
 
 	private void Validate()

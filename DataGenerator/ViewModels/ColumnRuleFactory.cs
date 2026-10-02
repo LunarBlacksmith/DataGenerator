@@ -3,7 +3,8 @@
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// Creates the column rules of a new row set, linking each column to the table it references (declared or inferred).
+/// Creates the column rules of a new row set, linking each column to the table it references (declared or inferred) and
+/// applying the saved settings that are marked to be used automatically.
 /// </summary>
 public sealed class ColumnRuleFactory
 {
@@ -27,7 +28,10 @@ public sealed class ColumnRuleFactory
 				reference is not null
 				&& string.Equals(reference.ReferencedTableKey, table.Key, StringComparison.OrdinalIgnoreCase);
 
-			rules.Add(new ColumnRuleViewModel(column, reference, isSelfReference, _services));
+			ColumnRuleViewModel rule = new ColumnRuleViewModel(table.DisplayName, column, reference, isSelfReference, _services);
+
+			_ = rule.ApplyAutomaticSetting();
+			rules.Add(rule);
 		}
 
 		return rules;

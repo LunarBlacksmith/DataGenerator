@@ -12,17 +12,23 @@ public sealed class ColumnRuleServices
 		ISqlValueConverter          converter,
 		IColumnValueGenerator       valueGenerator,
 		IPatternValueGenerator      patternGenerator,
-		IReadOnlyList<RegexProfile> regexProfiles
+		IReadOnlyList<RegexProfile> regexProfiles,
+		SavedSettingsLibrary        savedSettings,
+		ISavedSettingsWindowService savedSettingsWindows
 	)
 	{
-		Converter        = converter ?? throw new ArgumentNullException(nameof(converter));
-		ValueGenerator   = valueGenerator ?? throw new ArgumentNullException(nameof(valueGenerator));
-		PatternGenerator = patternGenerator ?? throw new ArgumentNullException(nameof(patternGenerator));
-		RegexProfiles    = regexProfiles ?? throw new ArgumentNullException(nameof(regexProfiles));
+		Converter            = converter ?? throw new ArgumentNullException(nameof(converter));
+		ValueGenerator       = valueGenerator ?? throw new ArgumentNullException(nameof(valueGenerator));
+		PatternGenerator     = patternGenerator ?? throw new ArgumentNullException(nameof(patternGenerator));
+		RegexProfiles        = regexProfiles ?? throw new ArgumentNullException(nameof(regexProfiles));
+		SavedSettings        = savedSettings ?? throw new ArgumentNullException(nameof(savedSettings));
+		SavedSettingsWindows = savedSettingsWindows ?? throw new ArgumentNullException(nameof(savedSettingsWindows));
 	}
 
-	public ISqlValueConverter          Converter        { get; }
-	public IColumnValueGenerator       ValueGenerator   { get; }
-	public IPatternValueGenerator      PatternGenerator { get; }
-	public IReadOnlyList<RegexProfile> RegexProfiles    { get; }
+	public ISqlValueConverter          Converter            { get; }
+	public IColumnValueGenerator       ValueGenerator       { get; }
+	public IPatternValueGenerator      PatternGenerator     { get; }
+	public IReadOnlyList<RegexProfile> RegexProfiles        { get; }
+	public SavedSettingsLibrary        SavedSettings        { get; }
+	public ISavedSettingsWindowService SavedSettingsWindows { get; }
 }

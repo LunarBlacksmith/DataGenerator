@@ -5,218 +5,284 @@
 	<!-- Window and text -->
 	<SolidColorBrush
 		x:Key ="WindowBackgroundBrush"
-		Color ="#EEF1F5" />
+		Color ="#1B1F24" />
 
 	<SolidColorBrush
 		x:Key ="TextBrush"
-		Color ="#1F2933" />
+		Color ="#E3E8EE" />
 
 	<SolidColorBrush
 		x:Key ="SecondaryTextBrush"
-		Color ="#5F6B7A" />
+		Color ="#9AA5B1" />
 
 	<!-- Section cards: a subtle tint per section with a matching accent bar in the header -->
 	<SolidColorBrush
 		x:Key ="SectionBorderBrush"
-		Color ="#D5DBE3" />
+		Color ="#353C46" />
 
 	<SolidColorBrush
 		x:Key ="SectionHeaderTextBrush"
-		Color ="#33475B" />
+		Color ="#CAD4DF" />
 
 	<SolidColorBrush
 		x:Key ="ConnectionSectionBrush"
-		Color ="#F2F6FC" />
+		Color ="#1F2631" />
 
 	<SolidColorBrush
 		x:Key ="ConnectionAccentBrush"
-		Color ="#4A7BB7" />
+		Color ="#6B9BD6" />
 
 	<SolidColorBrush
 		x:Key ="ExplorerSectionBrush"
-		Color ="#F2F9F5" />
+		Color ="#1E2924" />
 
 	<SolidColorBrush
 		x:Key ="ExplorerAccentBrush"
-		Color ="#3E9A6A" />
+		Color ="#4FB37E" />
 
 	<SolidColorBrush
 		x:Key ="RulesSectionBrush"
-		Color ="#F6F4FC" />
+		Color ="#24222F" />
 
 	<SolidColorBrush
 		x:Key ="RulesAccentBrush"
-		Color ="#7C6BC4" />
+		Color ="#9A8BE0" />
 
 	<SolidColorBrush
 		x:Key ="OutputSectionBrush"
-		Color ="#FCF8F0" />
+		Color ="#2A261D" />
 
 	<SolidColorBrush
 		x:Key ="OutputAccentBrush"
-		Color ="#C08A2E" />
+		Color ="#D6A04A" />
 
 	<!-- Rows of the database tree and the column rules grid -->
 	<SolidColorBrush
 		x:Key ="RowBrush"
-		Color ="#FFFFFF" />
+		Color ="#22272E" />
 
 	<SolidColorBrush
 		x:Key ="AlternateRowBrush"
-		Color ="#F4F6F9" />
+		Color ="#282E36" />
 
 	<SolidColorBrush
 		x:Key ="DatabaseRowBrush"
-		Color ="#E6EDF6" />
+		Color ="#253141" />
 
 	<SolidColorBrush
 		x:Key ="DatabaseAlternateRowBrush"
-		Color ="#DDE6F1" />
+		Color ="#2A3748" />
 
 	<SolidColorBrush
 		x:Key ="SelectedRowBrush"
-		Color ="#CFE3FA" />
+		Color ="#1F3D5C" />
 
 	<SolidColorBrush
 		x:Key ="SelectedRowBorderBrush"
-		Color ="#7AB2EC" />
+		Color ="#4C8FD6" />
 
 	<SolidColorBrush
 		x:Key ="HoverOverlayBrush"
-		Color ="#1A2B6CB0" />
+		Color ="#267AB2EC" />
 
 	<SolidColorBrush
 		x:Key ="HiddenRowBrush"
-		Color ="#E9EBEE" />
+		Color ="#24272B" />
 
 	<SolidColorBrush
 		x:Key ="HiddenTextBrush"
-		Color ="#9AA1AB" />
+		Color ="#6B737D" />
 
 	<SolidColorBrush
 		x:Key ="PrimaryKeyRowBrush"
-		Color ="#F9D5D3" />
+		Color ="#4A2B2B" />
 
 	<SolidColorBrush
 		x:Key ="PrimaryKeyAlternateRowBrush"
-		Color ="#F5CAC7" />
+		Color ="#543030" />
 
 	<SolidColorBrush
 		x:Key ="ForeignKeyRowBrush"
-		Color ="#FDE2C4" />
+		Color ="#4A3623" />
 
 	<SolidColorBrush
 		x:Key ="ForeignKeyAlternateRowBrush"
-		Color ="#FAD7B2" />
+		Color ="#543D27" />
 
 	<!-- Status -->
 	<SolidColorBrush
 		x:Key ="ErrorBrush"
-		Color ="#B3261E" />
+		Color ="#FF8A80" />
 
 	<SolidColorBrush
 		x:Key ="ErrorBackgroundBrush"
-		Color ="#FDECEA" />
+		Color ="#3D2424" />
 
 	<SolidColorBrush
 		x:Key ="ErrorBorderBrush"
-		Color ="#F1B8B4" />
+		Color ="#7A3A36" />
 
 	<SolidColorBrush
 		x:Key ="WarningBrush"
-		Color ="#B26A00" />
+		Color ="#F0B45A" />
 
 	<!-- Buttons and inputs -->
 	<SolidColorBrush
 		x:Key ="AccentBrush"
-		Color ="#2B6CB0" />
+		Color ="#3B82D0" />
 
 	<SolidColorBrush
 		x:Key ="AccentHoverBrush"
-		Color ="#245A93" />
+		Color ="#4A90DC" />
 
 	<SolidColorBrush
 		x:Key ="AccentPressedBrush"
-		Color ="#1D4A79" />
+		Color ="#2F6DB3" />
 
 	<SolidColorBrush
 		x:Key ="ButtonBackgroundBrush"
-		Color ="#FBFCFD" />
+		Color ="#2A3038" />
 
 	<SolidColorBrush
 		x:Key ="ButtonBorderBrush"
-		Color ="#C3CBD6" />
+		Color ="#46505C" />
 
 	<SolidColorBrush
 		x:Key ="ButtonHoverBackgroundBrush"
-		Color ="#EAF2FB" />
+		Color ="#33404F" />
 
 	<SolidColorBrush
 		x:Key ="ButtonHoverBorderBrush"
-		Color ="#7AB2EC" />
+		Color ="#5A9BE0" />
 
 	<SolidColorBrush
 		x:Key ="ButtonPressedBackgroundBrush"
-		Color ="#D6E6F8" />
+		Color ="#2B4A6B" />
+
+	<SolidColorBrush
+		x:Key ="InputBackgroundBrush"
+		Color ="#1E2329" />
 
 	<SolidColorBrush
 		x:Key ="InputBorderBrush"
-		Color ="#C3CBD6" />
+		Color ="#4A5360" />
 
 	<SolidColorBrush
 		x:Key ="HeaderStripBrush"
-		Color ="#E9EDF2" />
+		Color ="#2A3038" />
 
 	<SolidColorBrush
 		x:Key ="GridLineBrush"
-		Color ="#E3E7ED" />
+		Color ="#323942" />
 
 	<SolidColorBrush
 		x:Key ="StatusBarBrush"
-		Color ="#E2E7EE" />
+		Color ="#16191D" />
 
 	<SolidColorBrush
 		x:Key ="StatusBarBorderBrush"
-		Color ="#CDD4DE" />
+		Color ="#2E343C" />
+
+	<!-- Pop-ups, hints and scroll bars -->
+	<SolidColorBrush
+		x:Key ="PopupBackgroundBrush"
+		Color ="#252B33" />
+
+	<SolidColorBrush
+		x:Key ="ToolTipBackgroundBrush"
+		Color ="#2A3038" />
+
+	<SolidColorBrush
+		x:Key ="ToolTipBorderBrush"
+		Color ="#4A5360" />
+
+	<SolidColorBrush
+		x:Key ="ScrollBarTrackBrush"
+		Color ="#20252B" />
+
+	<SolidColorBrush
+		x:Key ="ScrollBarThumbBrush"
+		Color ="#4A5360" />
+
+	<SolidColorBrush
+		x:Key ="ScrollBarThumbHoverBrush"
+		Color ="#5E6977" />
 
 	<!-- Key badges -->
 	<SolidColorBrush
 		x:Key ="PrimaryKeyBadgeBrush"
-		Color ="#F3B3AE" />
+		Color ="#7A3530" />
 
 	<SolidColorBrush
 		x:Key ="PrimaryKeyBadgeTextBrush"
-		Color ="#7A1F17" />
+		Color ="#FFD9D5" />
 
 	<SolidColorBrush
 		x:Key ="ForeignKeyBadgeBrush"
-		Color ="#F9C893" />
+		Color ="#7A4F22" />
 
 	<SolidColorBrush
 		x:Key ="ForeignKeyBadgeTextBrush"
-		Color ="#7A4310" />
+		Color ="#FFE3C4" />
 
 	<SolidColorBrush
 		x:Key ="ForeignTableKeyBadgeBrush"
-		Color ="#FBE7C6" />
+		Color ="#4A3A22" />
 
 	<SolidColorBrush
 		x:Key ="ForeignTableKeyBadgeBorderBrush"
-		Color ="#E0A458" />
+		Color ="#C08A44" />
 
 	<SolidColorBrush
 		x:Key ="IdentityBadgeBrush"
-		Color ="#D8E3F0" />
-
-	<SolidColorBrush
-		x:Key ="IdentityBadgeTextBrush"
 		Color ="#33475B" />
 
 	<SolidColorBrush
+		x:Key ="IdentityBadgeTextBrush"
+		Color ="#D8E3F0" />
+
+	<SolidColorBrush
 		x:Key ="RowSetBadgeBrush"
-		Color ="#E3DDF7" />
+		Color ="#3B3466" />
 
 	<SolidColorBrush
 		x:Key ="RowSetBadgeTextBrush"
-		Color ="#4B3F8A" />
+		Color ="#DCD5FF" />
+
+	<!-- Windows colours used by the standard control templates, so controls without a template of their own match the theme -->
+	<SolidColorBrush
+		x:Key ="{x:Static SystemColors.WindowBrushKey}"
+		Color ="#22272E" />
+
+	<SolidColorBrush
+		x:Key ="{x:Static SystemColors.WindowTextBrushKey}"
+		Color ="#E3E8EE" />
+
+	<SolidColorBrush
+		x:Key ="{x:Static SystemColors.ControlBrushKey}"
+		Color ="#20252B" />
+
+	<SolidColorBrush
+		x:Key ="{x:Static SystemColors.ControlTextBrushKey}"
+		Color ="#E3E8EE" />
+
+	<SolidColorBrush
+		x:Key ="{x:Static SystemColors.GrayTextBrushKey}"
+		Color ="#8A949F" />
+
+	<SolidColorBrush
+		x:Key ="{x:Static SystemColors.InfoBrushKey}"
+		Color ="#2A3038" />
+
+	<SolidColorBrush
+		x:Key ="{x:Static SystemColors.InfoTextBrushKey}"
+		Color ="#E3E8EE" />
+
+	<SolidColorBrush
+		x:Key ="{x:Static SystemColors.MenuBrushKey}"
+		Color ="#252B33" />
+
+	<SolidColorBrush
+		x:Key ="{x:Static SystemColors.MenuTextBrushKey}"
+		Color ="#E3E8EE" />
 </ResourceDictionary>

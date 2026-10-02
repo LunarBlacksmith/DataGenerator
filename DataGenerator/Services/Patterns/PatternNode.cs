@@ -6,14 +6,21 @@ internal sealed class PatternContext
 {
 	public const int MAXIMUM_OUTPUT_LENGTH = 100_000;
 
-	public PatternContext(long rowIndex, Random random)
+	public PatternContext(long rowIndex, Random random, TimeProvider timeProvider)
 	{
-		RowIndex = rowIndex;
-		Random   = random;
+		RowIndex     = rowIndex;
+		Random       = random;
+		TimeProvider = timeProvider;
 	}
 
-	public long   RowIndex { get; }
-	public Random Random   { get; }
+	public long         RowIndex     { get; }
+	public Random       Random       { get; }
+	public TimeProvider TimeProvider { get; }
+
+	/// <summary>
+	/// The local date and time at the moment a value is generated.
+	/// </summary>
+	public DateTime Now => TimeProvider.GetLocalNow().DateTime;
 
 	public static void EnsureLength(StringBuilder builder)
 	{

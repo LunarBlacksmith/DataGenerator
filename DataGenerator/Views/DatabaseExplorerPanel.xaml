@@ -27,7 +27,7 @@
 				Value    ="Hand" />
 			<Setter
 				Property ="Foreground"
-				Value    ="{StaticResource SecondaryTextBrush}" />
+				Value    ="{DynamicResource SecondaryTextBrush}" />
 
 			<Setter
 				Property="Template">
@@ -60,7 +60,7 @@
 								Value    ="True">
 								<Setter
 									Property ="Foreground"
-									Value    ="{StaticResource AccentBrush}" />
+									Value    ="{DynamicResource AccentBrush}" />
 							</Trigger>
 						</ControlTemplate.Triggers>
 					</ControlTemplate>
@@ -134,7 +134,7 @@
 					<Setter
 						TargetName ="PART_Header"
 						Property   ="BorderBrush"
-						Value      ="{StaticResource ButtonHoverBorderBrush}" />
+						Value      ="{DynamicResource ButtonHoverBorderBrush}" />
 				</Trigger>
 			</ControlTemplate.Triggers>
 		</ControlTemplate>
@@ -160,7 +160,7 @@
 				Value    ="1" />
 			<Setter
 				Property ="Foreground"
-				Value    ="{StaticResource TextBrush}" />
+				Value    ="{DynamicResource TextBrush}" />
 			<Setter
 				Property ="HorizontalContentAlignment"
 				Value    ="Stretch" />
@@ -186,7 +186,7 @@
 			BasedOn    ="{StaticResource ExplorerItemBaseStyle}">
 			<Setter
 				Property ="Background"
-				Value    ="{StaticResource DatabaseRowBrush}" />
+				Value    ="{DynamicResource DatabaseRowBrush}" />
 
 			<Style.Triggers>
 				<DataTrigger
@@ -194,7 +194,7 @@
 					Value   ="True">
 					<Setter
 						Property ="Background"
-						Value    ="{StaticResource DatabaseAlternateRowBrush}" />
+						Value    ="{DynamicResource DatabaseAlternateRowBrush}" />
 				</DataTrigger>
 
 				<DataTrigger
@@ -202,10 +202,10 @@
 					Value   ="True">
 					<Setter
 						Property ="Background"
-						Value    ="{StaticResource HiddenRowBrush}" />
+						Value    ="{DynamicResource HiddenRowBrush}" />
 					<Setter
 						Property ="Foreground"
-						Value    ="{StaticResource HiddenTextBrush}" />
+						Value    ="{DynamicResource HiddenTextBrush}" />
 				</DataTrigger>
 
 				<DataTrigger
@@ -213,10 +213,10 @@
 					Value   ="True">
 					<Setter
 						Property ="Background"
-						Value    ="{StaticResource SelectedRowBrush}" />
+						Value    ="{DynamicResource SelectedRowBrush}" />
 					<Setter
 						Property ="BorderBrush"
-						Value    ="{StaticResource SelectedRowBorderBrush}" />
+						Value    ="{DynamicResource SelectedRowBorderBrush}" />
 				</DataTrigger>
 
 				<Trigger
@@ -224,7 +224,7 @@
 					Value    ="True">
 					<Setter
 						Property ="BorderBrush"
-						Value    ="{StaticResource AccentBrush}" />
+						Value    ="{DynamicResource AccentBrush}" />
 				</Trigger>
 
 				<DataTrigger
@@ -243,7 +243,7 @@
 			BasedOn    ="{StaticResource ExplorerItemBaseStyle}">
 			<Setter
 				Property ="Background"
-				Value    ="{StaticResource RowBrush}" />
+				Value    ="{DynamicResource RowBrush}" />
 
 			<Style.Triggers>
 				<DataTrigger
@@ -251,7 +251,7 @@
 					Value   ="True">
 					<Setter
 						Property ="Background"
-						Value    ="{StaticResource AlternateRowBrush}" />
+						Value    ="{DynamicResource AlternateRowBrush}" />
 				</DataTrigger>
 
 				<DataTrigger
@@ -259,10 +259,10 @@
 					Value   ="True">
 					<Setter
 						Property ="Background"
-						Value    ="{StaticResource HiddenRowBrush}" />
+						Value    ="{DynamicResource HiddenRowBrush}" />
 					<Setter
 						Property ="Foreground"
-						Value    ="{StaticResource HiddenTextBrush}" />
+						Value    ="{DynamicResource HiddenTextBrush}" />
 				</DataTrigger>
 
 				<DataTrigger
@@ -270,10 +270,10 @@
 					Value   ="True">
 					<Setter
 						Property ="Background"
-						Value    ="{StaticResource SelectedRowBrush}" />
+						Value    ="{DynamicResource SelectedRowBrush}" />
 					<Setter
 						Property ="BorderBrush"
-						Value    ="{StaticResource SelectedRowBorderBrush}" />
+						Value    ="{DynamicResource SelectedRowBorderBrush}" />
 				</DataTrigger>
 
 				<Trigger
@@ -281,7 +281,7 @@
 					Value    ="True">
 					<Setter
 						Property ="BorderBrush"
-						Value    ="{StaticResource AccentBrush}" />
+						Value    ="{DynamicResource AccentBrush}" />
 				</Trigger>
 
 				<DataTrigger
@@ -307,7 +307,7 @@
 				Value    ="2" />
 			<Setter
 				Property ="Foreground"
-				Value    ="{StaticResource SecondaryTextBrush}" />
+				Value    ="{DynamicResource SecondaryTextBrush}" />
 			<Setter
 				Property ="Command"
 				Value    ="{Binding	DataContext.ToggleHiddenCommand,
@@ -328,7 +328,7 @@
 					Value   ="True">
 					<Setter
 						Property ="Foreground"
-						Value    ="{StaticResource AccentBrush}" />
+						Value    ="{DynamicResource AccentBrush}" />
 					<Setter
 						Property ="infrastructure:ButtonIcon.Glyph"
 						Value    ="&#xED1A;" />
@@ -381,13 +381,13 @@
 				<Border
 					Grid.Column ="3"
 					Style       ="{StaticResource BadgeStyle}"
-					Background  ="{StaticResource RowSetBadgeBrush}"
+					Background  ="{DynamicResource RowSetBadgeBrush}"
 					ToolTip     ="{StaticResource RowSetBadgeHint}"
 					Visibility  ="{Binding	HasMultipleRowSets,
 													Converter={StaticResource BooleanToVisibilityConverter}}">
 					<TextBlock
 						Style      ="{StaticResource BadgeTextStyle}"
-						Foreground ="{StaticResource RowSetBadgeTextBrush}"
+						Foreground ="{DynamicResource RowSetBadgeTextBrush}"
 						Text       ="{Binding RowSetSummary}" />
 				</Border>
 
@@ -538,7 +538,7 @@
 					Margin              ="11,0,0,0"
 					HorizontalAlignment ="Left"
 					Style               ="{StaticResource IconTextStyle}"
-					Foreground          ="{StaticResource SecondaryTextBrush}"
+					Foreground          ="{DynamicResource SecondaryTextBrush}"
 					IsHitTestVisible    ="False"
 					Text                ="&#xE721;" />
 
@@ -573,7 +573,7 @@
 				Grid.Row     ="1"
 				Margin       ="4,2,4,6"
 				Padding      ="4,2"
-				Background   ="{StaticResource HeaderStripBrush}"
+				Background   ="{DynamicResource HeaderStripBrush}"
 				CornerRadius ="4">
 				<StackPanel>
 					<DockPanel>
@@ -703,13 +703,13 @@
 				<Border
 					Grid.Row        ="0"
 					Padding         ="5,4,3,4"
-					Background      ="{StaticResource HeaderStripBrush}"
-					BorderBrush     ="{StaticResource SectionBorderBrush}"
+					Background      ="{DynamicResource HeaderStripBrush}"
+					BorderBrush     ="{DynamicResource SectionBorderBrush}"
 					BorderThickness ="1,1,1,0"
 					CornerRadius    ="4,4,0,0">
 					<Grid
 						TextElement.FontWeight ="SemiBold"
-						TextElement.Foreground ="{StaticResource SectionHeaderTextBrush}">
+						TextElement.Foreground ="{DynamicResource SectionHeaderTextBrush}">
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition
 								Width="*" />
@@ -749,7 +749,7 @@
 				<TreeView
 					Grid.Row           ="1"
 					Padding            ="0"
-					BorderBrush        ="{StaticResource SectionBorderBrush}"
+					BorderBrush        ="{DynamicResource SectionBorderBrush}"
 					ItemContainerStyle ="{StaticResource DatabaseItemStyle}"
 					ItemsSource        ="{Binding Databases}"
 					ItemTemplate       ="{StaticResource DatabaseNodeTemplate}"

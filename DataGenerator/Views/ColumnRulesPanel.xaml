@@ -84,7 +84,7 @@
 					Value   ="True">
 					<Setter
 						Property ="Foreground"
-						Value    ="{StaticResource ErrorBrush}" />
+						Value    ="{DynamicResource ErrorBrush}" />
 				</DataTrigger>
 			</Style.Triggers>
 		</Style>
@@ -108,7 +108,7 @@
 			</Style.Triggers>
 		</Style>
 
-		<!-- Editors of the generation modes; a column only shows the editor of its own mode -->
+		<!-- Editors of the generation modes; a column only shows the editor of its own mode. Two-way bindings set UpdateSourceTrigger=PropertyChanged (see the grid below) -->
 		<DataTemplate
 			x:Key    ="FixedSettingsTemplate"
 			DataType ="{x:Type viewModels:ColumnRuleViewModel}">
@@ -210,7 +210,8 @@
 						DisplayMemberPath ="Name"
 						ItemsSource       ="{Binding RegexProfiles}"
 						SelectedItem      ="{Binding	SelectedRegexProfile,
-																Mode=TwoWay}"
+																Mode=TwoWay,
+																UpdateSourceTrigger=PropertyChanged}"
 						ToolTip           ="{StaticResource RegexPresetHint}" />
 
 					<TextBlock
@@ -332,7 +333,7 @@
 				Value    ="10,4" />
 			<Setter
 				Property ="Foreground"
-				Value    ="{StaticResource SecondaryTextBrush}" />
+				Value    ="{DynamicResource SecondaryTextBrush}" />
 			<Setter
 				Property ="ToolTip"
 				Value    ="{StaticResource RowSetTabHint}" />
@@ -345,8 +346,8 @@
 						<Border
 							x:Name          ="TabBorder"
 							Margin          ="0,0,2,0"
-							Background      ="{StaticResource HeaderStripBrush}"
-							BorderBrush     ="{StaticResource SectionBorderBrush}"
+							Background      ="{DynamicResource HeaderStripBrush}"
+							BorderBrush     ="{DynamicResource SectionBorderBrush}"
 							BorderThickness ="1,1,1,0"
 							CornerRadius    ="4,4,0,0">
 							<Border
@@ -370,7 +371,7 @@
 								<Setter
 									TargetName ="TabBorder"
 									Property   ="Background"
-									Value      ="{StaticResource ButtonHoverBackgroundBrush}" />
+									Value      ="{DynamicResource ButtonHoverBackgroundBrush}" />
 							</Trigger>
 
 							<Trigger
@@ -381,7 +382,7 @@
 									Value    ="1" />
 								<Setter
 									Property ="Foreground"
-									Value    ="{StaticResource TextBrush}" />
+									Value    ="{DynamicResource TextBrush}" />
 								<Setter
 									TargetName ="TabBorder"
 									Property   ="Margin"
@@ -389,11 +390,11 @@
 								<Setter
 									TargetName ="TabBorder"
 									Property   ="Background"
-									Value      ="{StaticResource RowBrush}" />
+									Value      ="{DynamicResource RowBrush}" />
 								<Setter
 									TargetName ="AccentBorder"
 									Property   ="BorderBrush"
-									Value      ="{StaticResource RulesAccentBrush}" />
+									Value      ="{DynamicResource RulesAccentBrush}" />
 							</Trigger>
 
 							<Trigger
@@ -401,12 +402,64 @@
 								Value    ="False">
 								<Setter
 									Property ="Foreground"
-									Value    ="{StaticResource HiddenTextBrush}" />
+									Value    ="{DynamicResource HiddenTextBrush}" />
 							</Trigger>
 						</ControlTemplate.Triggers>
 					</ControlTemplate>
 				</Setter.Value>
 			</Setter>
+		</Style>
+
+		<!-- Opens the saved-settings menu of a column; highlighted while the column uses a saved setting -->
+		<Style
+			x:Key      ="SavedSettingsToggleStyle"
+			TargetType ="ToggleButton"
+			BasedOn    ="{StaticResource IconToggleButtonStyle}">
+			<Setter
+				Property ="Margin"
+				Value    ="4,0,0,0" />
+
+			<Style.Triggers>
+				<DataTrigger
+					Binding ="{Binding HasAppliedSetting}"
+					Value   ="True">
+					<Setter
+						Property ="Foreground"
+						Value    ="{DynamicResource AccentBrush}" />
+				</DataTrigger>
+
+				<DataTrigger
+					Binding ="{Binding CanChangeMode}"
+					Value   ="False">
+					<Setter
+						Property ="Visibility"
+						Value    ="Collapsed" />
+				</DataTrigger>
+
+				<!-- While the menu is open a click on the button only closes the menu (instead of closing and reopening it) -->
+				<DataTrigger
+					Binding ="{Binding IsSavedSettingsMenuOpen}"
+					Value   ="True">
+					<Setter
+						Property ="IsHitTestVisible"
+						Value    ="False" />
+				</DataTrigger>
+			</Style.Triggers>
+		</Style>
+
+		<Style
+			x:Key      ="PopupHeaderTextStyle"
+			TargetType ="TextBlock"
+			BasedOn    ="{StaticResource SecondaryTextStyle}">
+			<Setter
+				Property ="Margin"
+				Value    ="8,6,8,2" />
+			<Setter
+				Property ="FontWeight"
+				Value    ="SemiBold" />
+			<Setter
+				Property ="TextTrimming"
+				Value    ="CharacterEllipsis" />
 		</Style>
 	</UserControl.Resources>
 
@@ -453,12 +506,12 @@
 						TextTrimming      ="CharacterEllipsis"
 						ToolTip           ="{Binding ActiveTable.ToolTipText}">
 						<Run
-							Foreground ="{StaticResource SecondaryTextBrush}"
+							Foreground ="{DynamicResource SecondaryTextBrush}"
 							Text       ="{Binding	ActiveTable.Database.DisplayName,
 															Mode=OneWay}" />
 
 						<Run
-							Foreground ="{StaticResource SecondaryTextBrush}"
+							Foreground ="{DynamicResource SecondaryTextBrush}"
 							Text       ="›" />
 
 						<Run
@@ -504,7 +557,7 @@
 				<TabControl
 					Grid.Row           ="1"
 					Padding            ="6,4,6,6"
-					BorderBrush        ="{StaticResource SectionBorderBrush}"
+					BorderBrush        ="{DynamicResource SectionBorderBrush}"
 					ItemContainerStyle ="{StaticResource RowSetTabStyle}"
 					ItemsSource        ="{Binding ActiveTable.RowSets}"
 					SelectedItem       ="{Binding	ActiveTable.SelectedRowSet,
@@ -588,11 +641,12 @@
 
 										<TextBlock
 											VerticalAlignment ="Center"
-											Foreground        ="{StaticResource WarningBrush}"
+											Foreground        ="{DynamicResource WarningBrush}"
 											Text              ="{Binding ValidationSummary}" />
 									</StackPanel>
 								</WrapPanel>
 
+								<!-- Each grid row has a BindingGroup that makes bindings without an explicit UpdateSourceTrigger wait for a row commit, so every editor in the cells sets UpdateSourceTrigger=PropertyChanged -->
 								<DataGrid
 									Grid.Row    ="1"
 									Margin      ="0,2,0,0"
@@ -618,47 +672,47 @@
 														ToolTip     ="{StaticResource KeyColumnHint}">
 														<Border
 															Style      ="{StaticResource BadgeStyle}"
-															Background ="{StaticResource PrimaryKeyBadgeBrush}"
+															Background ="{DynamicResource PrimaryKeyBadgeBrush}"
 															Visibility ="{Binding	IsPrimaryKey,
 																							Converter={StaticResource BooleanToVisibilityConverter}}">
 															<TextBlock
 																Style      ="{StaticResource BadgeTextStyle}"
-																Foreground ="{StaticResource PrimaryKeyBadgeTextBrush}"
+																Foreground ="{DynamicResource PrimaryKeyBadgeTextBrush}"
 																Text       ="PK" />
 														</Border>
 
 														<Border
 															Style      ="{StaticResource BadgeStyle}"
-															Background ="{StaticResource ForeignKeyBadgeBrush}"
+															Background ="{DynamicResource ForeignKeyBadgeBrush}"
 															Visibility ="{Binding	IsForeignKey,
 																							Converter={StaticResource BooleanToVisibilityConverter}}">
 															<TextBlock
 																Style      ="{StaticResource BadgeTextStyle}"
-																Foreground ="{StaticResource ForeignKeyBadgeTextBrush}"
+																Foreground ="{DynamicResource ForeignKeyBadgeTextBrush}"
 																Text       ="FK" />
 														</Border>
 
 														<Border
 															Style           ="{StaticResource BadgeStyle}"
-															Background      ="{StaticResource ForeignTableKeyBadgeBrush}"
-															BorderBrush     ="{StaticResource ForeignTableKeyBadgeBorderBrush}"
+															Background      ="{DynamicResource ForeignTableKeyBadgeBrush}"
+															BorderBrush     ="{DynamicResource ForeignTableKeyBadgeBorderBrush}"
 															BorderThickness ="1"
 															Visibility      ="{Binding	ShowForeignTableKeyBadge,
 																								Converter={StaticResource BooleanToVisibilityConverter}}">
 															<TextBlock
 																Style      ="{StaticResource BadgeTextStyle}"
-																Foreground ="{StaticResource ForeignKeyBadgeTextBrush}"
+																Foreground ="{DynamicResource ForeignKeyBadgeTextBrush}"
 																Text       ="FTK" />
 														</Border>
 
 														<Border
 															Style      ="{StaticResource BadgeStyle}"
-															Background ="{StaticResource IdentityBadgeBrush}"
+															Background ="{DynamicResource IdentityBadgeBrush}"
 															Visibility ="{Binding	IsIdentity,
 																							Converter={StaticResource BooleanToVisibilityConverter}}">
 															<TextBlock
 																Style      ="{StaticResource BadgeTextStyle}"
-																Foreground ="{StaticResource IdentityBadgeTextBrush}"
+																Foreground ="{DynamicResource IdentityBadgeTextBrush}"
 																Text       ="ID" />
 														</Border>
 													</StackPanel>
@@ -761,7 +815,8 @@
 														ItemContainerStyle ="{StaticResource ModeItemStyle}"
 														ItemsSource        ="{Binding AvailableModes}"
 														SelectedValue      ="{Binding	GenerationMode,
-																								Mode=TwoWay}"
+																								Mode=TwoWay,
+																								UpdateSourceTrigger=PropertyChanged}"
 														SelectedValuePath  ="Mode"
 														ToolTip            ="{Binding SelectedModeOption.Description}" />
 												</DataTemplate>
@@ -780,9 +835,128 @@
 											<DataGridTemplateColumn.CellTemplate>
 												<DataTemplate
 													DataType="{x:Type viewModels:ColumnRuleViewModel}">
-													<ContentControl
-														Style   ="{StaticResource SettingsEditorStyle}"
-														Content ="{Binding}" />
+													<Grid>
+														<Grid.ColumnDefinitions>
+															<ColumnDefinition
+																Width="*" />
+															<ColumnDefinition
+																Width="Auto" />
+														</Grid.ColumnDefinitions>
+
+														<ContentControl
+															Grid.Column ="0"
+															Style       ="{StaticResource SettingsEditorStyle}"
+															Content     ="{Binding}" />
+
+														<ToggleButton
+															x:Name      ="SavedSettingsButton"
+															Grid.Column ="1"
+															Style       ="{StaticResource SavedSettingsToggleStyle}"
+															IsChecked   ="{Binding	IsSavedSettingsMenuOpen,
+																							Mode=TwoWay,
+																							UpdateSourceTrigger=PropertyChanged}"
+															ToolTip     ="{Binding SavedSettingsButtonHint}"
+															infrastructure:ButtonIcon.Glyph ="&#xE728;" />
+
+														<Popup
+															AllowsTransparency ="True"
+															IsOpen             ="{Binding	IsSavedSettingsMenuOpen,
+																									Mode=TwoWay,
+																									UpdateSourceTrigger=PropertyChanged}"
+															Placement          ="Bottom"
+															PlacementTarget    ="{Binding ElementName=SavedSettingsButton}"
+															PopupAnimation     ="Fade"
+															StaysOpen          ="False">
+															<Border
+																Style ="{StaticResource PopupMenuBorderStyle}">
+																<StackPanel
+																	Width ="320">
+																	<TextBlock
+																		Style ="{StaticResource PopupHeaderTextStyle}"
+																		Text  ="{Binding	Name,
+																								StringFormat='Saved settings · {0}'}" />
+
+																	<Button
+																		Style   ="{StaticResource PopupMenuButtonStyle}"
+																		Command ="{Binding SaveSettingsCommand}"
+																		Content ="Save these settings…"
+																		ToolTip ="{StaticResource SaveSettingsHint}"
+																		infrastructure:ButtonIcon.Glyph ="&#xE74E;" />
+
+																	<Separator
+																		Margin ="4" />
+
+																	<TextBlock
+																		Style ="{StaticResource PopupHeaderTextStyle}"
+																		Text  ="Apply a saved setting" />
+
+																	<TextBlock
+																		Margin       ="8,2,8,6"
+																		Style        ="{StaticResource SecondaryTextStyle}"
+																		Text         ="No saved setting suits this column yet. Save the settings of a column to reuse them here."
+																		TextWrapping ="Wrap"
+																		Visibility   ="{Binding	HasSavedSettingOptions,
+																										Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+
+																	<ScrollViewer
+																		MaxHeight                     ="280"
+																		HorizontalScrollBarVisibility ="Disabled"
+																		VerticalScrollBarVisibility   ="Auto">
+																		<ItemsControl
+																			ItemsSource ="{Binding SavedSettingOptions}"
+																			ToolTip     ="{StaticResource ApplySavedSettingHint}">
+																			<ItemsControl.ItemTemplate>
+																				<DataTemplate
+																					DataType="{x:Type viewModels:SavedSettingOption}">
+																					<Button
+																						HorizontalAlignment ="Stretch"
+																						Style               ="{StaticResource PopupMenuButtonStyle}"
+																						Command             ="{Binding	DataContext.ApplySavedSettingCommand,
+																																	RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+																						CommandParameter    ="{Binding}"
+																						ToolTip             ="{Binding ToolTipText}">
+																						<StackPanel>
+																							<StackPanel
+																								Orientation ="Horizontal">
+																								<TextBlock
+																									FontWeight   ="SemiBold"
+																									Text         ="{Binding Name}"
+																									TextTrimming ="CharacterEllipsis" />
+
+																								<TextBlock
+																									Margin     ="6,0,0,0"
+																									Style      ="{StaticResource SecondaryTextStyle}"
+																									Text       ="· saved for this column"
+																									Visibility ="{Binding	IsSavedForColumn,
+																																	Converter={StaticResource BooleanToVisibilityConverter}}" />
+																							</StackPanel>
+
+																							<TextBlock
+																								MaxWidth     ="290"
+																								Style        ="{StaticResource SecondaryTextStyle}"
+																								FontFamily   ="{StaticResource CodeFontFamily}"
+																								Text         ="{Binding Summary}"
+																								TextTrimming ="CharacterEllipsis" />
+																						</StackPanel>
+																					</Button>
+																				</DataTemplate>
+																			</ItemsControl.ItemTemplate>
+																		</ItemsControl>
+																	</ScrollViewer>
+
+																	<Separator
+																		Margin ="4" />
+
+																	<Button
+																		Style   ="{StaticResource PopupMenuButtonStyle}"
+																		Command ="{Binding ManageSavedSettingsCommand}"
+																		Content ="Manage saved settings…"
+																		ToolTip ="{StaticResource ManageSavedSettingsHint}"
+																		infrastructure:ButtonIcon.Glyph ="&#xE713;" />
+																</StackPanel>
+															</Border>
+														</Popup>
+													</Grid>
 												</DataTemplate>
 											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
@@ -826,6 +1000,14 @@
 						ToolTip        ="{StaticResource PatternLanguageHint}"
 						infrastructure:ButtonIcon.Glyph ="&#xE897;" />
 
+					<Button
+						DockPanel.Dock ="Right"
+						Style          ="{StaticResource ToolbarButtonStyle}"
+						Command        ="{Binding ManageSavedSettingsCommand}"
+						Content        ="Saved settings"
+						ToolTip        ="{StaticResource ManageSavedSettingsHint}"
+						infrastructure:ButtonIcon.Glyph ="&#xE728;" />
+
 					<StackPanel
 						Background  ="Transparent"
 						Orientation ="Horizontal"
@@ -834,8 +1016,8 @@
 							Width           ="14"
 							Height          ="14"
 							Margin          ="4,0,5,0"
-							Background      ="{StaticResource PrimaryKeyRowBrush}"
-							BorderBrush     ="{StaticResource PrimaryKeyBadgeBrush}"
+							Background      ="{DynamicResource PrimaryKeyRowBrush}"
+							BorderBrush     ="{DynamicResource PrimaryKeyBadgeBrush}"
 							BorderThickness ="1"
 							CornerRadius    ="3" />
 
@@ -847,8 +1029,8 @@
 							Width           ="14"
 							Height          ="14"
 							Margin          ="14,0,5,0"
-							Background      ="{StaticResource ForeignKeyRowBrush}"
-							BorderBrush     ="{StaticResource ForeignKeyBadgeBrush}"
+							Background      ="{DynamicResource ForeignKeyRowBrush}"
+							BorderBrush     ="{DynamicResource ForeignKeyBadgeBrush}"
 							BorderThickness ="1"
 							CornerRadius    ="3" />
 
@@ -859,10 +1041,10 @@
 						<Border
 							Margin     ="14,0,5,0"
 							Style      ="{StaticResource BadgeStyle}"
-							Background ="{StaticResource IdentityBadgeBrush}">
+							Background ="{DynamicResource IdentityBadgeBrush}">
 							<TextBlock
 								Style      ="{StaticResource BadgeTextStyle}"
-								Foreground ="{StaticResource IdentityBadgeTextBrush}"
+								Foreground ="{DynamicResource IdentityBadgeTextBrush}"
 								Text       ="ID" />
 						</Border>
 
