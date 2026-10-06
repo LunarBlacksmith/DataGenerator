@@ -21,6 +21,7 @@
 	WindowStartupLocation       ="CenterOwner"
 	infrastructure:DialogCloser.DialogResult ="{Binding DialogResult}">
 	<Window.Resources>
+		<!-- Warning and error messages collapse automatically when their bound text is empty -->
 		<Style
 			x:Key      ="DialogMessageStyle"
 			TargetType ="TextBlock">
@@ -53,6 +54,7 @@
 
 	<StackPanel
 		Margin="16,12,16,12">
+		<!-- Explains which column's rule settings will be stored -->
 		<TextBlock
 			Margin       ="4,0,4,8"
 			Style        ="{StaticResource SecondaryTextStyle}"
@@ -64,6 +66,7 @@
 			Content ="_Name"
 			Target  ="{Binding ElementName=NameTextBox}" />
 
+		<!-- Setting name is validated as it changes and also drives replace and conflict warnings -->
 		<TextBox
 			x:Name    ="NameTextBox"
 			MaxLength ="100"
@@ -75,6 +78,7 @@
 			Margin  ="0,6,0,0"
 			Content ="Settings" />
 
+		<!-- Read-only summary of the generation values captured from the column rule -->
 		<Border
 			Margin          ="4"
 			Padding         ="8,6"
@@ -93,6 +97,7 @@
 			Margin  ="0,6,0,0"
 			Content ="Apply automatically" />
 
+		<!-- Automatic application scope used when matching columns are created in new row sets -->
 		<RadioButton
 			Content   ="Never (only when picked from a column's saved-settings menu)"
 			IsChecked ="{Binding ApplyNever}"
@@ -108,6 +113,7 @@
 			IsChecked ="{Binding ApplyToEveryColumnWithName}"
 			ToolTip   ="{StaticResource ApplyToEveryColumnWithNameHint}" />
 
+		<!-- Replace, automatic-scope conflict and file-save errors appear only when the view model has text -->
 		<TextBlock
 			Foreground ="{DynamicResource WarningBrush}"
 			Style      ="{StaticResource DialogMessageStyle}"
@@ -123,6 +129,7 @@
 			Style      ="{StaticResource DialogMessageStyle}"
 			Text       ="{Binding ErrorMessage}" />
 
+		<!-- Save closes through DialogCloser when the view model sets DialogResult -->
 		<StackPanel
 			Margin              ="0,12,0,0"
 			HorizontalAlignment ="Right"

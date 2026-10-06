@@ -6,6 +6,11 @@
 	xmlns:services       ="clr-namespace:DataGenerator.Services"
 	ShutdownMode         ="OnMainWindowClose">
 	<Application.Resources>
+		<!--
+			Application-wide resources. Brushes.Light.xaml is the starting palette; ThemeService swaps it for
+			Brushes.Dark.xaml at run time, which is why every colour is used through DynamicResource.
+			Hints.xaml holds the hint text of every control, and Controls.xaml the shared styles and templates.
+		-->
 		<ResourceDictionary>
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceDictionary
@@ -18,6 +23,7 @@
 					Source="Themes/Controls.xaml" />
 			</ResourceDictionary.MergedDictionaries>
 
+			<!-- Converters shared by all views -->
 			<BooleanToVisibilityConverter
 				x:Key="BooleanToVisibilityConverter" />
 

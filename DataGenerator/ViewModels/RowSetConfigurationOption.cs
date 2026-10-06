@@ -5,18 +5,34 @@ using DataGenerator.Models;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// A saved set configuration offered in the set configuration menu of a row set.
+///	A saved set configuration offered in the set configuration menu of a row set.
 /// </summary>
 public sealed class RowSetConfigurationOption
 {
+	/// <summary>
+	///	Creates a saved row-set configuration choice for the active row set.
+	/// </summary>
+	/// <param name="configuration">
+	///	The saved configuration offered to the user.
+	/// </param>
+	/// <param name="matchingColumnCount">
+	///	How many columns of the active row set are present in the configuration.
+	/// </param>
+	/// <param name="isFromActiveTable">
+	///	Whether the configuration was saved from the active table.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="configuration"/> is <see langword="null"/>.
+	/// </exception>
 	public RowSetConfigurationOption(SavedRowSetConfiguration configuration, int matchingColumnCount, bool isFromActiveTable)
 	{
 		Configuration       = configuration ?? throw new ArgumentNullException(nameof(configuration));
 		MatchingColumnCount = matchingColumnCount;
 		IsFromActiveTable   = isFromActiveTable;
-		Summary             = isFromActiveTable
-			? $"{configuration.Columns.Count} columns · saved {configuration.SavedAt.ToString("g", CultureInfo.CurrentCulture)}"
-			: $"From {configuration.TableName} · {matchingColumnCount} of its {configuration.Columns.Count} columns are in this table";
+		Summary             =
+			isFromActiveTable
+				? $"{configuration.Columns.Count} columns · saved {configuration.SavedAt.ToString("g", CultureInfo.CurrentCulture)}"
+				: $"From {configuration.TableName} · {matchingColumnCount} of its {configuration.Columns.Count} columns are in this table";
 		ToolTipText         = BuildToolTipText(configuration);
 	}
 
@@ -28,6 +44,15 @@ public sealed class RowSetConfigurationOption
 
 	public string Name => Configuration.Name;
 
+	/// <summary>
+	///	Builds the tooltip that lists the saved values for every column in a configuration.
+	/// </summary>
+	/// <param name="configuration">
+	///	The configuration to describe.
+	/// </param>
+	/// <returns>
+	///	The multi-line tooltip text.
+	/// </returns>
 	private static string BuildToolTipText(SavedRowSetConfiguration configuration)
 	{
 		StringBuilder text = new();

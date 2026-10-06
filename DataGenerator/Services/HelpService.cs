@@ -10,11 +10,26 @@ public sealed class HelpService : IHelpService
 	private readonly IPatternValueGenerator _patternGenerator;
 	private PatternHelpWindow?              _patternHelpWindow;
 
+	/// <summary>
+	///	Creates the service that shows the pattern language help window.
+	/// </summary>
+	/// <param name="patternGenerator">
+	///	The pattern generator used by the help view model to evaluate examples.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="patternGenerator"/> is <see langword="null"/>.
+	/// </exception>
 	public HelpService(IPatternValueGenerator patternGenerator)
 	{
 		_patternGenerator = patternGenerator ?? throw new ArgumentNullException(nameof(patternGenerator));
 	}
 
+	/// <summary>
+	///	Shows or activates the pattern language help window and optionally loads an expression into it.
+	/// </summary>
+	/// <param name="expression">
+	///	The optional expression to show in the help window.
+	/// </param>
 	public void ShowPatternLanguageHelp(string? expression = null)
 	{
 		if (_patternHelpWindow is null)

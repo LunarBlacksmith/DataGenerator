@@ -5,13 +5,13 @@ using DataGenerator.Models;
 namespace DataGenerator.Services.Generation;
 
 /// <summary>
-/// The T-SQL of an update set: the new values are first stored in a temporary staging table (one row per changed row),
-/// then randomly chosen rows of the table that meet the scope and condition are changed to those values.
+///	The T-SQL of an update set: the new values are first stored in a temporary staging table (one row per changed row),
+///	then randomly chosen rows of the table that meet the scope and condition are changed to those values.
 /// </summary>
 internal sealed class RowSetUpdate
 {
 	/// <summary>
-	/// The alias of the changed table in update conditions, e.g. t.[Size] = 'XL'.
+	///	The alias of the changed table in update conditions, e.g. t.[Size] = 'XL'.
 	/// </summary>
 	public const string TARGET_ALIAS = "t";
 
@@ -22,6 +22,27 @@ internal sealed class RowSetUpdate
 	private const string VALUE_ALIAS      = "[v]";
 	private const string TARGET_ROW_NAME  = "[dg_row]";
 
+	/// <summary>
+	///	Creates the SQL metadata needed to stage and apply one update row set.
+	/// </summary>
+	/// <param name="number">
+	///	Unique number used in the staging table name.
+	/// </param>
+	/// <param name="table">
+	///	The table whose rows will be changed.
+	/// </param>
+	/// <param name="rowSet">
+	///	The update row set plan.
+	/// </param>
+	/// <param name="columns">
+	///	The columns that receive new values.
+	/// </param>
+	/// <param name="scopeCondition">
+	///	The optional generated/existing-row scope condition.
+	/// </param>
+	/// <param name="converter">
+	///	The converter used to declare staging value columns.
+	/// </param>
 	public RowSetUpdate(
 		int                        number,
 		TableModel                 table,
@@ -42,26 +63,38 @@ internal sealed class RowSetUpdate
 	public int                        Number          { get; }
 
 	/// <summary>
-	/// The changed columns, in the order of the staging table's value columns (V0, V1, …).
+	///	The changed columns, in the order of the staging table's value columns (V0, V1, …).
 	/// </summary>
 	public IReadOnlyList<ColumnModel> Columns         { get; }
 
 	/// <summary>
-	/// The number of rows that must be changed; 0 when changing fewer rows is allowed.
+	///	The number of rows that must be changed; 0 when changing fewer rows is allowed.
 	/// </summary>
 	public int                        RequiredCount   { get; }
 	public string                     Location        { get; }
 	public string                     CreateStatement { get; }
 
 	/// <summary>
-	/// Changes the rows; must be followed directly by a check of @@ROWCOUNT.
+	///	Changes the rows; must be followed directly by a check of @@ROWCOUNT.
 	/// </summary>
 	public string                     UpdateStatement { get; }
 
 	public string StagingTableName => $"#dg_update_{Number}";
 
+	/// <summary>
+	///	Builds the SQL statement that removes this update staging table if it exists.
+	/// </summary>
+	/// <returns>
+	///	A DROP TABLE IF EXISTS statement for the staging table.
+	/// </returns>
 	public string BuildDropStatement() => $"DROP TABLE IF EXISTS {StagingTableName};";
 
+	/// <summary>
+	///	Builds the INSERT prefix used when filling the update staging table.
+	/// </summary>
+	/// <returns>
+	///	The INSERT INTO statement prefix without VALUES.
+	/// </returns>
 	public string CreateInsertPrefix()
 	{
 		IEnumerable<string> valueColumns = Enumerable.Range(0, Columns.Count)
@@ -70,7 +103,15 @@ internal sealed class RowSetUpdate
 		return $"INSERT INTO {StagingTableName} ({ROW_NUMBER_COLUMN}, {string.Join(", ", valueColumns)})";
 	}
 
-	/// <param name="changedCount">The number of rows changed; null when it is not known (in scripts).</param>
+	/// <summary>
+	///	Describes a failed required update when too few target rows matched.
+	/// </summary>
+	/// <param name="changedCount">
+	///	The number of rows changed; null when it is not known (in scripts).
+	/// </param>
+	/// <returns>
+	///	A user-facing explanation of the shortage.
+	/// </returns>
 	public string DescribeShortage(long? changedCount)
 	{
 		string found = changedCount is long count ? $"only {count:N0} row(s)" : "fewer rows";
@@ -79,6 +120,15 @@ internal sealed class RowSetUpdate
 			+ "so nothing was saved. Lower the number of rows, loosen the condition, or clear 'Fail if fewer rows match'.";
 	}
 
+	/// <summary>
+	///	Builds the CREATE TABLE statement for the update staging table.
+	/// </summary>
+	/// <param name="converter">
+	///	The converter used to declare value column types.
+	/// </param>
+	/// <returns>
+	///	A CREATE TABLE statement for the staging table.
+	/// </returns>
 	private string BuildCreateStatement(ISqlValueConverter converter)
 	{
 		StringBuilder builder = new($"CREATE TABLE {StagingTableName} ({ROW_NUMBER_COLUMN} INT NOT NULL PRIMARY KEY");
@@ -96,6 +146,21 @@ internal sealed class RowSetUpdate
 		return builder.Append(");").ToString();
 	}
 
+	/// <summary>
+	///	Builds the UPDATE statement that applies staged values to randomly chosen matching rows.
+	/// </summary>
+	/// <param name="table">
+	///	The table whose rows will be changed.
+	/// </param>
+	/// <param name="rowSet">
+	///	The update row set plan.
+	/// </param>
+	/// <param name="scopeCondition">
+	///	The optional generated/existing-row scope condition.
+	/// </param>
+	/// <returns>
+	///	The UPDATE statement, ending before the row-count check.
+	/// </returns>
 	private string BuildUpdateStatement(TableModel table, RowSetPlan rowSet, string? scopeCondition)
 	{
 		List<string> conditions = [];

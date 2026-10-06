@@ -8,7 +8,7 @@ using DataGenerator.Services;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// The database/table tree: multi-selection, search, hiding, bulk actions and the table whose rules are being edited.
+///	The database/table tree: multi-selection, search, hiding, bulk actions and the table whose rules are being edited.
 /// </summary>
 public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 {
@@ -30,6 +30,30 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	private int                 _bulkUpdateDepth;
 	private bool                _hasPendingSettingsChange;
 
+	/// <summary>
+	///	Creates the database explorer view model and initialises commands, selections and saved-setting subscriptions.
+	/// </summary>
+	/// <param name="ruleFactory">
+	///	The factory used by table nodes to create column rules.
+	/// </param>
+	/// <param name="savedSettings">
+	///	The saved-settings library whose changes refresh column-rule state.
+	/// </param>
+	/// <param name="savedSettingsWindows">
+	///	The window service used to open saved-settings management.
+	/// </param>
+	/// <param name="ruleGridColumns">
+	///	The view model that controls optional rule-grid columns.
+	/// </param>
+	/// <param name="setConfigurations">
+	///	The view model that saves and loads row-set configurations.
+	/// </param>
+	/// <param name="dialogService">
+	///	The dialog service used for destructive-action confirmations.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any required service or child view model is <see langword="null"/>.
+	/// </exception>
 	public DatabaseExplorerViewModel(
 		ColumnRuleFactory             ruleFactory,
 		SavedSettingsLibrary          savedSettings,
@@ -95,7 +119,7 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Raised when tables are included or excluded, or when row counts or rule validity change.
+	///	Raised when tables are included or excluded, or when row counts or rule validity change.
 	/// </summary>
 	public event EventHandler? GenerationSettingsChanged;
 
@@ -129,17 +153,17 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	public RelayCommand ManageSavedSettingsCommand { get; }
 
 	/// <summary>
-	/// Which optional columns of the column rules grid are shown.
+	///	Which optional columns of the column rules grid are shown.
 	/// </summary>
 	public RuleGridColumnsViewModel RuleGridColumns { get; }
 
 	/// <summary>
-	/// Saves and loads the settings of every column of the row set being edited as one named configuration.
+	///	Saves and loads the settings of every column of the row set being edited as one named configuration.
 	/// </summary>
 	public RowSetConfigurationsViewModel SetConfigurations { get; }
 
 	/// <summary>
-	/// The table whose row sets and column rules are shown for editing (the last table that was clicked).
+	///	The table whose row sets and column rules are shown for editing (the last table that was clicked).
 	/// </summary>
 	public TableNodeViewModel? ActiveTable
 	{
@@ -240,12 +264,22 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	}
 
 	public string IncludedSummary
-		=> HasDatabases
-			? $"{IncludedTableCount:N0} of {TotalTableCount:N0} tables included · {IncludedRowCount:N0} rows"
-			: "No metadata loaded.";
+		=>
+			HasDatabases
+				? $"{IncludedTableCount:N0} of {TotalTableCount:N0} tables included · {IncludedRowCount:N0} rows"
+				: "No metadata loaded.";
 	#endregion PUBLIC
 	#endregion PROPERTIES
 
+	/// <summary>
+	///	Replaces the explorer contents with the supplied database metadata and resets selection and active table state.
+	/// </summary>
+	/// <param name="databases">
+	///	The databases and tables loaded from SQL Server.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="databases"/> is <see langword="null"/>.
+	/// </exception>
 	public void Load(IReadOnlyList<DatabaseModel> databases)
 	{
 		ArgumentNullException.ThrowIfNull(databases);
@@ -287,14 +321,35 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		OnGenerationSettingsChanged();
 	}
 
+	/// <summary>
+	///	Gets the tables currently marked for generation.
+	/// </summary>
+	/// <returns>
+	///	The included table nodes in explorer order.
+	/// </returns>
 	public IReadOnlyList<TableNodeViewModel> GetIncludedTables() => [.. AllTables.Where(table => table.IsIncluded)];
 
+	/// <summary>
+	///	Finds a table node by its stable model key.
+	/// </summary>
+	/// <param name="tableKey">
+	///	The table key to look up.
+	/// </param>
+	/// <returns>
+	///	The matching table node, or <see langword="null"/> when the key is not loaded.
+	/// </returns>
 	public TableNodeViewModel? FindTable(string tableKey)
 		=> _tablesByKey.TryGetValue(tableKey, out TableNodeViewModel? table) ? table : null;
 
 	/// <summary>
-	/// Includes several tables while raising <see cref="GenerationSettingsChanged"/> only once.
+	///	Includes several tables while raising <see cref="GenerationSettingsChanged"/> only once.
 	/// </summary>
+	/// <param name="tables">
+	///	The tables to mark as included.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="tables"/> is <see langword="null"/>.
+	/// </exception>
 	public void IncludeTables(IEnumerable<TableNodeViewModel> tables)
 	{
 		ArgumentNullException.ThrowIfNull(tables);
@@ -311,8 +366,17 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Selects a table, makes it the one being edited and brings it into view (used to point at a validation problem).
+	///	Selects a table, makes it the one being edited and brings it into view (used to point at a validation problem).
 	/// </summary>
+	/// <param name="table">
+	///	The table to reveal and select.
+	/// </param>
+	/// <param name="rowSet">
+	///	The row set to select after revealing the table, or <see langword="null"/> to keep the current row set.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="table"/> is <see langword="null"/>.
+	/// </exception>
 	public void Reveal(TableNodeViewModel table, RowSetViewModel? rowSet = null)
 	{
 		ArgumentNullException.ThrowIfNull(table);
@@ -338,6 +402,12 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Handles a tree selection command, including toggle, range and context-click selection modes.
+	/// </summary>
+	/// <param name="parameter">
+	///	The command parameter, expected to be a <see cref="TreeSelectionRequest"/>.
+	/// </param>
 	private void SelectNode(object? parameter)
 	{
 		if (parameter is not TreeSelectionRequest { Item: TreeNodeViewModel node } request)
@@ -367,6 +437,12 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Adds or removes one tree node from the current selection and makes it the range-selection anchor.
+	/// </summary>
+	/// <param name="node">
+	///	The node to toggle.
+	/// </param>
 	private void ToggleSelection(TreeNodeViewModel node)
 	{
 		if (_selectedNodes.Remove(node))
@@ -384,8 +460,14 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Selects every visible row between the anchor (the last row clicked without Shift) and <paramref name="node"/>.
+	///	Selects every visible row between the anchor (the last row clicked without Shift) and <paramref name="node"/>.
 	/// </summary>
+	/// <param name="node">
+	///	The node clicked with range selection.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when a visible range was selected; otherwise <see langword="false"/>.
+	/// </returns>
 	private bool TrySelectRange(TreeNodeViewModel node)
 	{
 		if (_selectionAnchor is null)
@@ -406,18 +488,27 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		return true;
 	}
 
+	/// <summary>
+	///	Selects every database and expanded table that is currently visible in the tree.
+	/// </summary>
 	private void SelectAllVisible()
 	{
 		ReplaceSelection(GetVisibleNodesInOrder());
 		_selectionAnchor = null;
 	}
 
+	/// <summary>
+	///	Clears the current selection and refreshes selection-dependent UI state.
+	/// </summary>
 	private void ClearSelection()
 	{
 		ClearSelectionCore();
 		OnSelectionChanged();
 	}
 
+	/// <summary>
+	///	Clears selected flags and the range-selection anchor without raising selection-change notifications.
+	/// </summary>
 	private void ClearSelectionCore()
 	{
 		foreach (TreeNodeViewModel node in _selectedNodes)
@@ -429,6 +520,12 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		_selectionAnchor = null;
 	}
 
+	/// <summary>
+	///	Replaces the current selection with the supplied nodes and updates their selected flags.
+	/// </summary>
+	/// <param name="nodes">
+	///	The nodes that should become the full selection.
+	/// </param>
 	private void ReplaceSelection(IEnumerable<TreeNodeViewModel> nodes)
 	{
 		HashSet<TreeNodeViewModel> newSelection = [.. nodes];
@@ -448,6 +545,9 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		OnSelectionChanged();
 	}
 
+	/// <summary>
+	///	Refreshes selection summary properties and commands after the selected nodes change.
+	/// </summary>
 	private void OnSelectionChanged()
 	{
 		OnPropertyChanged(nameof(HasSelection));
@@ -460,8 +560,11 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Databases followed by their tables, in the order they appear in the tree (collapsed tables excluded).
+	///	Databases followed by their tables, in the order they appear in the tree (collapsed tables excluded).
 	/// </summary>
+	/// <returns>
+	///	The visible nodes in the order they appear in the tree.
+	/// </returns>
 	private List<TreeNodeViewModel> GetVisibleNodesInOrder()
 	{
 		List<TreeNodeViewModel> nodes = [];
@@ -479,6 +582,12 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		return nodes;
 	}
 
+	/// <summary>
+	///	Enumerates every database node and table node, including hidden and filtered-out nodes.
+	/// </summary>
+	/// <returns>
+	///	All tree nodes in database and table order.
+	/// </returns>
 	private IEnumerable<TreeNodeViewModel> GetAllNodes()
 	{
 		foreach (DatabaseNodeViewModel database in Databases)
@@ -493,8 +602,11 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Selected tables plus the (visible) tables of selected databases.
+	///	Selected tables plus the (visible) tables of selected databases.
 	/// </summary>
+	/// <returns>
+	///	The distinct target tables for a bulk selection action.
+	/// </returns>
 	private List<TableNodeViewModel> GetSelectedTargetTables()
 	{
 		HashSet<TableNodeViewModel> tables = [];
@@ -514,6 +626,12 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		return [.. tables];
 	}
 
+	/// <summary>
+	///	Expands or collapses the databases represented by the current selection.
+	/// </summary>
+	/// <param name="isExpanded">
+	///	Whether the selected databases should be expanded.
+	/// </param>
 	private void SetSelectedExpanded(bool isExpanded)
 	{
 		HashSet<DatabaseNodeViewModel> databases = [];
@@ -529,6 +647,12 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Expands or collapses all loaded databases, keeping hidden databases collapsed when expanding.
+	/// </summary>
+	/// <param name="isExpanded">
+	///	Whether databases should be expanded.
+	/// </param>
 	private void SetAllExpanded(bool isExpanded)
 	{
 		foreach (DatabaseNodeViewModel database in Databases)
@@ -537,6 +661,12 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Toggles the hidden state of one node, or of the selected nodes when the clicked node is selected.
+	/// </summary>
+	/// <param name="parameter">
+	///	The command parameter, expected to be a <see cref="TreeNodeViewModel"/>.
+	/// </param>
 	private void ToggleHidden(object? parameter)
 	{
 		if (parameter is not TreeNodeViewModel node)
@@ -556,6 +686,15 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Sets the hidden state for a snapshot of tree nodes.
+	/// </summary>
+	/// <param name="nodes">
+	///	The nodes to update.
+	/// </param>
+	/// <param name="isHidden">
+	///	Whether the nodes should be hidden.
+	/// </param>
 	private static void SetHidden(IEnumerable<TreeNodeViewModel> nodes, bool isHidden)
 	{
 		foreach (TreeNodeViewModel node in nodes.ToList())
@@ -564,6 +703,12 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Includes or excludes all table targets represented by the current selection.
+	/// </summary>
+	/// <param name="isIncluded">
+	///	Whether the target tables should be included for generation.
+	/// </param>
 	private void SetSelectedIncluded(bool isIncluded)
 	{
 		List<TableNodeViewModel> tables = GetSelectedTargetTables();
@@ -579,6 +724,9 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		);
 	}
 
+	/// <summary>
+	///	Excludes every loaded table while coalescing generation-settings notifications.
+	/// </summary>
 	private void ExcludeAll()
 		=> RunBulkUpdate(
 				() =>
@@ -590,6 +738,9 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 				}
 			);
 
+	/// <summary>
+	///	Applies the bulk row count to selected target tables and includes those tables.
+	/// </summary>
 	private void ApplyRowCountToSelection()
 	{
 		if (!TryGetBulkRowCount(out int rowCount))
@@ -611,11 +762,23 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		);
 	}
 
+	/// <summary>
+	///	Tries to parse the bulk row-count text and checks it is within the supported range.
+	/// </summary>
+	/// <param name="rowCount">
+	///	The parsed row count, or zero when parsing fails.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the row count is valid; otherwise <see langword="false"/>.
+	/// </returns>
 	private bool TryGetBulkRowCount(out int rowCount)
 		=> int.TryParse(_bulkRowCountText.Trim(), NumberStyles.Integer | NumberStyles.AllowThousands, INVARIANT, out rowCount)
 			&& rowCount >= 1
 			&& rowCount <= RowSetViewModel.MAXIMUM_ROW_COUNT;
 
+	/// <summary>
+	///	Adds a normal row set to the active table, when a table is active.
+	/// </summary>
 	private void AddRowSet()
 	{
 		if (_activeTable is not null)
@@ -624,6 +787,9 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Adds an update set to the active table, when a table is active.
+	/// </summary>
 	private void AddUpdateSet()
 	{
 		if (_activeTable is not null)
@@ -632,6 +798,9 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Duplicates the selected row set of the active table, when one is selected.
+	/// </summary>
 	private void DuplicateRowSet()
 	{
 		if (_activeTable?.SelectedRowSet is RowSetViewModel rowSet)
@@ -640,6 +809,9 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Confirms and removes the selected row set from the active table when removal is allowed.
+	/// </summary>
 	private void RemoveRowSet()
 	{
 		if (_activeTable?.SelectedRowSet is not RowSetViewModel rowSet || !_activeTable.CanRemoveRowSet)
@@ -659,6 +831,9 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Refreshes commands whose enabled state depends on the active table or selected row set.
+	/// </summary>
 	private void RefreshRowSetCommands()
 	{
 		AddRowSetCommand.NotifyCanExecuteChanged();
@@ -668,6 +843,9 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		SetConfigurations.RefreshCommands();
 	}
 
+	/// <summary>
+	///	Applies the search and included-only filters, deselecting nodes that are no longer visible.
+	/// </summary>
 	private void ApplyFilter()
 	{
 		string filter    = _filterText.Trim();
@@ -701,6 +879,9 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		OnPropertyChanged(nameof(HasNoVisibleNodes));
 	}
 
+	/// <summary>
+	///	Removes filtered-out nodes from the current selection and clears the anchor if it is no longer visible.
+	/// </summary>
 	private void DeselectFilteredNodes()
 	{
 		List<TreeNodeViewModel> filteredNodes = [.. _selectedNodes.Where(node => !node.IsVisibleInTree)];
@@ -725,7 +906,7 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Alternates the background of visible database rows, and separately of the visible table rows of each database.
+	///	Alternates the background of visible database rows, and separately of the visible table rows of each database.
 	/// </summary>
 	private void ApplyStripes()
 	{
@@ -746,6 +927,12 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Runs a batch of table changes and raises a single generation-settings notification after the batch.
+	/// </summary>
+	/// <param name="update">
+	///	The changes to perform as one bulk update.
+	/// </param>
 	private void RunBulkUpdate(Action update)
 	{
 		++_bulkUpdateDepth;
@@ -766,9 +953,24 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Enumerates the column rules in every row set of every loaded table.
+	/// </summary>
+	/// <returns>
+	///	All loaded column rule view models.
+	/// </returns>
 	private IEnumerable<ColumnRuleViewModel> GetAllColumnRules()
 		=> AllTables.SelectMany(table => table.RowSets).SelectMany(rowSet => rowSet.ColumnRules);
 
+	/// <summary>
+	///	Refreshes applied saved-setting names after saved settings are renamed, changed or deleted.
+	/// </summary>
+	/// <param name="sender">
+	///	The saved-settings library that raised the event.
+	/// </param>
+	/// <param name="e">
+	///	The event data.
+	/// </param>
 	private void OnSavedSettingsChanged(object? sender, EventArgs e)
 	{
 		foreach (ColumnRuleViewModel rule in GetAllColumnRules())
@@ -777,6 +979,15 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Applies automatic saved settings to every loaded column rule and adds the number of changed columns to the event.
+	/// </summary>
+	/// <param name="sender">
+	///	The saved-settings library that raised the request.
+	/// </param>
+	/// <param name="e">
+	///	The request that accumulates the number of updated columns.
+	/// </param>
 	private void OnApplyAutomaticSettingsRequested(object? sender, ApplyAutomaticSettingsEventArgs e)
 	{
 		int updatedColumnCount = 0;
@@ -797,6 +1008,15 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		e.UpdatedColumnCount += updatedColumnCount;
 	}
 
+	/// <summary>
+	///	Handles table-setting changes, deferring the notification while a bulk update is running.
+	/// </summary>
+	/// <param name="sender">
+	///	The table node that raised the event.
+	/// </param>
+	/// <param name="e">
+	///	The event data.
+	/// </param>
 	private void OnTableSettingsChanged(object? sender, EventArgs e)
 	{
 		if (_bulkUpdateDepth > 0)
@@ -808,6 +1028,9 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		OnGenerationSettingsChanged();
 	}
 
+	/// <summary>
+	///	Refreshes included-table summaries and raises <see cref="GenerationSettingsChanged"/>.
+	/// </summary>
 	private void OnGenerationSettingsChanged()
 	{
 		if (_showIncludedOnly)
@@ -822,5 +1045,18 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		GenerationSettingsChanged?.Invoke(this, EventArgs.Empty);
 	}
 
+	/// <summary>
+	///	Checks whether text contains the current filter using ordinal case-insensitive comparison.
+	/// </summary>
+	/// <param name="text">
+	///	The text to search.
+	/// </param>
+	/// <param name="filter">
+	///	The filter text to find.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when <paramref name="filter"/> appears in <paramref name="text"/>; otherwise
+	///	<see langword="false"/>.
+	/// </returns>
 	private static bool Matches(string text, string filter) => text.Contains(filter, StringComparison.OrdinalIgnoreCase);
 }

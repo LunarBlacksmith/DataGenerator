@@ -7,8 +7,8 @@ using System.Windows.Controls.Primitives;
 namespace DataGenerator.Infrastructure;
 
 /// <summary>
-/// Keeps the selected items of a multi-select control (e.g. a DataGrid with SelectionMode Extended) and a view model
-/// collection the same, in both directions. A new collection starts with nothing selected.
+///	Keeps the selected items of a multi-select control (e.g. a DataGrid with SelectionMode Extended) and a view model
+///	collection the same, in both directions. A new collection starts with nothing selected.
 /// </summary>
 public static class MultiSelection
 {
@@ -26,12 +26,45 @@ public static class MultiSelection
 		new PropertyMetadata(null)
 	);
 
+	/// <summary>
+	///	Gets the view model collection bound to the selector's selected items.
+	/// </summary>
+	/// <param name="element">
+	///	The selector that stores the attached collection.
+	/// </param>
+	/// <returns>
+	///	The bound selected-items collection, or <see langword="null"/> when none is set.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="element"/> is <see langword="null"/>.
+	/// </exception>
 	public static IList? GetSelectedItems(DependencyObject element)
 		=> (IList?)(element ?? throw new ArgumentNullException(nameof(element))).GetValue(SELECTED_ITEMS_PROPERTY);
 
+	/// <summary>
+	///	Sets the view model collection bound to the selector's selected items.
+	/// </summary>
+	/// <param name="element">
+	///	The selector that stores the attached collection.
+	/// </param>
+	/// <param name="value">
+	///	The collection to keep in sync with the selector, or <see langword="null"/> to detach synchronisation.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="element"/> is <see langword="null"/>.
+	/// </exception>
 	public static void SetSelectedItems(DependencyObject element, IList? value)
 		=> (element ?? throw new ArgumentNullException(nameof(element))).SetValue(SELECTED_ITEMS_PROPERTY, value);
 
+	/// <summary>
+	///	Replaces any existing synchroniser when a selector is bound to a new collection.
+	/// </summary>
+	/// <param name="element">
+	///	The element whose attached collection changed.
+	/// </param>
+	/// <param name="e">
+	///	The old and new attached collection values.
+	/// </param>
 	private static void OnSelectedItemsChanged(DependencyObject element, DependencyPropertyChangedEventArgs e)
 	{
 		if (element is not MultiSelector selector)
@@ -54,6 +87,15 @@ public static class MultiSelection
 		private readonly IList         _items;
 		private bool                   _isSynchronizing;
 
+		/// <summary>
+		///	Creates a synchroniser for a selector and a bound collection, starting with no selected items.
+		/// </summary>
+		/// <param name="selector">
+		///	The selector whose selection is mirrored.
+		/// </param>
+		/// <param name="items">
+		///	The collection that receives the selected items and may also drive them.
+		/// </param>
 		public Synchronizer(MultiSelector selector, IList items)
 		{
 			_selector        = selector;
@@ -78,6 +120,9 @@ public static class MultiSelection
 			}
 		}
 
+		/// <summary>
+		///	Stops listening to selector and collection changes.
+		/// </summary>
 		public void Detach()
 		{
 			_selector.SelectionChanged -= OnSelectorSelectionChanged;
@@ -88,6 +133,15 @@ public static class MultiSelection
 			}
 		}
 
+		/// <summary>
+		///	Copies user selection changes from the selector into the bound collection.
+		/// </summary>
+		/// <param name="sender">
+		///	The selector that raised the event.
+		/// </param>
+		/// <param name="e">
+		///	The selection change raised by WPF.
+		/// </param>
 		private void OnSelectorSelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
 			// Selection changes of nested selectors (e.g. a ComboBox in a cell) bubble up to the grid.
@@ -99,6 +153,15 @@ public static class MultiSelection
 			Synchronize(_selector.SelectedItems, _items);
 		}
 
+		/// <summary>
+		///	Copies bound collection changes back into the selector.
+		/// </summary>
+		/// <param name="sender">
+		///	The observable collection that raised the event.
+		/// </param>
+		/// <param name="e">
+		///	The collection change notification.
+		/// </param>
 		private void OnItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
 		{
 			if (!_isSynchronizing)
@@ -108,8 +171,14 @@ public static class MultiSelection
 		}
 
 		/// <summary>
-		/// Makes the target hold the items of the source that are shown by the selector, changing only what differs.
+		///	Makes the target hold the items of the source that are shown by the selector, changing only what differs.
 		/// </summary>
+		/// <param name="source">
+		///	The collection whose items should be mirrored.
+		/// </param>
+		/// <param name="target">
+		///	The collection to update.
+		/// </param>
 		private void Synchronize(IList source, IList target)
 		{
 			_isSynchronizing = true;

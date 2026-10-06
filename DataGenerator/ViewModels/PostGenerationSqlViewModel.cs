@@ -5,8 +5,8 @@ using DataGenerator.Models;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// The stored procedures or SQL that run at the end of a generation, inside its transaction and just before the commit,
-/// and the database they run in.
+///	The stored procedures or SQL that run at the end of a generation, inside its transaction and just before the commit,
+///	and the database they run in.
 /// </summary>
 public sealed class PostGenerationSqlViewModel : ObservableObject
 {
@@ -19,6 +19,15 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 	private IReadOnlyList<PostGenerationStatement> _statements;
 	private string?                                _parseError;
 
+	/// <summary>
+	///	Creates the post-generation SQL editor with no statements and no chosen database.
+	/// </summary>
+	/// <param name="parser">
+	///	The parser used to split and validate the text.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="parser"/> is <see langword="null"/>.
+	/// </exception>
 	public PostGenerationSqlViewModel(IPostGenerationSqlParser parser)
 	{
 		_parser           = parser ?? throw new ArgumentNullException(nameof(parser));
@@ -31,12 +40,12 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// Raised whenever the statements, their validity or the database change.
+	///	Raised whenever the statements, their validity or the database change.
 	/// </summary>
 	public event EventHandler? Changed;
 
 	/// <summary>
-	/// One stored procedure name per line, or SQL that is run as typed.
+	///	One stored procedure name per line, or SQL that is run as typed.
 	/// </summary>
 	public string Text
 	{
@@ -51,7 +60,7 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// The databases of the loaded metadata.
+	///	The databases of the loaded metadata.
 	/// </summary>
 	public IReadOnlyList<string> DatabaseNames
 	{
@@ -60,7 +69,7 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// The database the statements run in, so names without a database (e.g. dbo.RebuildTotals) are found there.
+	///	The database the statements run in, so names without a database (e.g. dbo.RebuildTotals) are found there.
 	/// </summary>
 	public string? DatabaseName
 	{
@@ -78,12 +87,12 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 	public bool HasStatements => _statements.Count > 0;
 
 	/// <summary>
-	/// True when the text cannot be run, or when there are statements but no database to run them in.
+	///	True when the text cannot be run, or when there are statements but no database to run them in.
 	/// </summary>
 	public bool HasProblem => _parseError is not null || (HasStatements && string.IsNullOrEmpty(_databaseName));
 
 	/// <summary>
-	/// Whether a summary or problem is shown under the text (nothing is shown while the text is empty).
+	///	Whether a summary or problem is shown under the text (nothing is shown while the text is empty).
 	/// </summary>
 	public bool HasSummary => HasStatements || _parseError is not null;
 
@@ -126,8 +135,14 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// Replaces the databases that can be chosen, keeping the chosen one when it still exists.
+	///	Replaces the databases that can be chosen, keeping the chosen one when it still exists.
 	/// </summary>
+	/// <param name="databaseNames">
+	///	The database names from the loaded metadata.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="databaseNames"/> is <see langword="null"/>.
+	/// </exception>
 	public void SetDatabases(IEnumerable<string> databaseNames)
 	{
 		ArgumentNullException.ThrowIfNull(databaseNames);
@@ -146,8 +161,11 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// Follows the database of the included tables until the user chooses a database.
+	///	Follows the database of the included tables until the user chooses a database.
 	/// </summary>
+	/// <param name="databaseName">
+	///	The database name suggested by the current table selection; <see langword="null"/> leaves the choice unchanged.
+	/// </param>
 	public void SuggestDatabase(string? databaseName)
 	{
 		if (_isDatabaseChosen || databaseName is null)
@@ -164,17 +182,27 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// The statements to run, or null when there are none. Only call while <see cref="HasProblem"/> is false.
+	///	Creates the statements to run. Only call while <see cref="HasProblem"/> is <see langword="false"/>.
 	/// </summary>
+	/// <returns>
+	///	The script to run, or <see langword="null"/> when there are no statements or the current state has a problem.
+	/// </returns>
 	public PostGenerationScript? CreateScript()
-		=> HasStatements && !HasProblem
-			? new PostGenerationScript
-			{
-				DatabaseName = _databaseName!,
-				Statements   = _statements
-			}
-			: null;
+		=>
+			HasStatements && !HasProblem
+				? new PostGenerationScript
+				{
+					DatabaseName = _databaseName!,
+					Statements   = _statements
+				}
+				: null;
 
+	/// <summary>
+	///	Changes the selected database without marking it as explicitly chosen by the user.
+	/// </summary>
+	/// <param name="databaseName">
+	///	The database name to select, or <see langword="null"/> when none can be selected.
+	/// </param>
 	private void SetDatabaseName(string? databaseName)
 	{
 		if (SetProperty(ref _databaseName, databaseName, nameof(DatabaseName)))
@@ -183,6 +211,9 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Parses the entered text into post-generation statements and refreshes the summary state.
+	/// </summary>
 	private void Parse()
 	{
 		if (_parser.TryParse(_text, out IReadOnlyList<PostGenerationStatement> statements, out string? error))
@@ -200,6 +231,9 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 		OnStateChanged();
 	}
 
+	/// <summary>
+	///	Refreshes the derived problem and summary properties and raises the changed event.
+	/// </summary>
 	private void OnStateChanged()
 	{
 		OnPropertyChanged(nameof(HasProblem));

@@ -234,12 +234,58 @@ public sealed class MainViewModel : ObservableObject
 	public string ErrorDetails  => _error?.Details ?? string.Empty;
 
 	public string GenerationSummary
-		=> Explorer.IncludedTableCount == 0
-			? "Include at least one table in the database explorer."
-			: $"{Explorer.IncludedRowCount:N0} rows for {Explorer.IncludedTableCount:N0} table(s)";
+		=>
+			Explorer.IncludedTableCount == 0
+				? "Include at least one table in the database explorer."
+				: $"{Explorer.IncludedRowCount:N0} rows for {Explorer.IncludedTableCount:N0} table(s)";
 	#endregion PUBLIC
 	#endregion PROPERTIES
 
+	/// <summary>
+	///	Creates the main application view model and initialises defaults, commands and child view-model subscriptions.
+	/// </summary>
+	/// <param name="metadataService">
+	///	The service that loads SQL Server metadata.
+	/// </param>
+	/// <param name="generationService">
+	///	The service that generates SQL scripts or inserts rows directly.
+	/// </param>
+	/// <param name="fileDialogService">
+	///	The file dialog service used to choose an output SQL file.
+	/// </param>
+	/// <param name="dialogService">
+	///	The dialog service used for confirmations.
+	/// </param>
+	/// <param name="shellService">
+	///	The shell service used to open the output folder.
+	/// </param>
+	/// <param name="clipboardService">
+	///	The clipboard service used to copy error details.
+	/// </param>
+	/// <param name="helpService">
+	///	The help service used to show pattern-language help.
+	/// </param>
+	/// <param name="exceptionFormatter">
+	///	The formatter that converts exceptions into error reports.
+	/// </param>
+	/// <param name="foreignTableKeyResolver">
+	///	The resolver that links inferred foreign-table-key columns after metadata is loaded.
+	/// </param>
+	/// <param name="tableCatalog">
+	///	The catalog shared with lookup parsing and lookup builders.
+	/// </param>
+	/// <param name="explorer">
+	///	The database explorer view model.
+	/// </param>
+	/// <param name="theme">
+	///	The theme view model.
+	/// </param>
+	/// <param name="postGeneration">
+	///	The post-generation SQL view model.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any required service or child view model is <see langword="null"/>.
+	/// </exception>
 	public MainViewModel(
 		ISqlMetadataService        metadataService,
 		IDataGenerationService     generationService,
@@ -302,8 +348,14 @@ public sealed class MainViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// Shows an exception in the error panel with what happened, where it happened and the full details.
+	///	Shows an exception in the error panel with what happened, where it happened and the full details.
 	/// </summary>
+	/// <param name="exception">
+	///	The exception to format and display.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="exception"/> is <see langword="null"/>.
+	/// </exception>
 	public void ReportError(Exception exception)
 	{
 		ArgumentNullException.ThrowIfNull(exception);
@@ -311,8 +363,23 @@ public sealed class MainViewModel : ObservableObject
 		ShowError(_exceptionFormatter.Format(exception));
 	}
 
+	/// <summary>
+	///	Checks whether metadata can be loaded with the current connection details.
+	/// </summary>
+	/// <param name="parameter">
+	///	The command parameter, which is not used.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the app is idle and connection details are complete; otherwise <see langword="false"/>.
+	/// </returns>
 	private bool CanLoadMetadata(object? parameter) => !IsBusy && HasCompleteConnectionDetails();
 
+	/// <summary>
+	///	Loads database metadata, replacing existing explorer state after confirmation when current settings would be lost.
+	/// </summary>
+	/// <param name="parameter">
+	///	The command parameter, which is not used.
+	/// </param>
 	private async Task LoadMetadataAsync(object? parameter)
 	{
 		bool discardsSettings = Explorer.IncludedTableCount > 0;
@@ -349,13 +416,20 @@ public sealed class MainViewModel : ObservableObject
 				PostGeneration.SetDatabases(databases.Select(database => database.Name));
 
 				StatusMessage = $"Loaded {Explorer.TotalTableCount:N0} table(s) from {databases.Count:N0} database(s)"
-					+ (inferredKeyCount > 0
-						? $" and linked {inferredKeyCount:N0} FTK column(s) to the tables they refer to."
-						: ".");
+					+ (
+						inferredKeyCount > 0
+							? $" and linked {inferredKeyCount:N0} FTK column(s) to the tables they refer to."
+							: ".");
 			}
 		);
 	}
 
+	/// <summary>
+	///	Prompts for a SQL output file and stores the selected path when one is chosen.
+	/// </summary>
+	/// <param name="parameter">
+	///	The command parameter, which is not used.
+	/// </param>
 	private void BrowseOutputFile(object? parameter)
 	{
 		string? selectedPath = _fileDialogService.SelectSqlOutputFile();
@@ -366,6 +440,12 @@ public sealed class MainViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Opens the output folder, selecting the configured or last generated SQL file when it exists.
+	/// </summary>
+	/// <param name="parameter">
+	///	The command parameter, which is not used.
+	/// </param>
 	private void OpenOutputFolder(object? parameter)
 	{
 		try
@@ -386,6 +466,15 @@ public sealed class MainViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Checks whether generation can start with the current mode, included tables and output settings.
+	/// </summary>
+	/// <param name="parameter">
+	///	The command parameter, which is not used.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when generation is currently allowed; otherwise <see langword="false"/>.
+	/// </returns>
 	private bool CanGenerate(object? parameter)
 	{
 		bool outputIsConfigured =
@@ -399,6 +488,12 @@ public sealed class MainViewModel : ObservableObject
 					&& !PostGeneration.HasProblem;
 	}
 
+	/// <summary>
+	///	Validates the current generation setup and runs SQL file generation or direct insert generation.
+	/// </summary>
+	/// <param name="parameter">
+	///	The command parameter, which is not used.
+	/// </param>
 	private async Task GenerateAsync(object? parameter)
 	{
 		ClearError();
@@ -442,9 +537,11 @@ public sealed class MainViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// Resolves keys taken from tables that are not included, validates every rule and confirms data cleanup.
-	/// Returns the tables to generate, or <see langword="null"/> when generation should not start.
+	///	Resolves keys taken from tables that are not included, validates every rule and confirms data cleanup.
 	/// </summary>
+	/// <returns>
+	///	The tables to generate, or <see langword="null"/> when generation should not start.
+	/// </returns>
 	private IReadOnlyList<TableNodeViewModel>? PrepareIncludedTables()
 	{
 		IReadOnlyList<TableNodeViewModel> includedTables = Explorer.GetIncludedTables();
@@ -504,6 +601,15 @@ public sealed class MainViewModel : ObservableObject
 		return includedTables;
 	}
 
+	/// <summary>
+	///	Switches missing generated foreign keys to existing-key mode for tables that are already included.
+	/// </summary>
+	/// <param name="missingReferences">
+	///	The generated-key references whose target tables are not included.
+	/// </param>
+	/// <param name="includedTables">
+	///	The tables that will still be generated.
+	/// </param>
 	private static void UseExistingKeys(IReadOnlyList<MissingReference> missingReferences, IReadOnlyList<TableNodeViewModel> includedTables)
 	{
 		HashSet<TableNodeViewModel> included = [.. includedTables];
@@ -514,6 +620,15 @@ public sealed class MainViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Builds the confirmation message that explains generated-key references to tables that are not included.
+	/// </summary>
+	/// <param name="missingReferences">
+	///	The missing generated-key references to summarise.
+	/// </param>
+	/// <returns>
+	///	The message shown in the yes, no or cancel dialog.
+	/// </returns>
 	private static string BuildMissingReferenceMessage(IReadOnlyList<MissingReference> missingReferences)
 	{
 		StringBuilder builder = new("Some columns take their values from rows generated for tables that are not included:");
@@ -549,6 +664,12 @@ public sealed class MainViewModel : ObservableObject
 		return builder.ToString();
 	}
 
+	/// <summary>
+	///	Shows validation problems that block generation and reveals the first problem in the explorer.
+	/// </summary>
+	/// <param name="problems">
+	///	The rule problems found by the preflight checks.
+	/// </param>
 	private void ShowRuleProblems(IReadOnlyList<RuleProblem> problems)
 	{
 		StringBuilder summary = new($"{problems.Count:N0} setting(s) must be fixed before generating:");
@@ -576,6 +697,15 @@ public sealed class MainViewModel : ObservableObject
 		StatusMessage = "Fix the column rules marked in red, then generate again.";
 	}
 
+	/// <summary>
+	///	Asks the user to confirm deleting existing rows before direct insert generation.
+	/// </summary>
+	/// <param name="includedTables">
+	///	The tables selected for generation.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when cleanup is confirmed; otherwise <see langword="false"/>.
+	/// </returns>
 	private bool ConfirmCleanup(IReadOnlyList<TableNodeViewModel> includedTables)
 	{
 		IReadOnlyList<TableModel> tablesToClear = GetTablesToClear(includedTables);
@@ -592,6 +722,15 @@ public sealed class MainViewModel : ObservableObject
 		);
 	}
 
+	/// <summary>
+	///	Builds the generation request from the current mode, selected tables, cleanup options and post-generation SQL.
+	/// </summary>
+	/// <param name="includedTables">
+	///	The table nodes to include in the generation request.
+	/// </param>
+	/// <returns>
+	///	The request passed to the generation service.
+	/// </returns>
 	private GenerationRequest CreateRequest(IReadOnlyList<TableNodeViewModel> includedTables)
 		=> new GenerationRequest
 		{
@@ -604,16 +743,41 @@ public sealed class MainViewModel : ObservableObject
 			PostGeneration     = PostGeneration.CreateScript()
 		};
 
+	/// <summary>
+	///	Determines which physical tables should be cleared before direct insert generation.
+	/// </summary>
+	/// <param name="includedTables">
+	///	The tables selected for generation.
+	/// </param>
+	/// <returns>
+	///	The table models to delete from before inserting new rows.
+	/// </returns>
 	private IReadOnlyList<TableModel> GetTablesToClear(IReadOnlyList<TableNodeViewModel> includedTables)
-		=> _cleanupScope == DataCleanupScope.AllTablesInDatabases
-			? [.. includedTables.Select(table => table.Database).Distinct().SelectMany(database => database.Tables).Select(table => table.Model)]
-			: [.. includedTables.Select(table => table.Model)];
+		=>
+			_cleanupScope == DataCleanupScope.AllTablesInDatabases
+				? [.. includedTables.Select(table => table.Database).Distinct().SelectMany(database => database.Tables).Select(table => table.Model)]
+				: [.. includedTables.Select(table => table.Model)];
 
+	/// <summary>
+	///	Checks whether all required SQL Server sign-in fields contain text.
+	/// </summary>
+	/// <returns>
+	///	<see langword="true"/> when server, user and password are present; otherwise <see langword="false"/>.
+	/// </returns>
 	private bool HasCompleteConnectionDetails()
 		=>	!string.IsNullOrWhiteSpace(ServerName)
 			&& !string.IsNullOrWhiteSpace(UserName)
 			&& !string.IsNullOrWhiteSpace(Password);
 
+	/// <summary>
+	///	Builds a SQL Server connection string for the requested database using the current connection options.
+	/// </summary>
+	/// <param name="databaseName">
+	///	The database to connect to.
+	/// </param>
+	/// <returns>
+	///	The connection string used for metadata loading or direct insert generation.
+	/// </returns>
 	private string BuildConnectionString(string databaseName)
 	{
 		SqlConnectionStringBuilder builder = new()
@@ -634,6 +798,12 @@ public sealed class MainViewModel : ObservableObject
 		return builder.ConnectionString;
 	}
 
+	/// <summary>
+	///	Chooses the folder to open for generated SQL files, falling back to the secure generated-data directory.
+	/// </summary>
+	/// <returns>
+	///	An existing folder path suitable for opening in the shell.
+	/// </returns>
 	private string GetOutputFolder()
 	{
 		string outputFilePath = _outputFilePath.Trim();
@@ -658,6 +828,9 @@ public sealed class MainViewModel : ObservableObject
 		return SecurePathService.GetGeneratedDataDirectory();
 	}
 
+	/// <summary>
+	///	Replaces the output path with a new generated default and marks it as the default path.
+	/// </summary>
 	private void SetDefaultOutputFilePath()
 	{
 		_outputFilePath        = CreateDefaultOutputFilePath();
@@ -665,15 +838,36 @@ public sealed class MainViewModel : ObservableObject
 		OnPropertyChanged(nameof(OutputFilePath));
 	}
 
+	/// <summary>
+	///	Creates a default SQL output path in the generated-data directory.
+	/// </summary>
+	/// <returns>
+	///	The full default path for a new generated SQL file.
+	/// </returns>
 	private static string CreateDefaultOutputFilePath()
 		=> Path.Combine(SecurePathService.GetGeneratedDataDirectory(), SecurePathService.CreateDefaultSqlFileName());
 
+	/// <summary>
+	///	Requests cancellation of the current busy operation and updates the status message.
+	/// </summary>
+	/// <param name="parameter">
+	///	The command parameter, which is not used.
+	/// </param>
 	private void Cancel(object? parameter)
 	{
 		_cancellationTokenSource?.Cancel();
 		StatusMessage = "Cancellation requested…";
 	}
 
+	/// <summary>
+	///	Runs an asynchronous operation with busy-state, cancellation and error-report handling.
+	/// </summary>
+	/// <param name="operation">
+	///	The operation to run with the created cancellation token.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="operation"/> is <see langword="null"/>.
+	/// </exception>
 	private async Task RunBusyOperationAsync(Func<CancellationToken, Task> operation)
 	{
 		ArgumentNullException.ThrowIfNull(operation);
@@ -703,12 +897,21 @@ public sealed class MainViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Stores an error report and refreshes the error panel state.
+	/// </summary>
+	/// <param name="report">
+	///	The error report to show.
+	/// </param>
 	private void ShowError(ErrorReport report)
 	{
 		_error = report;
 		OnErrorChanged();
 	}
 
+	/// <summary>
+	///	Clears the current error report when one is shown.
+	/// </summary>
 	private void ClearError()
 	{
 		if (_error is null)
@@ -720,6 +923,9 @@ public sealed class MainViewModel : ObservableObject
 		OnErrorChanged();
 	}
 
+	/// <summary>
+	///	Refreshes error-panel properties and commands after the current error changes.
+	/// </summary>
 	private void OnErrorChanged()
 	{
 		OnPropertyChanged(nameof(HasError));
@@ -730,6 +936,12 @@ public sealed class MainViewModel : ObservableObject
 		DismissErrorCommand.NotifyCanExecuteChanged();
 	}
 
+	/// <summary>
+	///	Copies the current error summary, location and details to the clipboard when an error is shown.
+	/// </summary>
+	/// <param name="parameter">
+	///	The command parameter, which is not used.
+	/// </param>
 	private void CopyError(object? parameter)
 	{
 		if (_error is null)
@@ -751,6 +963,15 @@ public sealed class MainViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Updates generation summary state after included tables or rule settings change.
+	/// </summary>
+	/// <param name="sender">
+	///	The explorer that raised the event.
+	/// </param>
+	/// <param name="e">
+	///	The event data.
+	/// </param>
 	private void OnGenerationSettingsChanged(object? sender, EventArgs e)
 	{
 		TableNodeViewModel? firstIncludedTable = Explorer.AllTables.FirstOrDefault(table => table.IsIncluded);
@@ -760,8 +981,20 @@ public sealed class MainViewModel : ObservableObject
 		GenerateCommand.NotifyCanExecuteChanged();
 	}
 
+	/// <summary>
+	///	Refreshes generation command state after post-generation SQL settings change.
+	/// </summary>
+	/// <param name="sender">
+	///	The post-generation SQL view model that raised the event.
+	/// </param>
+	/// <param name="e">
+	///	The event data.
+	/// </param>
 	private void OnPostGenerationChanged(object? sender, EventArgs e) => GenerateCommand.NotifyCanExecuteChanged();
 
+	/// <summary>
+	///	Refreshes the main commands whose enabled state depends on connection details, output mode or busy state.
+	/// </summary>
 	private void RefreshCommands()
 	{
 		LoadMetadataCommand.NotifyCanExecuteChanged();

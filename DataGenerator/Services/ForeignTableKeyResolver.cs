@@ -4,9 +4,9 @@ using DataGenerator.Models;
 namespace DataGenerator.Services;
 
 /// <summary>
-/// Links "ftk" columns (e.g. tagFTK or tag_ftk) to the key column with the same base name in another table of the
-/// same database. A key column is one whose name ends in "PK" (any casing), in a lower-case letter followed by "TK"
-/// (e.g. tagTK) or in "_tk" (any casing), e.g. tagPK, tagTK, tag_PK or tag_tk.
+///	Links "ftk" columns (e.g. tagFTK or tag_ftk) to the key column with the same base name in another table of the
+///	same database. A key column is one whose name ends in "PK" (any casing), in a lower-case letter followed by "TK"
+///	(e.g. tagTK) or in "_tk" (any casing), e.g. tagPK, tagTK, tag_PK or tag_tk.
 /// </summary>
 public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 {
@@ -17,6 +17,18 @@ public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 
 	private const char NAME_SEPARATOR = '_';
 
+	/// <summary>
+	///	Infers foreign keys for foreign-table-key columns by matching them to key-like columns in other tables.
+	/// </summary>
+	/// <param name="databases">
+	///	The databases whose tables and columns are inspected and updated.
+	/// </param>
+	/// <returns>
+	///	How many inferred foreign keys were added.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="databases"/> is <see langword="null"/>.
+	/// </exception>
 	public int ResolveInferredKeys(IReadOnlyList<DatabaseModel> databases)
 	{
 		ArgumentNullException.ThrowIfNull(databases);
@@ -78,6 +90,15 @@ public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 		return inferredCount;
 	}
 
+	/// <summary>
+	///	Builds a lookup of key-like columns in a database, grouped by their base name.
+	/// </summary>
+	/// <param name="database">
+	///	The database whose tables are scanned for key candidates.
+	/// </param>
+	/// <returns>
+	///	A case-insensitive lookup from key base name to matching table and column candidates.
+	/// </returns>
 	private static Dictionary<string, List<KeyCandidate>> BuildCandidateLookup(DatabaseModel database)
 	{
 		Dictionary<string, List<KeyCandidate>> candidatesByName = new(StringComparer.OrdinalIgnoreCase);
@@ -105,8 +126,20 @@ public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 	}
 
 	/// <summary>
-	/// The name of a key column without its key suffix and separator, e.g. "tag" for tagPK, tagTK, tag_PK and tag_tk.
+	///	Gets the name of a key column without its key suffix and separator.
 	/// </summary>
+	/// <param name="columnName">
+	///	The column name to inspect, such as tagPK, tagTK, tag_PK or tag_tk.
+	/// </param>
+	/// <param name="baseName">
+	///	The key base name when a recognised key suffix is found, or an empty string otherwise.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when a non-empty key base name was found; otherwise <see langword="false"/>.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="columnName"/> is <see langword="null"/>.
+	/// </exception>
 	public static bool TryGetKeyBaseName(string columnName, out string baseName)
 	{
 		ArgumentNullException.ThrowIfNull(columnName);
@@ -132,8 +165,29 @@ public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 		return baseName.Length > 0;
 	}
 
+	/// <summary>
+	///	Removes trailing name separators from a base name.
+	/// </summary>
+	/// <param name="name">
+	///	The name to trim.
+	/// </param>
+	/// <returns>
+	///	The name without trailing separator characters.
+	/// </returns>
 	private static string TrimSeparator(string name) => name.TrimEnd(NAME_SEPARATOR);
 
+	/// <summary>
+	///	Checks whether a table already has a foreign key for a column.
+	/// </summary>
+	/// <param name="table">
+	///	The table whose foreign keys are searched.
+	/// </param>
+	/// <param name="column">
+	///	The column to look for as a parent column.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when an existing foreign key uses the column; otherwise <see langword="false"/>.
+	/// </returns>
 	private static bool HasForeignKey(TableModel table, ColumnModel column)
 		=> table.ForeignKeys.Any(foreignKey => string.Equals(foreignKey.ParentColumn, column.Name, StringComparison.OrdinalIgnoreCase));
 

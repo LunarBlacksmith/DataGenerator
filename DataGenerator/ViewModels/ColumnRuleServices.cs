@@ -5,10 +5,40 @@ using DataGenerator.Services;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// Services and shared settings used by every <see cref="ColumnRuleViewModel"/>.
+///	Services and shared settings used by every <see cref="ColumnRuleViewModel"/>.
 /// </summary>
 public sealed class ColumnRuleServices
 {
+	/// <summary>
+	///	Groups the services and shared settings needed by column rule view models.
+	/// </summary>
+	/// <param name="converter">
+	///	Converts typed values to and from SQL text.
+	/// </param>
+	/// <param name="valueGenerator">
+	///	Generates sample values for random, fixed and sequence modes.
+	/// </param>
+	/// <param name="patternGenerator">
+	///	Validates and generates values from pattern expressions.
+	/// </param>
+	/// <param name="regexProfiles">
+	///	The built-in regular-expression examples offered to the user.
+	/// </param>
+	/// <param name="savedSettings">
+	///	The saved column settings library.
+	/// </param>
+	/// <param name="savedSettingsWindows">
+	///	The window service used to save and manage column settings.
+	/// </param>
+	/// <param name="tableCatalog">
+	///	The loaded tables available to lookup rules.
+	/// </param>
+	/// <param name="lookupParser">
+	///	The parser used to validate and format lookup expressions.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any service or settings argument is <see langword="null"/>.
+	/// </exception>
 	public ColumnRuleServices(
 		ISqlValueConverter          converter,
 		IColumnValueGenerator       valueGenerator,

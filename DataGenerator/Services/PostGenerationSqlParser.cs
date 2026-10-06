@@ -5,10 +5,10 @@ using DataGenerator.Models;
 namespace DataGenerator.Services;
 
 /// <summary>
-/// Turns the post-generation text into statements. A line holding only a name, such as <c>dbo.RebuildTotals</c> or
-/// <c>[Sales].[Refresh Summary]; -- totals</c>, is a stored procedure, unless it continues SQL whose last line did not end in a
-/// semicolon (or was not followed by a blank line). Every other line is SQL; consecutive SQL lines are run together
-/// exactly as typed.
+///	Turns the post-generation text into statements. A line holding only a name, such as <c>dbo.RebuildTotals</c> or
+///	<c>[Sales].[Refresh Summary]; -- totals</c>, is a stored procedure, unless it continues SQL whose last line did not end in a
+///	semicolon (or was not followed by a blank line). Every other line is SQL; consecutive SQL lines are run together
+///	exactly as typed.
 /// </summary>
 public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 {
@@ -16,7 +16,7 @@ public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 	private const string COMMENT_PREFIX      = "--";
 
 	/// <summary>
-	/// Words that can stand alone on a line of SQL and must not be mistaken for a stored procedure.
+	///	Words that can stand alone on a line of SQL and must not be mistaken for a stored procedure.
 	/// </summary>
 	private static readonly HashSet<string> SQL_KEYWORDS = new(
 		[
@@ -28,6 +28,21 @@ public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 		StringComparer.OrdinalIgnoreCase
 	);
 
+	/// <summary>
+	///	Parses the post-generation script into SQL blocks and stored-procedure calls that can run after data generation.
+	/// </summary>
+	/// <param name="text">
+	///	The text typed by the user, or <see langword="null"/> to parse an empty script.
+	/// </param>
+	/// <param name="statements">
+	///	The parsed statements when parsing succeeds; otherwise an empty list.
+	/// </param>
+	/// <param name="error">
+	///	<see langword="null"/> when parsing succeeds; otherwise the user-facing problem found in the script.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the script can be run as statements; otherwise <see langword="false"/>.
+	/// </returns>
 	public bool TryParse(string? text, out IReadOnlyList<PostGenerationStatement> statements, out string? error)
 	{
 		List<PostGenerationStatement> result      = [];
@@ -103,6 +118,18 @@ public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 		return true;
 	}
 
+	/// <summary>
+	///	Detects whether a complete line is a stored-procedure name rather than a SQL statement.
+	/// </summary>
+	/// <param name="line">
+	///	The trimmed non-comment line to inspect.
+	/// </param>
+	/// <param name="procedureName">
+	///	The procedure name when the line names a procedure; otherwise an empty string.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the line is a procedure name; otherwise <see langword="false"/>.
+	/// </returns>
 	private static bool TryGetProcedureName(string line, out string procedureName)
 	{
 		Match match = ProcedureNameRegex().Match(line);
@@ -127,8 +154,20 @@ public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 	}
 
 	/// <summary>
-	/// Adds the collected SQL lines as one statement and clears them. Lines that hold only comments are dropped.
+	///	Adds the collected SQL lines as one statement and clears them. Lines that hold only comments are dropped.
 	/// </summary>
+	/// <param name="statements">
+	///	The statement list to append to when the collected lines contain SQL.
+	/// </param>
+	/// <param name="sqlLines">
+	///	The collected SQL and comment lines; cleared before the method returns.
+	/// </param>
+	/// <param name="firstLine">
+	///	The one-based line number of the first collected line.
+	/// </param>
+	/// <param name="lastLine">
+	///	The one-based line number of the last collected line.
+	/// </param>
 	private static void AddSqlBlock(List<PostGenerationStatement> statements, List<string> sqlLines, int firstLine, int lastLine)
 	{
 		bool hasSql = sqlLines.Any(
@@ -161,18 +200,30 @@ public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 	}
 
 	/// <summary>
-	/// One to four name parts separated by dots, each a regular identifier or a [bracketed] one, optionally followed by a
-	/// semicolon and a -- comment.
+	///	Matches one to four name parts separated by dots, each a regular identifier or a bracketed one, optionally
+	///	followed by a semicolon and a comment.
 	/// </summary>
+	/// <returns>
+	///	The compiled regular expression used to recognise stored-procedure names.
+	/// </returns>
 	[GeneratedRegex(@"^(?<name>(?:\[(?:[^\]]|\]\])+\]|[\p{L}_#][\p{L}\p{Nd}_@#$]*)(?:\s*\.\s*(?:\[(?:[^\]]|\]\])+\]|[\p{L}_#][\p{L}\p{Nd}_@#$]*)){0,3})\s*;?\s*(?:--.*)?$", RegexOptions.CultureInvariant)]
 	private static partial Regex ProcedureNameRegex();
 
+	/// <summary>
+	///	Matches a GO batch separator, which is not allowed because all post-generation SQL runs in one transaction.
+	/// </summary>
+	/// <returns>
+	///	The compiled regular expression used to reject GO batch separators.
+	/// </returns>
 	[GeneratedRegex(@"^GO(?:\s+\d+)?\s*;?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
 	private static partial Regex BatchSeparatorRegex();
 
 	/// <summary>
-	/// A line that ends a statement: its last character, ignoring a trailing -- comment, is a semicolon.
+	///	Matches a line that ends a statement: its last character, ignoring a trailing comment, is a semicolon.
 	/// </summary>
+	/// <returns>
+	///	The compiled regular expression used to detect complete SQL statements.
+	/// </returns>
 	[GeneratedRegex(@";\s*(?:--.*)?$", RegexOptions.CultureInvariant)]
 	private static partial Regex StatementEndRegex();
 }

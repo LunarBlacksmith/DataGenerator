@@ -6,7 +6,7 @@ using DataGenerator.Services.Generation;
 namespace DataGenerator.Services;
 
 /// <summary>
-/// Generates test data either as a transactional SQL script or by inserting it directly into SQL Server.
+///	Generates test data either as a transactional SQL script or by inserting it directly into SQL Server.
 /// </summary>
 public sealed class DataGenerationService : IDataGenerationService
 {
@@ -15,6 +15,21 @@ public sealed class DataGenerationService : IDataGenerationService
 	private readonly IPatternSqlTranslator _patternTranslator;
 	private readonly RowValueBuilder       _rowValueBuilder;
 
+	/// <summary>
+	///	Creates the service that builds generation plans and writes or inserts generated rows.
+	/// </summary>
+	/// <param name="converter">
+	///	The converter used to format generated values for SQL Server.
+	/// </param>
+	/// <param name="columnValueGenerator">
+	///	The generator used to produce individual column values.
+	/// </param>
+	/// <param name="patternTranslator">
+	///	The translator used to turn pattern expressions into SQL fragments when possible.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any dependency is <see langword="null"/>.
+	/// </exception>
 	public DataGenerationService(
 		ISqlValueConverter    converter,
 		IColumnValueGenerator columnValueGenerator,
@@ -27,6 +42,21 @@ public sealed class DataGenerationService : IDataGenerationService
 		_rowValueBuilder      = new RowValueBuilder(columnValueGenerator);
 	}
 
+	/// <summary>
+	///	Generates the requested data either into a SQL script file or directly into SQL Server.
+	/// </summary>
+	/// <param name="request">
+	///	The generation request containing row plans, output mode and destination details.
+	/// </param>
+	/// <param name="progress">
+	///	The optional progress sink that receives user-facing status messages.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	The token used to cancel file writing or database insertion.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="request"/> is <see langword="null"/>.
+	/// </exception>
 	public async Task GenerateAsync(
 		GenerationRequest  request,
 		IProgress<string>? progress,
@@ -73,6 +103,15 @@ public sealed class DataGenerationService : IDataGenerationService
 		generationProgress.Report($"Inserted {blueprint.TotalRowCount:N0} row(s){changedRows} and committed the transaction.");
 	}
 
+	/// <summary>
+	///	Checks that a generation request has enough information for its selected mode.
+	/// </summary>
+	/// <param name="request">
+	///	The request to validate.
+	/// </param>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when no plans are selected, an output file is missing or unsafe, or a direct connection is missing.
+	/// </exception>
 	private static void ValidateRequest(GenerationRequest request)
 	{
 		if (request.Plans.Count == 0)

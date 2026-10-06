@@ -20,12 +20,47 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 	private readonly ITableCatalog         _catalog;
 	private readonly IPatternSqlTranslator _patternTranslator;
 
+	/// <summary>
+	///	Creates a parser that resolves lookup expressions against the loaded table catalog and validates pattern filters.
+	/// </summary>
+	/// <param name="catalog">
+	///	The catalog used to find source tables named by lookup expressions.
+	/// </param>
+	/// <param name="patternTranslator">
+	///	The translator used to validate pattern-based WHERE filters.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="catalog"/> or <paramref name="patternTranslator"/> is <see langword="null"/>.
+	/// </exception>
 	public LookupExpressionParser(ITableCatalog catalog, IPatternSqlTranslator patternTranslator)
 	{
 		_catalog           = catalog ?? throw new ArgumentNullException(nameof(catalog));
 		_patternTranslator = patternTranslator ?? throw new ArgumentNullException(nameof(patternTranslator));
 	}
 
+	/// <summary>
+	///	Parses a lookup expression into the source table, source column, uniqueness, row scope and optional filter used
+	///	when a column copies values from another table.
+	/// </summary>
+	/// <param name="expression">
+	///	The expression typed by the user, such as <c>dbo.Shirt.ShirtID UNIQUE</c>.
+	/// </param>
+	/// <param name="targetTable">
+	///	The table whose column owns the lookup, used to resolve omitted database and schema names.
+	/// </param>
+	/// <param name="lookup">
+	///	The parsed lookup when parsing succeeds; otherwise <see langword="null"/>.
+	/// </param>
+	/// <param name="errorMessage">
+	///	An empty string when parsing succeeds; otherwise the user-facing reason the expression is invalid.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when <paramref name="expression"/> names a valid source column and options; otherwise
+	///	<see langword="false"/>.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="targetTable"/> is <see langword="null"/>.
+	/// </exception>
 	public bool TryParse(string expression, TableModel targetTable, out ColumnLookup? lookup, out string errorMessage)
 	{
 		ArgumentNullException.ThrowIfNull(targetTable);
@@ -64,6 +99,21 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 		return true;
 	}
 
+	/// <summary>
+	///	Builds the editable lookup expression for a saved lookup, quoting names only when SQL-style brackets are needed.
+	/// </summary>
+	/// <param name="lookup">
+	///	The lookup to write as text.
+	/// </param>
+	/// <param name="targetTable">
+	///	The table that owns the lookup, used to omit the database name when it matches the source table.
+	/// </param>
+	/// <returns>
+	///	The lookup expression shown to the user.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="lookup"/> or <paramref name="targetTable"/> is <see langword="null"/>.
+	/// </exception>
 	public string Format(ColumnLookup lookup, TableModel targetTable)
 	{
 		ArgumentNullException.ThrowIfNull(lookup);
@@ -113,8 +163,24 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 	}
 
 	/// <summary>
-	/// Reads database.schema.table.column, where each part may be in [brackets] (]] stands for ]).
+	///	Reads database, schema, table and column name parts, where each part may be bracketed and escaped with doubled
+	///	closing brackets.
 	/// </summary>
+	/// <param name="text">
+	///	The complete expression being parsed.
+	/// </param>
+	/// <param name="position">
+	///	The current character index; advanced to the first character after the name.
+	/// </param>
+	/// <param name="parts">
+	///	The two to four name parts read from <paramref name="text"/> when successful; otherwise an empty or partial list.
+	/// </param>
+	/// <param name="errorMessage">
+	///	An empty string when the name is valid; otherwise the user-facing reason it is invalid.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when a valid table and column name was read; otherwise <see langword="false"/>.
+	/// </returns>
 	private static bool TryReadNameParts(string text, ref int position, out List<string> parts, out string errorMessage)
 	{
 		parts = [];
@@ -188,6 +254,27 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 		return true;
 	}
 
+	/// <summary>
+	///	Resolves the parsed name parts to a source table and column in the loaded catalog.
+	/// </summary>
+	/// <param name="parts">
+	///	The parsed name parts, ending with table and column names and optionally starting with database and schema names.
+	/// </param>
+	/// <param name="targetTable">
+	///	The table that owns the lookup, used to prefer its database when the expression omits a database name.
+	/// </param>
+	/// <param name="sourceTable">
+	///	The resolved source table when successful; otherwise <see langword="null"/>.
+	/// </param>
+	/// <param name="sourceColumn">
+	///	The resolved source column when successful; otherwise <see langword="null"/>.
+	/// </param>
+	/// <param name="errorMessage">
+	///	An empty string when resolution succeeds; otherwise the user-facing reason the table or column cannot be found.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the table and column were found; otherwise <see langword="false"/>.
+	/// </returns>
 	private bool TryResolveColumn(
 		List<string>     parts,
 		TableModel       targetTable,
@@ -221,9 +308,30 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 		return true;
 	}
 
+	/// <summary>
+	///	Finds the table named by a lookup expression and reports ambiguity or missing metadata in user-facing text.
+	/// </summary>
+	/// <param name="databaseName">
+	///	The optional database name supplied in the expression, or <see langword="null"/> to infer one.
+	/// </param>
+	/// <param name="schemaName">
+	///	The optional schema name supplied in the expression, or <see langword="null"/> to infer one.
+	/// </param>
+	/// <param name="tableName">
+	///	The table name supplied in the expression.
+	/// </param>
+	/// <param name="targetTable">
+	///	The table that owns the lookup, included in the search even if it has not yet been added to the catalog.
+	/// </param>
+	/// <param name="errorMessage">
+	///	An empty string when exactly one table is found; otherwise the user-facing reason no table is returned.
+	/// </param>
+	/// <returns>
+	///	The matching table when exactly one can be chosen; otherwise <see langword="null"/>.
+	/// </returns>
 	/// <remarks>
-	/// Without a database name the database of the target table is searched first; without a schema name, dbo wins when
-	/// several schemas have a table with the name.
+	///	Without a database name the database of the target table is searched first; without a schema name, dbo wins when
+	///	several schemas have a table with the name.
 	/// </remarks>
 	private TableModel? FindTable(string? databaseName, string? schemaName, string tableName, TableModel targetTable, out string errorMessage)
 	{
@@ -282,6 +390,33 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 		}
 	}
 
+	/// <summary>
+	///	Reads the optional UNIQUE, FROM and WHERE clauses that follow the source column name.
+	/// </summary>
+	/// <param name="text">
+	///	The complete lookup expression being parsed.
+	/// </param>
+	/// <param name="position">
+	///	The current character index; advanced as option words are consumed.
+	/// </param>
+	/// <param name="isUnique">
+	///	Whether the UNIQUE option was present.
+	/// </param>
+	/// <param name="scope">
+	///	The parsed row scope, or <see cref="RowScope.Any"/> when no FROM clause is present.
+	/// </param>
+	/// <param name="filterKind">
+	///	The parsed filter kind, or <see cref="LookupFilterKind.None"/> when no WHERE clause is present.
+	/// </param>
+	/// <param name="filterText">
+	///	The parsed filter text, or an empty string when no WHERE clause is present.
+	/// </param>
+	/// <param name="errorMessage">
+	///	An empty string when the options are valid; otherwise the user-facing reason parsing failed.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when all remaining options are valid; otherwise <see langword="false"/>.
+	/// </returns>
 	private static bool TryReadOptions(
 		string               text,
 		ref int              position,
@@ -341,13 +476,32 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 				return TryReadFilter(text[position..], out filterKind, out filterText, out errorMessage);
 			}
 
-			errorMessage = word.Length == 0
-				? $"Unexpected '{text[position]}' after the column name. Expected UNIQUE, FROM or WHERE."
-				: $"Unexpected '{word}' after the column name. Expected UNIQUE, FROM ANY|GENERATED|EXISTING or WHERE (each at most once, WHERE last).";
+			errorMessage =
+				word.Length == 0
+					? $"Unexpected '{text[position]}' after the column name. Expected UNIQUE, FROM or WHERE."
+					: $"Unexpected '{word}' after the column name. Expected UNIQUE, FROM ANY|GENERATED|EXISTING or WHERE (each at most once, WHERE last).";
 			return false;
 		}
 	}
 
+	/// <summary>
+	///	Reads the body of a WHERE clause and decides whether it is a pattern, regular expression or SQL condition.
+	/// </summary>
+	/// <param name="text">
+	///	The text after the WHERE keyword.
+	/// </param>
+	/// <param name="filterKind">
+	///	The detected filter kind when a non-empty filter is found.
+	/// </param>
+	/// <param name="filterText">
+	///	The filter text without the optional REGEX or SQL prefix.
+	/// </param>
+	/// <param name="errorMessage">
+	///	An empty string when a filter was read; otherwise the user-facing reason the filter is incomplete.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when a non-empty filter was read; otherwise <see langword="false"/>.
+	/// </returns>
 	private static bool TryReadFilter(string text, out LookupFilterKind filterKind, out string filterText, out string errorMessage)
 	{
 		int    position = 0;
@@ -380,6 +534,21 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 		return true;
 	}
 
+	/// <summary>
+	///	Validates pattern and regular-expression filters before the lookup is accepted.
+	/// </summary>
+	/// <param name="filterKind">
+	///	The kind of filter to validate.
+	/// </param>
+	/// <param name="filterText">
+	///	The filter text supplied by the user.
+	/// </param>
+	/// <param name="errorMessage">
+	///	An empty string when the filter is valid; otherwise the user-facing validation problem.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the filter is valid or does not need validation; otherwise <see langword="false"/>.
+	/// </returns>
 	private bool TryValidateFilter(LookupFilterKind filterKind, string filterText, out string errorMessage)
 	{
 		switch (filterKind)
@@ -415,6 +584,15 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 		return true;
 	}
 
+	/// <summary>
+	///	Moves the parsing position past any whitespace characters.
+	/// </summary>
+	/// <param name="text">
+	///	The text being parsed.
+	/// </param>
+	/// <param name="position">
+	///	The current character index; advanced to the next non-whitespace character or the end of the text.
+	/// </param>
 	private static void SkipWhiteSpace(string text, ref int position)
 	{
 		while (position < text.Length && char.IsWhiteSpace(text[position]))
@@ -423,6 +601,18 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 		}
 	}
 
+	/// <summary>
+	///	Reads a keyword-style word made from letters, digits and underscores.
+	/// </summary>
+	/// <param name="text">
+	///	The text being parsed.
+	/// </param>
+	/// <param name="position">
+	///	The current character index; advanced to the first character after the word.
+	/// </param>
+	/// <returns>
+	///	The word read from <paramref name="text"/>, or an empty string when no word starts at <paramref name="position"/>.
+	/// </returns>
 	private static string ReadWord(string text, ref int position)
 	{
 		int start = position;
@@ -435,6 +625,15 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 		return text[start..position];
 	}
 
+	/// <summary>
+	///	Quotes a SQL identifier only when it is not a plain word that can be written without brackets.
+	/// </summary>
+	/// <param name="name">
+	///	The identifier to quote.
+	/// </param>
+	/// <returns>
+	///	The original identifier for plain names; otherwise a bracketed identifier with closing brackets escaped.
+	/// </returns>
 	private static string QuoteName(string name)
 	{
 		bool isPlain = name.Length > 0

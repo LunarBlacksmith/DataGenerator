@@ -4,8 +4,8 @@ using DataGenerator.Services;
 namespace DataGenerator.Infrastructure;
 
 /// <summary>
-/// What the pattern suggestion pop-up shows: the matching functions and keywords, the selected one and whether the
-/// next Tab inserts it.
+///	What the pattern suggestion pop-up shows: the matching functions and keywords, the selected one and whether the
+///	next Tab inserts it.
 /// </summary>
 public sealed class PatternCompletionSession : ObservableObject
 {
@@ -33,7 +33,7 @@ public sealed class PatternCompletionSession : ObservableObject
 	}
 
 	/// <summary>
-	/// Whether Tab has been pressed once, so the next Tab inserts the selected suggestion.
+	///	Whether Tab has been pressed once, so the next Tab inserts the selected suggestion.
 	/// </summary>
 	public bool IsArmed
 	{
@@ -52,8 +52,14 @@ public sealed class PatternCompletionSession : ObservableObject
 	public PatternCompletionResult? Result => _result;
 
 	/// <summary>
-	/// Shows the suggestions of <paramref name="result"/>, keeping the selected one when it still matches.
+	///	Shows the suggestions of <paramref name="result"/>, keeping the selected one when it still matches.
 	/// </summary>
+	/// <param name="result">
+	///	The latest completions returned by the provider.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="result"/> is <see langword="null"/>.
+	/// </exception>
 	public void Update(PatternCompletionResult result)
 	{
 		ArgumentNullException.ThrowIfNull(result);
@@ -84,6 +90,12 @@ public sealed class PatternCompletionSession : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Moves the selected suggestion by an offset, wrapping around at either end.
+	/// </summary>
+	/// <param name="offset">
+	///	The number of positions to move; negative values move upwards.
+	/// </param>
 	public void MoveSelection(int offset)
 	{
 		if (Items.Count == 0)
@@ -97,6 +109,9 @@ public sealed class PatternCompletionSession : ObservableObject
 		SelectedEntry = Items[((index % Items.Count) + Items.Count) % Items.Count];
 	}
 
+	/// <summary>
+	///	Clears the current completion result and disarms Tab acceptance.
+	/// </summary>
 	public void Clear()
 	{
 		_result = null;

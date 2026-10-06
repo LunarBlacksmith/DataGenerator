@@ -4,18 +4,44 @@ using DataGenerator.Models;
 namespace DataGenerator.Services.Generation;
 
 /// <summary>
-/// Produces the values of one inserted row from a <see cref="RowSetBlueprint"/>.
+///	Produces the values of one inserted row from a <see cref="RowSetBlueprint"/>.
 /// </summary>
 internal sealed class RowValueBuilder
 {
 	private readonly IColumnValueGenerator _valueGenerator;
 
+	/// <summary>
+	///	Creates the service that produces row values from row-set blueprints.
+	/// </summary>
+	/// <param name="valueGenerator">
+	///	The generator used for rule-based column values.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="valueGenerator"/> is <see langword="null"/>.
+	/// </exception>
 	public RowValueBuilder(IColumnValueGenerator valueGenerator)
 	{
 		_valueGenerator = valueGenerator ?? throw new ArgumentNullException(nameof(valueGenerator));
 	}
 
-	/// <param name="rowIndex">Zero-based index of the row within its row set.</param>
+	/// <summary>
+	///	Builds the values of one inserted or staged update row in dependency order.
+	/// </summary>
+	/// <param name="table">
+	///	The table blueprint that owns the row set.
+	/// </param>
+	/// <param name="rowSet">
+	///	The row-set blueprint that describes value sources.
+	/// </param>
+	/// <param name="rowIndex">
+	///	Zero-based index of the row within its row set.
+	/// </param>
+	/// <returns>
+	///	The generated values in source-column order.
+	/// </returns>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when a value cannot be generated for the row.
+	/// </exception>
 	public object?[] Build(TableBlueprint table, RowSetBlueprint rowSet, long rowIndex)
 	{
 		object?[]      values           = new object?[rowSet.Sources.Count];
@@ -53,8 +79,17 @@ internal sealed class RowValueBuilder
 	}
 
 	/// <summary>
-	/// Returns the captured key values of a row (null entries are produced by SQL Server).
+	///	Returns the captured key values of a row (null entries are produced by SQL Server).
 	/// </summary>
+	/// <param name="rowSet">
+	///	The row set whose key-source indexes identify captured values.
+	/// </param>
+	/// <param name="values">
+	///	The generated values for the row.
+	/// </param>
+	/// <returns>
+	///	The key values in generated-key table column order.
+	/// </returns>
 	public static object?[] GetKeyValues(RowSetBlueprint rowSet, object?[] values)
 	{
 		object?[] keyValues = new object?[rowSet.KeySourceIndexes.Count];
@@ -69,6 +104,15 @@ internal sealed class RowValueBuilder
 		return keyValues;
 	}
 
+	/// <summary>
+	///	Creates a choice array initialised to show that no shared group has chosen a row yet.
+	/// </summary>
+	/// <param name="count">
+	///	The number of shared choice groups.
+	/// </param>
+	/// <returns>
+	///	An array of <c>-1</c> values, one per group.
+	/// </returns>
 	private static int[] CreateChoices(int count)
 	{
 		int[] choices = new int[count];
@@ -78,6 +122,21 @@ internal sealed class RowValueBuilder
 		return choices;
 	}
 
+	/// <summary>
+	///	Gets a value from a generated parent key table, choosing one parent row per shared group.
+	/// </summary>
+	/// <param name="source">
+	///	The generated-key value source.
+	/// </param>
+	/// <param name="choices">
+	///	The chosen parent row indexes for generated-key groups.
+	/// </param>
+	/// <returns>
+	///	The generated key value for the source column.
+	/// </returns>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when no rows were generated for the referenced table.
+	/// </exception>
 	private static object? GetGeneratedKey(ValueSource source, int[] choices)
 	{
 		GeneratedKeyTable keys = source.KeyTable!;
@@ -96,7 +155,7 @@ internal sealed class RowValueBuilder
 	}
 
 	/// <summary>
-	/// The values generated so far for the row, for rules that use the value of another column.
+	///	The values generated so far for the row, for rules that use the value of another column.
 	/// </summary>
 	private sealed class RowValueLookup : IRowValueLookup
 	{
@@ -104,6 +163,15 @@ internal sealed class RowValueBuilder
 		private readonly object?[]       _values;
 		private readonly bool[]          _isGenerated;
 
+		/// <summary>
+		///	Creates a lookup over values generated so far for one row.
+		/// </summary>
+		/// <param name="rowSet">
+		///	The row set whose source indexes map column names to value indexes.
+		/// </param>
+		/// <param name="values">
+		///	The values being generated for the row.
+		/// </param>
 		public RowValueLookup(RowSetBlueprint rowSet, object?[] values)
 		{
 			_rowSet      = rowSet;
@@ -111,16 +179,47 @@ internal sealed class RowValueBuilder
 			_isGenerated = new bool[values.Length];
 		}
 
+		/// <summary>
+		///	Marks a source value as available to later column rules.
+		/// </summary>
+		/// <param name="index">
+		///	The source index that has just been generated.
+		/// </param>
 		public void MarkGenerated(int index) => _isGenerated[index] = true;
 
+		/// <summary>
+		///	Gets the value already generated for another column in the same row.
+		/// </summary>
+		/// <param name="columnName">
+		///	The column name requested by the rule.
+		/// </param>
+		/// <returns>
+		///	The generated column value, which may be <see langword="null"/>.
+		/// </returns>
+		/// <exception cref="InvalidOperationException">
+		///	Thrown when the column is not inserted by the row set or has not been generated yet.
+		/// </exception>
 		public object? GetValue(string columnName)
-			=> !_rowSet.SourceIndexesByName.TryGetValue(columnName, out int index)
+			=>
+				!_rowSet.SourceIndexesByName.TryGetValue(columnName, out int index)
 					? throw new InvalidOperationException($"Column [{columnName}] is not inserted by this row set, so its value cannot be used.")
 					: _isGenerated[index]
 						? _values[index]
 						: throw new InvalidOperationException($"The value of column [{columnName}] has not been generated yet.");
 	}
 
+	/// <summary>
+	///	Gets a value from an existing-key pool, choosing one referenced row per shared group.
+	/// </summary>
+	/// <param name="source">
+	///	The existing-key value source.
+	/// </param>
+	/// <param name="choices">
+	///	The chosen sampled row indexes for existing-key groups.
+	/// </param>
+	/// <returns>
+	///	The existing key value for the source column.
+	/// </returns>
 	private static object? GetExistingKey(ValueSource source, int[] choices)
 	{
 		ExistingKeyPool pool = source.Pool!;

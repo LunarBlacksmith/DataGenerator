@@ -8,7 +8,7 @@ using DataGenerator.Services;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// How one column is generated within one row set. Only the settings of the selected mode are shown and validated.
+///	How one column is generated within one row set. Only the settings of the selected mode are shown and validated.
 /// </summary>
 public sealed class ColumnRuleViewModel : ValidatableObservableObject
 {
@@ -43,7 +43,31 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	private bool                              _isSavedSettingsMenuOpen;
 	private IReadOnlyList<SavedSettingOption> _savedSettingOptions = [];
 
-	/// <param name="isUpdate">Whether the rule belongs to an update set, which changes rows that are already in the table.</param>
+	/// <summary>
+	///	Creates the generation rule view model for one table column and initialises its available modes, defaults and commands.
+	/// </summary>
+	/// <param name="table">
+	///	The table that owns the column.
+	/// </param>
+	/// <param name="column">
+	///	The column whose values this rule generates or updates.
+	/// </param>
+	/// <param name="reference">
+	///	The foreign-key relationship for the column, or <see langword="null"/> when it is not a linked key.
+	/// </param>
+	/// <param name="isSelfReference">
+	///	Whether <paramref name="reference"/> points back to the same table.
+	/// </param>
+	/// <param name="isUpdate">
+	///	Whether the rule belongs to an update set, which changes rows that are already in the table.
+	/// </param>
+	/// <param name="services">
+	///	The services used to convert values, parse lookups, generate samples and access saved settings.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="table"/>, <paramref name="column"/> or <paramref name="services"/> is
+	///	<see langword="null"/>.
+	/// </exception>
 	public ColumnRuleViewModel(
 		TableModel         table,
 		ColumnModel        column,
@@ -76,14 +100,14 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Raised when the mode or a setting of the mode changes, so that columns which use this column's value can update.
+	///	Raised when the mode or a setting of the mode changes, so that columns which use this column's value can update.
 	/// </summary>
 	public event EventHandler? SettingsChanged;
 
 	public TableModel Table { get; }
 
 	/// <summary>
-	/// The schema.table the column belongs to.
+	///	The schema.table the column belongs to.
 	/// </summary>
 	public string TableName { get; }
 
@@ -113,7 +137,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	public bool   CanChangeMode     => AvailableModes.Count > 1;
 
 	/// <summary>
-	/// "FTK" badge for naming-convention keys that are not also declared foreign keys.
+	///	"FTK" badge for naming-convention keys that are not also declared foreign keys.
 	/// </summary>
 	public bool ShowForeignTableKeyBadge => Column.IsForeignTableKey && !Column.IsForeignKey;
 
@@ -195,7 +219,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	public IReadOnlyList<RegexProfile> RegexProfiles => _services.RegexProfiles;
 
 	/// <summary>
-	/// The preset whose pattern is the current <see cref="RegexPattern"/>, if any. Choosing a preset copies its pattern.
+	///	The preset whose pattern is the current <see cref="RegexPattern"/>, if any. Choosing a preset copies its pattern.
 	/// </summary>
 	public RegexProfile? SelectedRegexProfile
 	{
@@ -222,7 +246,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// The column of the same row whose value the Copy of column mode copies.
+	///	The column of the same row whose value the Copy of column mode copies.
 	/// </summary>
 	public string SourceColumnName
 	{
@@ -237,7 +261,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// The column whose values the Value from table mode uses, e.g. dbo.Shirt.ShirtID UNIQUE FROM GENERATED.
+	///	The column whose values the Value from table mode uses, e.g. dbo.Shirt.ShirtID UNIQUE FROM GENERATED.
 	/// </summary>
 	public string LookupExpression
 	{
@@ -252,7 +276,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// The pop-up that builds <see cref="LookupExpression"/> from lists of the loaded tables and columns.
+	///	The pop-up that builds <see cref="LookupExpression"/> from lists of the loaded tables and columns.
 	/// </summary>
 	public LookupBuilderViewModel? LookupBuilder
 	{
@@ -283,18 +307,18 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// The other columns of the row set, which the Copy of column mode can copy.
+	///	The other columns of the row set, which the Copy of column mode can copy.
 	/// </summary>
 	public IReadOnlyList<string> CopySourceOptions
 		=> [.. _siblingRules.Where(rule => !ReferenceEquals(rule, this)).Select(rule => rule.Name)];
 
 	/// <summary>
-	/// Whether the column uses the value of another column (Copy of column, or COL(...) in a pattern).
+	///	Whether the column uses the value of another column (Copy of column, or COL(...) in a pattern).
 	/// </summary>
 	public bool UsesOtherColumns => _services.ValueGenerator.GetReferencedColumns(CreateRule()).Count > 0;
 
 	/// <summary>
-	/// Explanation shown instead of an editor for modes that have no settings.
+	///	Explanation shown instead of an editor for modes that have no settings.
 	/// </summary>
 	public string ModeSummary => _generationMode switch
 	{
@@ -308,8 +332,8 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	};
 
 	/// <summary>
-	/// A few sample values (or the problem that prevents generating them). Built on first use because previews of
-	/// random values are only needed for rows that are on screen.
+	///	A few sample values (or the problem that prevents generating them). Built on first use because previews of
+	///	random values are only needed for rows that are on screen.
 	/// </summary>
 	public string PreviewText => _previewText ??= BuildPreview();
 
@@ -323,7 +347,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// The validation message of the selected mode, or <see langword="null"/> when its settings are valid.
+	///	The validation message of the selected mode, or <see langword="null"/> when its settings are valid.
 	/// </summary>
 	public string? ValidationError => _generationMode switch
 	{
@@ -337,7 +361,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	};
 
 	/// <summary>
-	/// The saved setting the column uses, or <see langword="null"/> once its settings were changed by hand.
+	///	The saved setting the column uses, or <see langword="null"/> once its settings were changed by hand.
 	/// </summary>
 	public string? AppliedSettingName
 	{
@@ -355,12 +379,13 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	public bool HasAppliedSetting => _appliedSettingName is not null;
 
 	public string SavedSettingsButtonHint
-		=> _appliedSettingName is null
-			? "Saved settings: save this column's mode and settings for reuse, or apply settings you or a colleague saved earlier."
-			: $"Uses the saved setting '{_appliedSettingName}'. Click to save, apply or manage saved settings.";
+		=>
+			_appliedSettingName is null
+				? "Saved settings: save this column's mode and settings for reuse, or apply settings you or a colleague saved earlier."
+				: $"Uses the saved setting '{_appliedSettingName}'. Click to save, apply or manage saved settings.";
 
 	/// <summary>
-	/// Whether the saved-settings menu is open. Opening it lists the saved settings that suit the column.
+	///	Whether the saved-settings menu is open. Opening it lists the saved settings that suit the column.
 	/// </summary>
 	public bool IsSavedSettingsMenuOpen
 	{
@@ -377,7 +402,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// The saved settings whose mode the column supports; the ones saved for a column with the same name come first.
+	///	The saved settings whose mode the column supports; the ones saved for a column with the same name come first.
 	/// </summary>
 	public IReadOnlyList<SavedSettingOption> SavedSettingOptions
 	{
@@ -393,10 +418,19 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 	public bool HasSavedSettingOptions => _savedSettingOptions.Count > 0;
 
+	/// <summary>
+	///	Checks whether the column can use the requested generation mode.
+	/// </summary>
+	/// <param name="mode">
+	///	The mode to look for in <see cref="AvailableModes"/>.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the mode is available for this column; otherwise <see langword="false"/>.
+	/// </returns>
 	public bool IsModeAvailable(ValueGenerationMode mode) => AvailableModes.Any(option => option.Mode == mode);
 
 	/// <summary>
-	/// Whether the current mode has a value in the Settings cell that can be typed (fixed value, sequence, pattern, …).
+	///	Whether the current mode has a value in the Settings cell that can be typed (fixed value, sequence, pattern, …).
 	/// </summary>
 	public bool HasEditableSetting => _generationMode is ValueGenerationMode.Fixed
 		or ValueGenerationMode.Sequence
@@ -406,8 +440,14 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		or ValueGenerationMode.TableLookup;
 
 	/// <summary>
-	/// Why the column cannot use a mode, or <see langword="null"/> when it can.
+	///	Why the column cannot use a mode, or <see langword="null"/> when it can.
 	/// </summary>
+	/// <param name="mode">
+	///	The mode the user tried to choose.
+	/// </param>
+	/// <returns>
+	///	The problem text, or <see langword="null"/> when the mode is available.
+	/// </returns>
 	public string? DescribeModeProblem(ValueGenerationMode mode)
 	{
 		if (mode == _generationMode || IsModeAvailable(mode))
@@ -417,9 +457,10 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 		if (!CanChangeMode)
 		{
-			return _isUpdate && !IsGeneratedOnlyBySqlServer()
-				? "it is part of the primary key, which update sets do not change"
-				: $"{DescribeDatabaseGeneratedValue()}, so its mode cannot be changed";
+			return
+				_isUpdate && !IsGeneratedOnlyBySqlServer()
+					? "it is part of the primary key, which update sets do not change"
+					: $"{DescribeDatabaseGeneratedValue()}, so its mode cannot be changed";
 		}
 
 		return mode switch
@@ -429,20 +470,31 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			                                        => "update sets cannot ask SQL Server for a value",
 			ValueGenerationMode.Null                => "it does not allow NULL",
 			ValueGenerationMode.ExistingForeignKey  => "it does not refer to another table",
-			ValueGenerationMode.GeneratedForeignKey => Reference is null
-				? "it does not refer to another table"
-				: "it refers to its own table, whose keys are not known while its rows are inserted",
+			ValueGenerationMode.GeneratedForeignKey =>
+				Reference is null
+					? "it does not refer to another table"
+					: "it refers to its own table, whose keys are not known while its rows are inserted",
 			ValueGenerationMode.DatabaseGenerated   => "it has no default value for SQL Server to use",
 			_                                       => $"{GenerationModeOption.Get(mode).DisplayName} does not suit {SqlTypeDisplay}"
 		};
 	}
 
 	/// <summary>
-	/// Puts a value into the Settings cell of the current mode: the fixed value, the regular expression, the pattern, the
-	/// copied column, the table column (Value from table), or the sequence start (optionally followed by a semicolon and
-	/// the step, e.g. 100; 5). When the
-	/// value is not valid for the column, its settings are put back as they were and the problem is returned.
+	///	Tries to put a typed value into the setting field for the current mode.
+	///	Invalid values restore the previous settings and return the validation problem.
 	/// </summary>
+	/// <param name="value">
+	///	The text to apply to the current mode's editable setting.
+	/// </param>
+	/// <param name="problem">
+	///	The validation problem when the value cannot be used, or <see langword="null"/> when it is accepted.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the value was applied; otherwise <see langword="false"/>.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="value"/> is <see langword="null"/>.
+	/// </exception>
 	public bool TrySetSettingValue(string value, out string? problem)
 	{
 		ArgumentNullException.ThrowIfNull(value);
@@ -516,9 +568,21 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Uses the mode and settings saved for this column in a set configuration. When the column cannot use the mode, or
-	/// the saved value is not valid for it, its settings are put back as they were and the problem is returned.
+	///	Uses the mode and settings saved for this column in a set configuration. When the column cannot use the mode, or
+	///	the saved value is not valid for it, its settings are put back as they were and the problem is returned.
 	/// </summary>
+	/// <param name="setting">
+	///	The configured mode and values to apply.
+	/// </param>
+	/// <param name="problem">
+	///	The mode or validation problem, or <see langword="null"/> when the setting was applied.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the setting was applied; otherwise <see langword="false"/>.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="setting"/> is <see langword="null"/>.
+	/// </exception>
 	public bool TryApplyConfiguredSetting(SavedColumnSetting setting, out string? problem)
 	{
 		ArgumentNullException.ThrowIfNull(setting);
@@ -549,8 +613,17 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Uses the mode and settings of a saved setting. Settings of other modes keep their values.
+	///	Uses the mode and settings of a saved setting. Settings of other modes keep their values.
 	/// </summary>
+	/// <param name="setting">
+	///	The saved setting to apply.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the mode is available and the setting was applied; otherwise <see langword="false"/>.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="setting"/> is <see langword="null"/>.
+	/// </exception>
 	public bool ApplySetting(SavedColumnSetting setting)
 	{
 		ArgumentNullException.ThrowIfNull(setting);
@@ -616,9 +689,11 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Uses the saved setting that applies automatically to this column, if there is one.
-	/// Returns whether the column changed.
+	///	Uses the saved setting that applies automatically to this column, if there is one.
 	/// </summary>
+	/// <returns>
+	///	<see langword="true"/> when the column changed; otherwise <see langword="false"/>.
+	/// </returns>
 	public bool ApplyAutomaticSetting()
 	{
 		SavedColumnSetting? setting = _services.SavedSettings.FindAutomatic(TableName, Column.Name);
@@ -632,7 +707,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Updates <see cref="AppliedSettingName"/> after saved settings were renamed, changed or deleted.
+	///	Updates <see cref="AppliedSettingName"/> after saved settings were renamed, changed or deleted.
 	/// </summary>
 	public void RefreshAppliedSetting()
 	{
@@ -643,8 +718,11 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// The mode and the settings of that mode, ready to be saved.
+	///	The mode and the settings of that mode, ready to be saved.
 	/// </summary>
+	/// <returns>
+	///	A saved-setting snapshot for the current mode.
+	/// </returns>
 	public SavedColumnSetting CaptureSetting() => new SavedColumnSetting
 	{
 		GenerationMode    = _generationMode,
@@ -659,6 +737,15 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		ColumnName        = Column.Name
 	};
 
+	/// <summary>
+	///	Copies all mode values and the selected mode from another column rule.
+	/// </summary>
+	/// <param name="source">
+	///	The rule whose values should be copied.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="source"/> is <see langword="null"/>.
+	/// </exception>
 	public void CopyFrom(ColumnRuleViewModel source)
 	{
 		ArgumentNullException.ThrowIfNull(source);
@@ -675,6 +762,9 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		AppliedSettingName = source.AppliedSettingName;
 	}
 
+	/// <summary>
+	///	Clears the cached preview and notifies the preview properties so the UI rebuilds it on demand.
+	/// </summary>
 	public void RefreshPreview()
 	{
 		_previewText = null;
@@ -682,6 +772,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		OnPropertyChanged(nameof(PreviewIsError));
 	}
 
+	/// <summary>
+	///	Builds the model used by validation, previews and generation from the current view-model values.
+	/// </summary>
+	/// <returns>
+	///	A column rule containing the selected mode, converted sequence numbers and lookup information.
+	/// </returns>
 	public ColumnRule CreateRule() => new ColumnRule
 	{
 		Column            = Column,
@@ -698,9 +794,18 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	};
 
 	/// <summary>
-	/// Gives the rule access to the other columns of its row set, for the Copy of column mode and COL(...) in patterns,
-	/// and to its row count, for LAST(...) in patterns.
+	///	Gives the rule access to the other columns of its row set, for the Copy of column mode and COL(...) in patterns,
+	///	and to its row count, for LAST(...) in patterns.
 	/// </summary>
+	/// <param name="rowSetRules">
+	///	All column rules in the same row set.
+	/// </param>
+	/// <param name="rowCountProvider">
+	///	A function that returns the current row count for the row set.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="rowSetRules"/> or <paramref name="rowCountProvider"/> is <see langword="null"/>.
+	/// </exception>
 	public void AttachToRowSet(IReadOnlyList<ColumnRuleViewModel> rowSetRules, Func<int> rowCountProvider)
 	{
 		_siblingRules     = rowSetRules ?? throw new ArgumentNullException(nameof(rowSetRules));
@@ -711,7 +816,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Validates the rule again after another column of the row set changed, when the rule uses other columns.
+	///	Validates the rule again after another column of the row set changed, when the rule uses other columns.
 	/// </summary>
 	public void RefreshAfterOtherColumnChanged()
 	{
@@ -722,12 +827,18 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Refreshes validation-dependent UI state after the error collection changes.
+	/// </summary>
 	protected override void OnErrorsChanged()
 	{
 		OnPropertyChanged(nameof(ValidationError));
 		SaveSettingsCommand.NotifyCanExecuteChanged();
 	}
 
+	/// <summary>
+	///	Revalidates the rule, clears manual saved-setting attribution and raises <see cref="SettingsChanged"/>.
+	/// </summary>
 	private void OnSettingsChanged()
 	{
 		if (!_isApplyingSetting)
@@ -740,6 +851,9 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		SettingsChanged?.Invoke(this, EventArgs.Empty);
 	}
 
+	/// <summary>
+	///	Loads saved settings whose modes are valid for the column, placing settings saved for the same column first.
+	/// </summary>
 	private void LoadSavedSettingOptions()
 		=> SavedSettingOptions =
 		[
@@ -749,6 +863,9 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 				.OrderByDescending(option => option.IsSavedForColumn)
 		];
 
+	/// <summary>
+	///	Opens the save dialog for the current setting and records the saved setting name when the dialog succeeds.
+	/// </summary>
 	private void SaveSettings()
 	{
 		IsSavedSettingsMenuOpen = false;
@@ -761,6 +878,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Applies the saved setting represented by a saved-setting menu item.
+	/// </summary>
+	/// <param name="parameter">
+	///	The command parameter, expected to be a <see cref="SavedSettingOption"/>.
+	/// </param>
 	private void ApplySavedSetting(object? parameter)
 	{
 		IsSavedSettingsMenuOpen = false;
@@ -771,6 +894,9 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Closes the menu and opens the saved-settings manager window.
+	/// </summary>
 	private void ManageSavedSettings()
 	{
 		IsSavedSettingsMenuOpen = false;
@@ -778,8 +904,11 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// The mode and the values of every mode, so they can all be put back after a change that is undone.
+	///	The mode and the values of every mode, so they can all be put back after a change that is undone.
 	/// </summary>
+	/// <returns>
+	///	A saved-setting snapshot containing every editable value.
+	/// </returns>
 	private SavedColumnSetting CaptureAllValues() => new SavedColumnSetting
 	{
 		GenerationMode    = _generationMode,
@@ -794,6 +923,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		ColumnName        = Column.Name
 	};
 
+	/// <summary>
+	///	Restores all mode values from a snapshot without clearing the applied saved-setting name during the restore.
+	/// </summary>
+	/// <param name="values">
+	///	The snapshot previously created by <see cref="CaptureAllValues"/>.
+	/// </param>
 	private void RestoreAllValues(SavedColumnSetting values)
 	{
 		_isApplyingSetting = true;
@@ -815,6 +950,9 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Runs the validator for the selected mode and updates the visible validation message.
+	/// </summary>
 	private void Validate()
 	{
 		SetError(nameof(FixedValue), _generationMode == ValueGenerationMode.Fixed ? ValidateFixedValue() : null);
@@ -827,6 +965,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		OnPropertyChanged(nameof(ValidationError));
 	}
 
+	/// <summary>
+	///	Parses and validates the Value from table expression, updating the cached lookup when it is valid.
+	/// </summary>
+	/// <returns>
+	///	The validation problem, or <see langword="null"/> when the lookup can be used.
+	/// </returns>
 	private string? ValidateLookupExpression()
 	{
 		_lookup = null;
@@ -854,6 +998,9 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		return null;
 	}
 
+	/// <summary>
+	///	Copies the lookup-builder expression into the rule and closes the builder when the builder can be applied.
+	/// </summary>
 	private void ApplyLookupBuilder()
 	{
 		if (_lookupBuilder?.CanApply != true)
@@ -865,14 +1012,24 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		IsLookupBuilderOpen = false;
 	}
 
+	/// <summary>
+	///	Validates the Copy of column source and checks that a sample can be generated from it.
+	/// </summary>
+	/// <returns>
+	///	The validation problem, or <see langword="null"/> when the source column is usable.
+	/// </returns>
 	private string? ValidateSourceColumn()
-		=> string.IsNullOrWhiteSpace(_sourceColumnName)
-			? "Choose the column whose value is copied."
-			: ValidateReferencedColumns() ?? TryGenerateSample(0, out _);
+		=>
+			string.IsNullOrWhiteSpace(_sourceColumnName)
+				? "Choose the column whose value is copied."
+				: ValidateReferencedColumns() ?? TryGenerateSample(0, out _);
 
 	/// <summary>
-	/// Checks that the columns used by Copy of column or COL(...) exist in the row set and have a value before the row is inserted.
+	///	Checks that the columns used by Copy of column or COL(...) exist in the row set and have a value before the row is inserted.
 	/// </summary>
+	/// <returns>
+	///	The validation problem, or <see langword="null"/> when all referenced columns are usable.
+	/// </returns>
 	private string? ValidateReferencedColumns()
 	{
 		foreach (string columnName in _services.ValueGenerator.GetReferencedColumns(CreateRule()))
@@ -881,9 +1038,10 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 			if (referencedRule is null)
 			{
-				return _siblingRules.Count == 0
-					? null
-					: $"The table has no column named [{columnName}].";
+				return
+					_siblingRules.Count == 0
+						? null
+						: $"The table has no column named [{columnName}].";
 			}
 
 			if (ReferenceEquals(referencedRule, this))
@@ -907,9 +1065,24 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		return null;
 	}
 
+	/// <summary>
+	///	Finds another rule in the row set by column name.
+	/// </summary>
+	/// <param name="columnName">
+	///	The column name to match, ignoring surrounding white space and case.
+	/// </param>
+	/// <returns>
+	///	The matching sibling rule, or <see langword="null"/> when no rule matches.
+	/// </returns>
 	private ColumnRuleViewModel? FindSiblingRule(string columnName)
 		=> _siblingRules.FirstOrDefault(rule => string.Equals(rule.Name, columnName.Trim(), StringComparison.OrdinalIgnoreCase));
 
+	/// <summary>
+	///	Validates that the fixed value can be converted to the column's SQL type.
+	/// </summary>
+	/// <returns>
+	///	The validation problem, or <see langword="null"/> when the fixed value is valid.
+	/// </returns>
 	private string? ValidateFixedValue()
 	{
 		if (_fixedValue.Length == 0 && Category != SqlTypeCategory.Text)
@@ -920,6 +1093,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		return _services.Converter.TryConvertText(Column, _fixedValue, out _, out string errorMessage) ? null : errorMessage;
 	}
 
+	/// <summary>
+	///	Validates the first value of a sequence and checks that it fits the column type.
+	/// </summary>
+	/// <returns>
+	///	The validation problem, or <see langword="null"/> when the sequence start is valid.
+	/// </returns>
 	private string? ValidateSequenceStart()
 	{
 		if (!TryParseNumber(_sequenceStartText, out decimal start))
@@ -938,6 +1117,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Validates the amount added to each generated sequence value.
+	/// </summary>
+	/// <returns>
+	///	The validation problem, or <see langword="null"/> when the sequence step is valid.
+	/// </returns>
 	private string? ValidateSequenceStep()
 	{
 		if (!TryParseNumber(_sequenceStepText, out decimal step))
@@ -945,16 +1130,30 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			return "Enter the amount added for each row, e.g. 1. Use a negative number to count down.";
 		}
 
-		return Category == SqlTypeCategory.Integer && step != decimal.Truncate(step)
-			? $"{SqlTypeDisplay} only stores whole numbers, so the step must be a whole number."
-			: null;
+		return
+			Category == SqlTypeCategory.Integer && step != decimal.Truncate(step)
+				? $"{SqlTypeDisplay} only stores whole numbers, so the step must be a whole number."
+				: null;
 	}
 
+	/// <summary>
+	///	Validates that a regular expression is present and can produce a sample value.
+	/// </summary>
+	/// <returns>
+	///	The validation problem, or <see langword="null"/> when the regular expression is valid.
+	/// </returns>
 	private string? ValidateRegexPattern()
-		=> string.IsNullOrWhiteSpace(_regexPattern)
-			? "Enter a regular expression, e.g. [A-Z]{3}-[0-9]{4}, or pick a preset."
-			: TryGenerateSample(0, out _);
+		=>
+			string.IsNullOrWhiteSpace(_regexPattern)
+				? "Enter a regular expression, e.g. [A-Z]{3}-[0-9]{4}, or pick a preset."
+				: TryGenerateSample(0, out _);
 
+	/// <summary>
+	///	Validates the pattern expression, its referenced columns and a sample value.
+	/// </summary>
+	/// <returns>
+	///	The validation problem, or <see langword="null"/> when the pattern is valid.
+	/// </returns>
 	private string? ValidatePatternExpression()
 	{
 		if (string.IsNullOrWhiteSpace(_patternExpression))
@@ -962,11 +1161,18 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			return "Enter a pattern, e.g. P FOLLOWED BY SEQ(1-1000) FOLLOWED BY (X OR Y). Click ? for the pattern language reference.";
 		}
 
-		return _services.PatternGenerator.TryValidate(_patternExpression, out string errorMessage)
-			? ValidateReferencedColumns() ?? TryGenerateSample(0, out _)
-			: errorMessage;
+		return
+			_services.PatternGenerator.TryValidate(_patternExpression, out string errorMessage)
+				? ValidateReferencedColumns() ?? TryGenerateSample(0, out _)
+				: errorMessage;
 	}
 
+	/// <summary>
+	///	Builds the preview text for the selected mode, or records that the preview text is a validation problem.
+	/// </summary>
+	/// <returns>
+	///	The preview text shown for the column rule.
+	/// </returns>
 	private string BuildPreview()
 	{
 		_previewIsError = false;
@@ -1032,9 +1238,21 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		return string.Join(PREVIEW_SEPARATOR, samples);
 	}
 
+	/// <summary>
+	///	Tries to generate one preview sample value for the requested row.
+	/// </summary>
+	/// <param name="rowIndex">
+	///	The zero-based preview row index to generate.
+	/// </param>
+	/// <param name="value">
+	///	The generated value, <see langword="null"/> when conversion failed, or a sample-unavailable marker.
+	/// </param>
+	/// <returns>
+	///	The conversion problem, or <see langword="null"/> when generation succeeded or is only unavailable for preview.
+	/// </returns>
 	/// <remarks>
-	/// When the value depends on a column whose value is only known while generating (e.g. a key), there is no error and
-	/// <paramref name="value"/> is the <see cref="SampleUnavailableException"/> that explains why.
+	///	When the value depends on a column whose value is only known while generating, there is no error and
+	///	<paramref name="value"/> is the <see cref="SampleUnavailableException"/> that explains why.
 	/// </remarks>
 	private string? TryGenerateSample(long rowIndex, out object? value)
 	{
@@ -1056,8 +1274,17 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// A sample value for the preview; the values of other columns are generated with their own rules for the same row.
+	///	A sample value for the preview; the values of other columns are generated with their own rules for the same row.
 	/// </summary>
+	/// <param name="rowIndex">
+	///	The zero-based preview row index to generate.
+	/// </param>
+	/// <returns>
+	///	The generated sample value, or <see langword="null"/> when the rule generates a database null.
+	/// </returns>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when sample generation detects a loop through this column.
+	/// </exception>
 	private object? GenerateSample(long rowIndex)
 	{
 		if (_isGeneratingSample)
@@ -1084,6 +1311,21 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Generates this column's preview value when another column needs it while generating its own sample.
+	/// </summary>
+	/// <param name="rowIndex">
+	///	The zero-based preview row index to generate.
+	/// </param>
+	/// <returns>
+	///	The generated sample value, or <see langword="null"/> when the rule generates a database null.
+	/// </returns>
+	/// <exception cref="SampleUnavailableException">
+	///	Thrown when this value is only known during real generation.
+	/// </exception>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when this column currently has no valid value to supply.
+	/// </exception>
 	private object? GenerateSampleForOtherColumn(long rowIndex)
 	{
 		switch (_generationMode)
@@ -1120,6 +1362,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Builds the list of generation modes that suit the column metadata and whether the row set is an update set.
+	/// </summary>
+	/// <returns>
+	///	The available generation modes in display order.
+	/// </returns>
 	private List<GenerationModeOption> CreateAvailableModes()
 	{
 		if (_isUpdate && (IsGeneratedOnlyBySqlServer() || Column.IsPrimaryKey))
@@ -1186,6 +1434,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		return [.. GenerationModeOption.ALL_OPTIONS.Where(option => modes.Contains(option.Mode))];
 	}
 
+	/// <summary>
+	///	Chooses the safest initial generation mode for the column metadata.
+	/// </summary>
+	/// <returns>
+	///	The default generation mode for the column.
+	/// </returns>
 	private ValueGenerationMode GetDefaultMode()
 	{
 		if (_isUpdate)
@@ -1200,9 +1454,10 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 		if (Reference is not null)
 		{
-			return IsSelfReference
-				? Column.IsNullable ? ValueGenerationMode.Null : ValueGenerationMode.ExistingForeignKey
-				: ValueGenerationMode.GeneratedForeignKey;
+			return
+				IsSelfReference
+					? Column.IsNullable ? ValueGenerationMode.Null : ValueGenerationMode.ExistingForeignKey
+					: ValueGenerationMode.GeneratedForeignKey;
 		}
 
 		if (Column.IsPrimaryKey && Category is SqlTypeCategory.Integer or SqlTypeCategory.Decimal or SqlTypeCategory.Text)
@@ -1215,14 +1470,27 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			return ValueGenerationMode.Random;
 		}
 
-		return Column.IsNullable
-			? ValueGenerationMode.Null
-			: Column.HasDefault ? ValueGenerationMode.DatabaseGenerated : ValueGenerationMode.Fixed;
+		return
+			Column.IsNullable
+				? ValueGenerationMode.Null
+				: Column.HasDefault ? ValueGenerationMode.DatabaseGenerated : ValueGenerationMode.Fixed;
 	}
 
+	/// <summary>
+	///	Checks whether SQL Server must provide the column value because the application cannot generate it directly.
+	/// </summary>
+	/// <returns>
+	///	<see langword="true"/> for identity, computed and rowversion columns; otherwise <see langword="false"/>.
+	/// </returns>
 	private bool IsGeneratedOnlyBySqlServer()
 		=> Column.IsIdentity || Column.IsComputed || Category == SqlTypeCategory.RowVersion;
 
+	/// <summary>
+	///	Describes which SQL Server mechanism supplies the column value.
+	/// </summary>
+	/// <returns>
+	///	The user-facing explanation for database-generated values.
+	/// </returns>
 	private string DescribeDatabaseGeneratedValue()
 	{
 		if (Column.IsIdentity)
@@ -1235,11 +1503,18 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			return "Computed column: SQL Server calculates the value";
 		}
 
-		return Category == SqlTypeCategory.RowVersion
-			? "rowversion column: SQL Server stamps every row"
-			: "SQL Server uses the column's default value";
+		return
+			Category == SqlTypeCategory.RowVersion
+				? "rowversion column: SQL Server stamps every row"
+				: "SQL Server uses the column's default value";
 	}
 
+	/// <summary>
+	///	Describes why an update set leaves the column unchanged.
+	/// </summary>
+	/// <returns>
+	///	The user-facing explanation for keeping the current value.
+	/// </returns>
 	private string DescribeKeptValue()
 	{
 		if (!_isUpdate || CanChangeMode)
@@ -1247,16 +1522,30 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			return "Not changed: the row keeps its current value";
 		}
 
-		return IsGeneratedOnlyBySqlServer()
-			? $"Not changed ({DescribeDatabaseGeneratedValue()})"
-			: "Not changed: update sets find their rows by the primary key, so it keeps its value";
+		return
+			IsGeneratedOnlyBySqlServer()
+				? $"Not changed ({DescribeDatabaseGeneratedValue()})"
+				: "Not changed: update sets find their rows by the primary key, so it keeps its value";
 	}
 
+	/// <summary>
+	///	Formats the table used by the foreign-key generation modes.
+	/// </summary>
+	/// <returns>
+	///	The referenced schema and table, or a generic referenced-table label when there is no reference.
+	/// </returns>
 	private string DescribeReferencedTable()
-		=> Reference is null
-			? "the referenced table"
-			: $"{Reference.ReferencedSchema}.{Reference.ReferencedTable}";
+		=>
+			Reference is null
+				? "the referenced table"
+				: $"{Reference.ReferencedSchema}.{Reference.ReferencedTable}";
 
+	/// <summary>
+	///	Builds the multi-line tooltip description for the column metadata and key relationships.
+	/// </summary>
+	/// <returns>
+	///	The column description shown in the UI.
+	/// </returns>
 	private string BuildColumnDescription()
 	{
 		StringBuilder builder = new();
@@ -1299,6 +1588,15 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		return builder.ToString();
 	}
 
+	/// <summary>
+	///	Maps a SQL type category to the text editor kind used for fixed values.
+	/// </summary>
+	/// <param name="category">
+	///	The SQL type category of the column.
+	/// </param>
+	/// <returns>
+	///	The text input kind that best matches the category.
+	/// </returns>
 	private static TextInputKind GetFixedValueInputKind(SqlTypeCategory category) => category switch
 	{
 		SqlTypeCategory.Integer  => TextInputKind.Integer,
@@ -1311,9 +1609,30 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		_                        => TextInputKind.Any
 	};
 
+	/// <summary>
+	///	Tries to parse a decimal number using invariant-culture number and exponent formats.
+	/// </summary>
+	/// <param name="text">
+	///	The text to parse after trimming.
+	/// </param>
+	/// <param name="value">
+	///	The parsed decimal value, or zero when parsing fails.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the text is a valid number; otherwise <see langword="false"/>.
+	/// </returns>
 	private static bool TryParseNumber(string text, out decimal value)
 		=> decimal.TryParse(text.Trim(), NumberStyles.Number | NumberStyles.AllowExponent, INVARIANT, out value);
 
+	/// <summary>
+	///	Checks whether an exception represents invalid user-entered data rather than an unexpected failure.
+	/// </summary>
+	/// <param name="exception">
+	///	The exception raised while converting or generating a value.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the exception can be shown as a validation problem; otherwise <see langword="false"/>.
+	/// </returns>
 	private static bool IsValueProblem(Exception exception)
 		=> exception is FormatException
 			or OverflowException
@@ -1322,19 +1641,43 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			or NotSupportedException;
 
 	/// <summary>
-	/// The values of the other columns of one preview row.
+	///	The values of the other columns of one preview row.
 	/// </summary>
 	private sealed class SampleRowValues : IRowValueLookup
 	{
 		private readonly ColumnRuleViewModel _owner;
 		private readonly long                _rowIndex;
 
+		/// <summary>
+		///	Creates a preview lookup for the other column values in one row.
+		/// </summary>
+		/// <param name="owner">
+		///	The rule whose preview is being generated.
+		/// </param>
+		/// <param name="rowIndex">
+		///	The zero-based preview row index being generated.
+		/// </param>
 		public SampleRowValues(ColumnRuleViewModel owner, long rowIndex)
 		{
 			_owner    = owner;
 			_rowIndex = rowIndex;
 		}
 
+		/// <summary>
+		///	Gets the preview value of another column in the same row.
+		/// </summary>
+		/// <param name="columnName">
+		///	The name of the column whose value is needed.
+		/// </param>
+		/// <returns>
+		///	The other column's preview value, or <see langword="null"/> when that rule generates a database null.
+		/// </returns>
+		/// <exception cref="SampleUnavailableException">
+		///	Thrown when the preview cannot know the requested value yet.
+		/// </exception>
+		/// <exception cref="InvalidOperationException">
+		///	Thrown when the requested column does not exist in the row set.
+		/// </exception>
 		public object? GetValue(string columnName)
 		{
 			ColumnRuleViewModel? rule = _owner.FindSiblingRule(columnName);
@@ -1342,9 +1685,10 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			if (rule is null)
 			{
 				// Rules that are not in a row set (yet) cannot see other columns, so only the shape of the value is shown.
-				return _owner._siblingRules.Count == 0
-					? throw new SampleUnavailableException($"(uses [{columnName}])")
-					: throw new InvalidOperationException($"The table has no column named [{columnName}].");
+				return
+					_owner._siblingRules.Count == 0
+						? throw new SampleUnavailableException($"(uses [{columnName}])")
+						: throw new InvalidOperationException($"The table has no column named [{columnName}].");
 			}
 
 			return rule.GenerateSampleForOtherColumn(_rowIndex);
@@ -1352,10 +1696,16 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// The preview cannot show a value because it depends on a value that is only known while generating.
+	///	The preview cannot show a value because it depends on a value that is only known while generating.
 	/// </summary>
 	private sealed class SampleUnavailableException : InvalidOperationException
 	{
+		/// <summary>
+		///	Creates an exception that explains why a preview sample is unavailable but generation can continue.
+		/// </summary>
+		/// <param name="message">
+		///	The explanation shown in the preview.
+		/// </param>
 		public SampleUnavailableException(string message)
 			: base(message)
 		{

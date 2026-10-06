@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Threading;
+using DataGenerator.Infrastructure;
 using DataGenerator.Interfaces;
 using DataGenerator.Models;
 using DataGenerator.Services;
@@ -9,7 +10,7 @@ using DataGenerator.ViewModels;
 namespace DataGenerator;
 
 /// <summary>
-/// Composition root: creates the services and view models, shows the main window and reports unhandled errors.
+///	Composition root: creates the services and view models, shows the main window and reports unhandled errors.
 /// </summary>
 public partial class App : Application
 {
@@ -22,11 +23,24 @@ public partial class App : Application
 
 	private MainViewModel? _mainViewModel;
 
+	/// <summary>
+	///	Composes the application: creates the services and view models, loads the saved settings, set configurations and
+	///	preferences, applies the saved theme and shows the main window.
+	///	<para>
+	///		Problems reading the saved settings or set configurations files do not stop the application; they are shown
+	///		once the main window is open.
+	///	</para>
+	/// </summary>
+	/// <param name="e">
+	///	The start-up arguments, passed on to the base class.
+	/// </param>
 	protected override void OnStartup(StartupEventArgs e)
 	{
 		base.OnStartup(e);
 
 		DispatcherUnhandledException += OnDispatcherUnhandledException;
+
+		HintPresentation.Register();
 
 		ISqlValueConverter          converter            = new SqlValueConverter();
 		IRegexValueGenerator        regexGenerator       = new RegexValueGenerator();
@@ -108,8 +122,15 @@ public partial class App : Application
 	}
 
 	/// <summary>
-	/// Shows errors that nothing else handled in the error panel, or in a message box before the main window exists, and keeps the application running.
+	///	Shows errors that nothing else handled in the error panel, or in a message box before the main window exists, and
+	///	keeps the application running.
 	/// </summary>
+	/// <param name="sender">
+	///	The dispatcher that raised the event.
+	/// </param>
+	/// <param name="e">
+	///	The unhandled exception; it is marked as handled so the application does not close.
+	/// </param>
 	private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
 	{
 		if (_mainViewModel is not null)

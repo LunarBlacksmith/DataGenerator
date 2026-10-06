@@ -3,9 +3,9 @@
 namespace DataGenerator.Services.Patterns;
 
 /// <summary>
-/// Recursive-descent parser for the pattern language. Precedence from lowest to highest:
-/// concatenation (FOLLOWED BY, THEN, +), choice (OR, |), repetition (REPEATED n [TO m] [TIMES]),
-/// comparison (GREATER THAN, LESS THAN, AT LEAST, AT MOST) and primaries.
+///	Recursive-descent parser for the pattern language. Precedence from lowest to highest:
+///	concatenation (FOLLOWED BY, THEN, +), choice (OR, |), repetition (REPEATED n [TO m] [TIMES]),
+///	comparison (GREATER THAN, LESS THAN, AT LEAST, AT MOST) and primaries.
 /// </summary>
 internal sealed class PatternParser
 {
@@ -16,6 +16,12 @@ internal sealed class PatternParser
 	private readonly IReadOnlyList<PatternToken> _tokens;
 	private int                                  _index;
 
+	/// <summary>
+	///	Creates a parser over an already-tokenized pattern expression.
+	/// </summary>
+	/// <param name="tokens">
+	///	The tokens to parse, including the final End token.
+	/// </param>
 	private PatternParser(IReadOnlyList<PatternToken> tokens)
 	{
 		_tokens = tokens;
@@ -25,6 +31,18 @@ internal sealed class PatternParser
 
 	private PatternToken Next => _tokens[Math.Min(_index + 1, _tokens.Count - 1)];
 
+	/// <summary>
+	///	Parses a full pattern expression into an executable pattern tree.
+	/// </summary>
+	/// <param name="expression">
+	///	The pattern expression to parse.
+	/// </param>
+	/// <returns>
+	///	The root node of the parsed pattern tree.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the expression is empty, tokenization fails, or the parsed tokens do not form a valid pattern.
+	/// </exception>
 	public static PatternNode Parse(string expression)
 	{
 		if (string.IsNullOrWhiteSpace(expression))
@@ -39,6 +57,9 @@ internal sealed class PatternParser
 		return node;
 	}
 
+	/// <summary>
+	///	Moves to the next token, stopping at the final End token.
+	/// </summary>
 	private void Advance()
 	{
 		if (_index < _tokens.Count - 1)
@@ -47,6 +68,15 @@ internal sealed class PatternParser
 		}
 	}
 
+	/// <summary>
+	///	Parses the lowest-precedence concatenation operators: FOLLOWED BY, THEN and +.
+	/// </summary>
+	/// <returns>
+	///	A single child node when no concatenation is present, otherwise a concatenation node.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when a child expression is invalid or FOLLOWED is not followed by BY.
+	/// </exception>
 	private PatternNode ParseConcatenation()
 	{
 		List<PatternNode> parts = [ParseChoice()];
@@ -59,6 +89,15 @@ internal sealed class PatternParser
 		return parts.Count == 1 ? parts[0] : new ConcatenationPatternNode(parts);
 	}
 
+	/// <summary>
+	///	Consumes a concatenation operator if the current token begins one.
+	/// </summary>
+	/// <returns>
+	///	<see langword="true"/> when an operator was consumed; otherwise <see langword="false"/>.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when FOLLOWED is not immediately followed by BY.
+	/// </exception>
 	private bool TryConsumeConcatenationOperator()
 	{
 		if (Current.Kind == PatternTokenKind.Plus || Current.IsKeyword("THEN"))
@@ -83,6 +122,15 @@ internal sealed class PatternParser
 		return true;
 	}
 
+	/// <summary>
+	///	Parses OR and | choice operators.
+	/// </summary>
+	/// <returns>
+	///	A single child node when no choice is present, otherwise a choice node.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when an option expression is invalid.
+	/// </exception>
 	private PatternNode ParseChoice()
 	{
 		List<PatternNode> options = [ParseRepetition()];
@@ -96,6 +144,15 @@ internal sealed class PatternParser
 		return options.Count == 1 ? options[0] : new ChoicePatternNode(options);
 	}
 
+	/// <summary>
+	///	Parses REPEATED counts, count ranges and the optional TIMES keyword.
+	/// </summary>
+	/// <returns>
+	///	The parsed child node, wrapped in repetition nodes for each REPEATED clause.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when a repetition count is invalid or a count range is reversed.
+	/// </exception>
 	private PatternNode ParseRepetition()
 	{
 		PatternNode node = ParseComparison();
@@ -133,9 +190,14 @@ internal sealed class PatternParser
 	}
 
 	/// <summary>
-	/// A primary followed by any number of GREATER THAN n, LESS THAN n, AT LEAST n or AT MOST n, which narrow the range
-	/// of NUM(...) or RAND_NUM(...), e.g. NUM(digits=5) GREATER THAN 50.
+	///	Parses a primary followed by comparisons that narrow NUM or RAND_NUM ranges.
 	/// </summary>
+	/// <returns>
+	///	The primary node, or a random-number node narrowed by the parsed comparisons.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when a comparison follows a non-number function or leaves no possible values.
+	/// </exception>
 	private PatternNode ParseComparison()
 	{
 		PatternNode node = ParsePrimary();
@@ -174,6 +236,18 @@ internal sealed class PatternParser
 		return node;
 	}
 
+	/// <summary>
+	///	Reads a comparison keyword pair such as GREATER THAN or AT MOST.
+	/// </summary>
+	/// <param name="comparison">
+	///	The normalised comparison text when one is found; otherwise an empty string.
+	/// </param>
+	/// <param name="position">
+	///	The one-based token position where the comparison started.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when a comparison was consumed; otherwise <see langword="false"/>.
+	/// </returns>
 	private bool TryReadComparison(out string comparison, out int position)
 	{
 		position = Current.Position;
@@ -197,6 +271,18 @@ internal sealed class PatternParser
 		return true;
 	}
 
+	/// <summary>
+	///	Reads the signed whole-number bound that follows a comparison.
+	/// </summary>
+	/// <param name="comparison">
+	///	The comparison text used in error messages.
+	/// </param>
+	/// <returns>
+	///	The signed comparison bound.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the bound is missing, fractional, too large or not a number.
+	/// </exception>
 	private long ReadComparisonBound(string comparison)
 	{
 		bool isNegative = false;
@@ -220,6 +306,15 @@ internal sealed class PatternParser
 		return isNegative ? -bound : bound;
 	}
 
+	/// <summary>
+	///	Reads a REPEATED count within the allowed range.
+	/// </summary>
+	/// <returns>
+	///	The parsed repetition count.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the current token is not a whole number from 0 to the maximum repetition count.
+	/// </exception>
 	private int ReadRepetitionCount()
 	{
 		PatternToken token = Current;
@@ -238,6 +333,15 @@ internal sealed class PatternParser
 		return count;
 	}
 
+	/// <summary>
+	///	Parses a primary pattern part: grouped expression, quoted text, number, bare word or function call.
+	/// </summary>
+	/// <returns>
+	///	The node represented by the primary expression.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the primary is missing, a reserved word is used as text, or a group is malformed.
+	/// </exception>
 	private PatternNode ParsePrimary()
 	{
 		PatternToken token = Current;
@@ -282,9 +386,10 @@ internal sealed class PatternParser
 				}
 
 				Advance();
-				return Current.Kind == PatternTokenKind.LeftParenthesis
-					? ParseFunction(token)
-					: new LiteralPatternNode(token.Text);
+				return
+					Current.Kind == PatternTokenKind.LeftParenthesis
+						? ParseFunction(token)
+						: new LiteralPatternNode(token.Text);
 			}
 
 			case PatternTokenKind.End:
@@ -302,6 +407,18 @@ internal sealed class PatternParser
 		}
 	}
 
+	/// <summary>
+	///	Parses a function call after its name has been consumed.
+	/// </summary>
+	/// <param name="nameToken">
+	///	The token containing the function name and source position.
+	/// </param>
+	/// <returns>
+	///	The node created for the parsed function call.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when arguments are malformed, the closing parenthesis is missing, or the function is invalid.
+	/// </exception>
 	private PatternNode ParseFunction(PatternToken nameToken)
 	{
 		List<PatternArgument> arguments = [];
@@ -339,6 +456,18 @@ internal sealed class PatternParser
 		return PatternFunctionFactory.Create(nameToken, arguments);
 	}
 
+	/// <summary>
+	///	Parses one function argument, including optional name, nested function expression, text, number or range.
+	/// </summary>
+	/// <param name="nameToken">
+	///	The function name token used in argument error messages.
+	/// </param>
+	/// <returns>
+	///	The parsed argument with its source position and value kind.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the argument value is missing or cannot be parsed.
+	/// </exception>
 	private PatternArgument ParseArgument(PatternToken nameToken)
 	{
 		string? name     = null;
@@ -410,6 +539,18 @@ internal sealed class PatternParser
 		};
 	}
 
+	/// <summary>
+	///	Reads a decimal number with an optional leading minus sign for use in function arguments.
+	/// </summary>
+	/// <param name="nameToken">
+	///	The function name token used in error messages.
+	/// </param>
+	/// <returns>
+	///	The numeric value and the source text including any minus sign.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the current token is not a number, the number is too large, or a range end is a function call.
+	/// </exception>
 	private (decimal Value, string Text) ReadSignedNumber(PatternToken nameToken)
 	{
 		bool isNegative = false;
@@ -448,6 +589,12 @@ internal sealed class PatternParser
 		return isNegative ? (-value, $"-{token.Text}") : (value, token.Text);
 	}
 
+	/// <summary>
+	///	Checks that parsing consumed the whole token stream.
+	/// </summary>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when extra tokens remain or a closing parenthesis has no matching opening parenthesis.
+	/// </exception>
 	private void ExpectEnd()
 	{
 		if (Current.Kind == PatternTokenKind.End)
@@ -463,6 +610,12 @@ internal sealed class PatternParser
 		throw CreateMissingOperatorException();
 	}
 
+	/// <summary>
+	///	Builds the error used when two pattern parts appear without a joining operator.
+	/// </summary>
+	/// <returns>
+	///	A syntax exception positioned at the unexpected token.
+	/// </returns>
 	private PatternSyntaxException CreateMissingOperatorException()
 	{
 		string found = Current.Kind == PatternTokenKind.Text ? $"'{Current.Text}'" : Current.Text;

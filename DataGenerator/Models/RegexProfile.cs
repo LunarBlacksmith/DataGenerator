@@ -3,7 +3,7 @@
 public sealed class RegexProfile
 {
 	/// <summary>
-	/// Ready-made regular expressions offered next to the regex editor of a column rule.
+	///	Ready-made regular expressions offered next to the regex editor of a column rule.
 	/// </summary>
 	public static readonly IReadOnlyList<RegexProfile> DEFAULT_PROFILES =
 	[
@@ -32,5 +32,11 @@ public sealed class RegexProfile
 	public required string Name    { get; init; }
 	public required string Pattern { get; init; }
 
+	/// <summary>
+	///	Returns the profile name shown in selection controls.
+	/// </summary>
+	/// <returns>
+	///	The profile name.
+	/// </returns>
 	public override string ToString() => Name;
 }

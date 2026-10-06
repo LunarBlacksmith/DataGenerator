@@ -3,7 +3,7 @@
 	xmlns:x   ="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:sys ="clr-namespace:System;assembly=System.Runtime">
 
-	<!-- Connection -->
+	<!-- Connection section -->
 	<sys:String
 		x:Key="ServerHint">
 		The SQL Server instance to connect to, e.g. localhost, MYPC\SQLEXPRESS or myserver.database.windows.net,1433.
@@ -39,7 +39,7 @@
 		usually have a self-signed certificate; untick it for servers with a trusted certificate.
 	</sys:String>
 
-	<!-- Database explorer -->
+	<!-- Database explorer panel -->
 	<sys:String
 		x:Key="ExplorerFilterHint">
 		Shows only the databases and tables whose names contain this text. A database whose name matches shows all of its
@@ -174,7 +174,7 @@
 		Drag to resize the database explorer and the column rules panel.
 	</sys:String>
 
-	<!-- Column rules -->
+	<!-- Column rules panel -->
 	<sys:String
 		x:Key="IncludeActiveTableHint">
 		Includes this table in the generation. Its rules can be edited whether or not it is included.
@@ -451,7 +451,7 @@
 		Row colours of the column rules grid.
 	</sys:String>
 
-	<!-- Output -->
+	<!-- Output section -->
 	<sys:String
 		x:Key="SqlFileModeHint">
 		Writes the INSERT statements to a .sql script that you can review and run yourself.
@@ -525,7 +525,7 @@
 		Stops the running operation. Direct inserts that were already made are rolled back.
 	</sys:String>
 
-	<!-- Errors -->
+	<!-- Error banner and details area -->
 	<sys:String
 		x:Key="CopyErrorHint">
 		Copies the error, where it happened and the full details to the clipboard.
@@ -548,7 +548,7 @@
 		clipboard and Dismiss hides it.
 	</sys:String>
 
-	<!-- Pattern language reference -->
+	<!-- Pattern language reference window -->
 	<sys:String
 		x:Key="PatternTryHint">
 		Type a pattern to see the values it generates for the first rows. While you type, matching functions and keywords are
@@ -570,7 +570,8 @@
 		x:Key="SyntaxTableHint">
 		The building blocks of the pattern language. Keywords are not case-sensitive.
 	</sys:String>
-	<!-- Saved settings -->
+
+	<!-- Saved settings windows and menus -->
 	<sys:String
 		x:Key="SaveSettingsHint">
 		Saves the generation mode and the settings of this column under a name, so they can be applied to other columns,
@@ -740,7 +741,7 @@
 		Closes this window. Changes are already saved.
 	</sys:String>
 
-	<!-- Appearance -->
+	<!-- Application chrome -->
 	<sys:String
 		x:Key="ThemeToggleHint">
 		Switches between the light and dark colour themes. The choice is remembered for the next time the application starts;

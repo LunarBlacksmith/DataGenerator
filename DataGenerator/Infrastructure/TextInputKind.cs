@@ -1,7 +1,7 @@
 ﻿namespace DataGenerator.Infrastructure;
 
 /// <summary>
-/// The kind of value a text box accepts. Used by <see cref="TextInputFilter"/> to block characters that can never be valid.
+///	The kind of value a text box accepts. Used by <see cref="TextInputFilter"/> to block characters that can never be valid.
 /// </summary>
 public enum TextInputKind
 {

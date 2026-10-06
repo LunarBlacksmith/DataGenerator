@@ -7,8 +7,8 @@ using System.Text.Json.Serialization;
 namespace DataGenerator.Services;
 
 /// <summary>
-/// Reads and writes the indented JSON files of DataGenerator, so they can be read, reviewed, kept in source control
-/// and shared.
+///	Reads and writes the indented JSON files of DataGenerator, so they can be read, reviewed, kept in source control
+///	and shared.
 /// </summary>
 internal static class JsonDocumentFile
 {
@@ -28,9 +28,23 @@ internal static class JsonDocumentFile
 	};
 
 	/// <summary>
-	/// Throws <see cref="InvalidDataException"/> when the file is not valid JSON for <typeparamref name="T"/>; the message
-	/// calls the file a <paramref name="fileDescription"/>, e.g. "saved settings file".
+	///	Reads a JSON document from disk using DataGenerator serializer settings.
 	/// </summary>
+	/// <typeparam name="T">
+	///	The document type to deserialize.
+	/// </typeparam>
+	/// <param name="filePath">
+	///	The JSON file to read.
+	/// </param>
+	/// <param name="fileDescription">
+	///	The user-facing description used in invalid JSON error messages.
+	/// </param>
+	/// <returns>
+	///	The deserialized document, or <see langword="null"/> when the JSON represents null.
+	/// </returns>
+	/// <exception cref="InvalidDataException">
+	///	Thrown when the file is not valid JSON for <typeparamref name="T"/>.
+	/// </exception>
 	public static T? Read<T>(string filePath, string fileDescription) where T : class
 	{
 		try
@@ -45,8 +59,17 @@ internal static class JsonDocumentFile
 	}
 
 	/// <summary>
-	/// Writes to a temporary file first, so an interrupted save never leaves a half-written file behind.
+	///	Writes a JSON document through a temporary file so interrupted saves do not leave partial output.
 	/// </summary>
+	/// <typeparam name="T">
+	///	The document type to serialize.
+	/// </typeparam>
+	/// <param name="filePath">
+	///	The destination JSON file path.
+	/// </param>
+	/// <param name="document">
+	///	The document to write.
+	/// </param>
 	public static void Write<T>(string filePath, T document)
 	{
 		string  fullPath      = Path.GetFullPath(filePath);
@@ -67,8 +90,14 @@ internal static class JsonDocumentFile
 	}
 
 	/// <summary>
-	/// Renames an unreadable file so it is kept for reference instead of being overwritten, and returns its new path.
+	///	Renames an unreadable file so it is kept for reference instead of being overwritten.
 	/// </summary>
+	/// <param name="filePath">
+	///	The file to move aside when it exists.
+	/// </param>
+	/// <returns>
+	///	The new path of the renamed file, or <see langword="null"/> when the file does not exist.
+	/// </returns>
 	public static string? SetAside(string filePath)
 	{
 		if (!File.Exists(filePath))

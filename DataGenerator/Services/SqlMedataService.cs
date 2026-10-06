@@ -7,6 +7,24 @@ namespace DataGenerator.Services;
 
 public sealed class SqlMetadataService : ISqlMetadataService
 {
+	/// <summary>
+	///	Loads accessible user databases and their table, column and foreign-key metadata from SQL Server.
+	/// </summary>
+	/// <param name="connectionString">
+	///	The connection string used first for the master database and then for each accessible database.
+	/// </param>
+	/// <param name="progress">
+	///	The optional progress reporter that receives database-loading messages.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	The token that cancels metadata loading.
+	/// </param>
+	/// <returns>
+	///	The loaded databases, each containing its user tables and relationships.
+	/// </returns>
+	/// <exception cref="OperationCanceledException">
+	///	Thrown when <paramref name="cancellationToken"/> is cancelled.
+	/// </exception>
 	public async Task<IReadOnlyList<DatabaseModel>> LoadMetadataAsync(
 		string             connectionString,
 		IProgress<string>? progress,
@@ -68,6 +86,18 @@ public sealed class SqlMetadataService : ISqlMetadataService
 		return databases;
 	}
 
+	/// <summary>
+	///	Loads table, column and foreign-key metadata for one database into an existing database model.
+	/// </summary>
+	/// <param name="connectionString">
+	///	The connection string whose initial catalog is the database being loaded.
+	/// </param>
+	/// <param name="database">
+	///	The database model to populate.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	The token that cancels database metadata loading.
+	/// </param>
 	private static async Task LoadDatabaseAsync(
 		string connectionString,
 		DatabaseModel database,

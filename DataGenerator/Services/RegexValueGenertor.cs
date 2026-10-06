@@ -7,6 +7,31 @@ public sealed class RegexValueGenerator : IRegexValueGenerator
 {
 	private const int MAXIMUM_REPEAT_COUNT = 1000;
 
+	/// <summary>
+	///	Generates a random value from the supported subset of a regular expression, stopping at the requested length.
+	/// </summary>
+	/// <param name="pattern">
+	///	The regular expression pattern to generate from.
+	/// </param>
+	/// <param name="maximumLength">
+	///	The maximum number of characters to return.
+	/// </param>
+	/// <returns>
+	///	A generated value that follows the supported parts of <paramref name="pattern"/> and is no longer than
+	///	<paramref name="maximumLength"/>.
+	/// </returns>
+	/// <exception cref="ArgumentException">
+	///	Thrown when <paramref name="pattern"/> is empty or whitespace.
+	/// </exception>
+	/// <exception cref="ArgumentOutOfRangeException">
+	///	Thrown when <paramref name="maximumLength"/> is less than one.
+	/// </exception>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when the pattern contains malformed supported syntax.
+	/// </exception>
+	/// <exception cref="NotSupportedException">
+	///	Thrown when the pattern contains a regular-expression construct that this generator does not support.
+	/// </exception>
 	public string Generate(string pattern, int maximumLength)
 	{
 		if (string.IsNullOrWhiteSpace(pattern))
@@ -103,6 +128,15 @@ public sealed class RegexValueGenerator : IRegexValueGenerator
 		return result.ToString();
 	}
 
+	/// <summary>
+	///	Checks whether a pattern character starts a regular-expression construct that the generator cannot expand.
+	/// </summary>
+	/// <param name="character">
+	///	The pattern character to test.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the character is unsupported; otherwise <see langword="false"/>.
+	/// </returns>
 	private static bool IsUnsupportedConstruct(char character)
 		=> character
 				is '('
@@ -112,6 +146,21 @@ public sealed class RegexValueGenerator : IRegexValueGenerator
 				or '*'
 				or '|';
 
+	/// <summary>
+	///	Reads an optional repetition suffix after an atom and chooses the number of generated characters for it.
+	/// </summary>
+	/// <param name="pattern">
+	///	The normalised regular-expression pattern being read.
+	/// </param>
+	/// <param name="index">
+	///	The current index after the atom; advanced past the repetition suffix when one is present.
+	/// </param>
+	/// <returns>
+	///	The exact or randomly selected repetition count for the preceding atom.
+	/// </returns>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when a repetition block is malformed or outside the supported range.
+	/// </exception>
 	private static int ReadRepetition(string pattern, ref int index)
 	{
 		if (index >= pattern.Length)
@@ -176,11 +225,27 @@ public sealed class RegexValueGenerator : IRegexValueGenerator
 
 		index = endingBraceIndex + 1;
 
-		return minimum == maximum
-								? minimum
-								: Random.Shared.Next(minimum, maximum + 1);
+		return
+			minimum == maximum
+				? minimum
+				: Random.Shared.Next(minimum, maximum + 1);
 	}
 
+	/// <summary>
+	///	Expands a character class into the concrete characters from which a generated value may choose.
+	/// </summary>
+	/// <param name="characterClass">
+	///	The contents of a bracketed regular-expression character class.
+	/// </param>
+	/// <returns>
+	///	The characters represented by literals, escapes and ranges in the class.
+	/// </returns>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when the class is empty, incomplete or contains an invalid range.
+	/// </exception>
+	/// <exception cref="NotSupportedException">
+	///	Thrown when the class is negated.
+	/// </exception>
 	private static string ExpandCharacterClass(string characterClass)
 	{
 		if (string.IsNullOrEmpty(characterClass))
@@ -243,8 +308,9 @@ public sealed class RegexValueGenerator : IRegexValueGenerator
 			_ = characters.Append(characterClass[index]);
 		}
 
-		return characters.Length == 0
-					? throw new InvalidOperationException("The character class did not contain any usable characters.")
-					: characters.ToString();
+		return
+			characters.Length == 0
+				? throw new InvalidOperationException("The character class did not contain any usable characters.")
+				: characters.ToString();
 	}
 }

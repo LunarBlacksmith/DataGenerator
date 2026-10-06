@@ -5,7 +5,7 @@ using DataGenerator.Services;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// One saved setting in the saved-settings manager. Edits are passed to the manager, which saves them.
+///	One saved setting in the saved-settings manager. Edits are passed to the manager, which saves them.
 /// </summary>
 public sealed class SavedSettingRowViewModel : ValidatableObservableObject
 {
@@ -14,6 +14,21 @@ public sealed class SavedSettingRowViewModel : ValidatableObservableObject
 
 	private string _name;
 
+	/// <summary>
+	///	Creates a row for one saved setting and the callbacks that persist edits.
+	/// </summary>
+	/// <param name="setting">
+	///	The saved setting represented by the row.
+	/// </param>
+	/// <param name="rename">
+	///	The callback that saves a valid new name and returns an error message when it cannot be saved.
+	/// </param>
+	/// <param name="setApplyAutomatically">
+	///	The callback that saves whether the setting is applied automatically.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any argument is <see langword="null"/>.
+	/// </exception>
 	public SavedSettingRowViewModel(
 		SavedColumnSetting                              setting,
 		Func<SavedSettingRowViewModel, string, string?> rename,
@@ -34,7 +49,7 @@ public sealed class SavedSettingRowViewModel : ValidatableObservableObject
 	public bool   HasTarget  => Setting.ColumnName is not null;
 
 	/// <summary>
-	/// The name; a valid new name renames the saved setting, otherwise the validation message is shown.
+	///	The name; a valid new name renames the saved setting, otherwise the validation message is shown.
 	/// </summary>
 	public string Name
 	{
@@ -71,7 +86,7 @@ public sealed class SavedSettingRowViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Shows the saved values again after the library changed.
+	///	Shows the saved values again after the library changed.
 	/// </summary>
 	public void Refresh()
 	{

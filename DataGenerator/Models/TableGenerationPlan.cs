@@ -6,7 +6,7 @@ public sealed class TableGenerationPlan
 	public required IReadOnlyList<RowSetPlan> RowSets { get; init; }
 
 	/// <summary>
-	/// The number of rows inserted; update sets change existing rows and are not counted.
+	///	The number of rows inserted; update sets change existing rows and are not counted.
 	/// </summary>
 	public int TotalRowCount => RowSets.Where(rowSet => !rowSet.IsUpdate).Sum(rowSet => rowSet.RowCount);
 

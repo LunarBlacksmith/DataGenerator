@@ -8,7 +8,7 @@ using DataGenerator.Services;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// The saved-settings manager: rename, delete, import, export and choose which settings new row sets use automatically.
+///	The saved-settings manager: rename, delete, import, export and choose which settings new row sets use automatically.
 /// </summary>
 public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposable
 {
@@ -22,6 +22,21 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 	private string                    _statusText;
 	private bool                      _isDisposed;
 
+	/// <summary>
+	///	Creates the saved-settings manager and loads the current saved settings.
+	/// </summary>
+	/// <param name="library">
+	///	The saved settings library.
+	/// </param>
+	/// <param name="dialogService">
+	///	The dialog service used for confirmations and errors.
+	/// </param>
+	/// <param name="fileDialogService">
+	///	The file dialog service used to import and export settings.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any service argument is <see langword="null"/>.
+	/// </exception>
 	public SavedSettingsManagerViewModel(
 		SavedSettingsLibrary library,
 		IDialogService       dialogService,
@@ -66,7 +81,7 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 	public string FilePath             => _library.FilePath;
 
 	/// <summary>
-	/// The result of the last import, export or apply.
+	///	The result of the last import, export or apply.
 	/// </summary>
 	public string StatusText
 	{
@@ -74,6 +89,9 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		private set => SetProperty(ref _statusText, value);
 	}
 
+	/// <summary>
+	///	Stops listening for saved-settings library changes.
+	/// </summary>
 	public void Dispose()
 	{
 		if (_isDisposed)
@@ -85,6 +103,15 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		_library.Changed -= OnLibraryChanged;
 	}
 
+	/// <summary>
+	///	Refreshes rows and commands after the saved settings library changes.
+	/// </summary>
+	/// <param name="sender">
+	///	The saved settings library that changed.
+	/// </param>
+	/// <param name="e">
+	///	The event data for the library change.
+	/// </param>
 	private void OnLibraryChanged(object? sender, EventArgs e)
 	{
 		bool isSameList =
@@ -107,6 +134,9 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		ApplyToOpenCommand.NotifyCanExecuteChanged();
 	}
 
+	/// <summary>
+	///	Rebuilds the rows from the library, keeping the previous selection by name when possible.
+	/// </summary>
 	private void RebuildRows()
 	{
 		string? selectedName = _selectedSetting?.Setting.Name;
@@ -126,6 +156,18 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		ExportCommand.NotifyCanExecuteChanged();
 	}
 
+	/// <summary>
+	///	Renames a saved setting if the new name is not already used.
+	/// </summary>
+	/// <param name="row">
+	///	The row being renamed.
+	/// </param>
+	/// <param name="newName">
+	///	The new validated name.
+	/// </param>
+	/// <returns>
+	///	<see langword="null"/> when the rename succeeded; otherwise the validation error to show on the row.
+	/// </returns>
 	private string? Rename(SavedSettingRowViewModel row, string newName)
 	{
 		SavedColumnSetting? existing = _library.Find(newName);
@@ -138,11 +180,23 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		return TryChange(() => _library.Rename(row.Setting.Name, newName)) ? null : "The new name could not be saved.";
 	}
 
+	/// <summary>
+	///	Saves whether a row's setting should be applied automatically.
+	/// </summary>
+	/// <param name="row">
+	///	The row whose setting is being changed.
+	/// </param>
+	/// <param name="applyAutomatically">
+	///	Whether the setting should be applied to new matching row sets.
+	/// </param>
 	private void SetApplyAutomatically(SavedSettingRowViewModel row, bool applyAutomatically)
 	{
 		_ = TryChange(() => _library.SetApplyAutomatically(row.Setting.Name, applyAutomatically));
 	}
 
+	/// <summary>
+	///	Deletes the selected saved setting after confirmation.
+	/// </summary>
 	private void DeleteSelected()
 	{
 		if (_selectedSetting is null)
@@ -168,6 +222,9 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		}
 	}
 
+	/// <summary>
+	///	Imports saved column settings from a file and asks how to handle names that already exist.
+	/// </summary>
 	private void Import()
 	{
 		string? filePath = _fileDialogService.SelectSettingsFileToImport();
@@ -219,12 +276,16 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 
 		if (TryChange(() => importedCount = _library.Import(settings, replace)))
 		{
-			StatusText = importedCount == 1
-				? $"Imported 1 setting from '{Path.GetFileName(filePath)}'."
-				: $"Imported {importedCount} settings from '{Path.GetFileName(filePath)}'.";
+			StatusText =
+				importedCount == 1
+					? $"Imported 1 setting from '{Path.GetFileName(filePath)}'."
+					: $"Imported {importedCount} settings from '{Path.GetFileName(filePath)}'.";
 		}
 	}
 
+	/// <summary>
+	///	Exports every saved column setting to a user-chosen file.
+	/// </summary>
 	private void Export()
 	{
 		string? filePath = _fileDialogService.SelectSettingsExportFile();
@@ -245,6 +306,9 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		}
 	}
 
+	/// <summary>
+	///	Applies automatic settings to the row sets that are already open after confirmation.
+	/// </summary>
 	private void ApplyAutomaticSettingsToExistingRowSets()
 	{
 		bool confirmed = _dialogService.Confirm(
@@ -260,11 +324,21 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 
 		int updatedCount = _library.ApplyAutomaticSettingsToExistingRowSets();
 
-		StatusText = updatedCount == 1
-			? "Updated 1 column."
-			: $"Updated {updatedCount} columns.";
+		StatusText =
+			updatedCount == 1
+				? "Updated 1 column."
+				: $"Updated {updatedCount} columns.";
 	}
 
+	/// <summary>
+	///	Runs a saved-settings library change and reports problems to the user.
+	/// </summary>
+	/// <param name="change">
+	///	The library operation to run.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the operation succeeded; otherwise <see langword="false"/>.
+	/// </returns>
 	private bool TryChange(Action change)
 	{
 		try
@@ -279,6 +353,15 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		}
 	}
 
+	/// <summary>
+	///	Whether an exception means the saved-settings file could not be read or written.
+	/// </summary>
+	/// <param name="exception">
+	///	The exception to classify.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the exception is a file or data problem; otherwise <see langword="false"/>.
+	/// </returns>
 	private static bool IsFileProblem(Exception exception)
 		=> exception is IOException or UnauthorizedAccessException or InvalidDataException;
 }

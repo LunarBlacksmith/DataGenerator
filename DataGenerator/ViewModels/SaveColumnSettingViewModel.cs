@@ -6,8 +6,8 @@ using DataGenerator.Services;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// The "Save column settings" dialog: names the settings of a column rule and chooses whether new row sets use them
-/// automatically.
+///	The "Save column settings" dialog: names the settings of a column rule and chooses whether new row sets use them
+///	automatically.
 /// </summary>
 public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 {
@@ -19,19 +19,36 @@ public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 	private string?                  _errorMessage;
 	private bool?                    _dialogResult;
 
+	/// <summary>
+	///	Creates the save dialog for a column's current settings and suggests how it should be applied automatically.
+	/// </summary>
+	/// <param name="values">
+	///	The column settings to save.
+	/// </param>
+	/// <param name="library">
+	///	The saved settings library.
+	/// </param>
+	/// <param name="suggestedName">
+	///	The initial name to show, or <see langword="null"/> to use an automatic or column name.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="values"/> or <paramref name="library"/> is <see langword="null"/>.
+	/// </exception>
 	public SaveColumnSettingViewModel(SavedColumnSetting values, SavedSettingsLibrary library, string? suggestedName)
 	{
 		_values  = values?.Clone() ?? throw new ArgumentNullException(nameof(values));
 		_library = library ?? throw new ArgumentNullException(nameof(library));
 
-		SavedColumnSetting? automatic = _values.TableName is null || _values.ColumnName is null
-			? null
-			: _library.FindAutomatic(_values.TableName, _values.ColumnName);
+		SavedColumnSetting? automatic =
+			_values.TableName is null || _values.ColumnName is null
+				? null
+				: _library.FindAutomatic(_values.TableName, _values.ColumnName);
 
 		_name                 = suggestedName ?? automatic?.Name ?? _values.ColumnName ?? string.Empty;
-		_automaticApplication = automatic is null
-			? AutomaticApplicationKind.Never
-			: automatic.AppliesToAnyTable ? AutomaticApplicationKind.EveryColumnWithName : AutomaticApplicationKind.ThisColumn;
+		_automaticApplication =
+			automatic is null
+				? AutomaticApplicationKind.Never
+				: automatic.AppliesToAnyTable ? AutomaticApplicationKind.EveryColumnWithName : AutomaticApplicationKind.ThisColumn;
 
 		SaveCommand = new RelayCommand(_ => Save(), _ => !HasErrors);
 		ValidateName();
@@ -87,9 +104,10 @@ public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 		{
 			SavedColumnSetting? existing = _library.Find(_name);
 
-			return existing is null
-				? string.Empty
-				: $"Replaces the saved setting '{existing.Name}' ({SavedSettingDescriber.DescribeValues(existing)}).";
+			return
+				existing is null
+					? string.Empty
+					: $"Replaces the saved setting '{existing.Name}' ({SavedSettingDescriber.DescribeValues(existing)}).";
 		}
 	}
 
@@ -99,20 +117,22 @@ public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 	{
 		get
 		{
-			SavedColumnSetting? conflict = SavedSettingsLibrary.ValidateName(_name) is null
-				? _library.FindAutomaticConflict(CreateSetting())
-				: null;
+			SavedColumnSetting? conflict =
+				SavedSettingsLibrary.ValidateName(_name) is null
+					? _library.FindAutomaticConflict(CreateSetting())
+					: null;
 
-			return conflict is null
-				? string.Empty
-				: $"'{conflict.Name}' is applied automatically to the same columns now. This setting takes its place.";
+			return
+				conflict is null
+					? string.Empty
+					: $"'{conflict.Name}' is applied automatically to the same columns now. This setting takes its place.";
 		}
 	}
 
 	public bool HasConflictWarning => ConflictWarning.Length > 0;
 
 	/// <summary>
-	/// Why the setting could not be saved, e.g. because the file is read-only.
+	///	Why the setting could not be saved, e.g. because the file is read-only.
 	/// </summary>
 	public string? ErrorMessage
 	{
@@ -121,7 +141,7 @@ public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// Set when the setting was saved, which closes the dialog.
+	///	Set when the setting was saved, which closes the dialog.
 	/// </summary>
 	public bool? DialogResult
 	{
@@ -130,12 +150,24 @@ public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	/// The name the setting was saved under.
+	///	The name the setting was saved under.
 	/// </summary>
 	public string SavedName => _name.Trim();
 
+	/// <summary>
+	///	Refreshes whether the Save command can run after validation errors change.
+	/// </summary>
 	protected override void OnErrorsChanged() => SaveCommand.NotifyCanExecuteChanged();
 
+	/// <summary>
+	///	Chooses how the saved setting should be applied automatically.
+	/// </summary>
+	/// <param name="isChecked">
+	///	Whether the radio button for <paramref name="kind"/> is checked.
+	/// </param>
+	/// <param name="kind">
+	///	The automatic-application kind represented by the changed radio button.
+	/// </param>
 	private void SetAutomaticApplication(bool isChecked, AutomaticApplicationKind kind)
 	{
 		if (!isChecked || _automaticApplication == kind)
@@ -151,8 +183,17 @@ public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 		OnPropertyChanged(nameof(HasConflictWarning));
 	}
 
+	/// <summary>
+	///	Validates the entered setting name.
+	/// </summary>
 	private void ValidateName() => SetError(nameof(Name), SavedSettingsLibrary.ValidateName(_name));
 
+	/// <summary>
+	///	Builds the setting that will be saved from the dialog values.
+	/// </summary>
+	/// <returns>
+	///	The saved column setting, including its name and automatic-application scope.
+	/// </returns>
 	private SavedColumnSetting CreateSetting()
 	{
 		SavedColumnSetting setting = _values.Clone();
@@ -163,6 +204,9 @@ public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 		return setting;
 	}
 
+	/// <summary>
+	///	Saves the setting and closes the dialog, or shows a file error.
+	/// </summary>
 	private void Save()
 	{
 		if (HasErrors)

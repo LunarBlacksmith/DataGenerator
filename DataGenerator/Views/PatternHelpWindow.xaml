@@ -19,6 +19,7 @@
 	UseLayoutRounding     ="True"
 	WindowStartupLocation ="CenterOwner">
 	<Window.Resources>
+		<!-- Section headings used by the scrollable reference areas -->
 		<Style
 			x:Key      ="HeadingTextStyle"
 			TargetType ="TextBlock">
@@ -36,6 +37,7 @@
 				Value    ="{DynamicResource SectionHeaderTextBrush}" />
 		</Style>
 
+		<!-- Explanatory notes under syntax tables -->
 		<Style
 			x:Key      ="NoteTextStyle"
 			TargetType ="TextBlock"
@@ -48,6 +50,7 @@
 				Value    ="Wrap" />
 		</Style>
 
+		<!-- Monospace text for syntax, examples and generated sample values -->
 		<Style
 			x:Key      ="CodeTextStyle"
 			TargetType ="TextBlock">
@@ -65,6 +68,7 @@
 				Value    ="Wrap" />
 		</Style>
 
+		<!-- Shared table header border for syntax and example columns -->
 		<Style
 			x:Key      ="TableHeaderStyle"
 			TargetType ="Border">
@@ -91,6 +95,7 @@
 				Value    ="{DynamicResource SectionHeaderTextBrush}" />
 		</Style>
 
+		<!-- ItemsControl table frame; AlternationCount drives striped row templates -->
 		<Style
 			x:Key      ="TableStyle"
 			TargetType ="ItemsControl">
@@ -108,6 +113,7 @@
 				Value    ="1,0,1,0" />
 		</Style>
 
+		<!-- Border style for rows in the pattern reference tables -->
 		<Style
 			x:Key      ="TableRowStyle"
 			TargetType ="Border">
@@ -181,6 +187,7 @@
 			</DataTemplate.Triggers>
 		</DataTemplate>
 
+		<!-- Header row reused above the operators and functions tables -->
 		<DataTemplate
 			x:Key="SyntaxHeaderTemplate">
 			<Border
@@ -246,6 +253,7 @@
 						infrastructure:PatternAutoComplete.Provider ="{StaticResource PatternCompletionProvider}" />
 				</Grid>
 
+				<!-- Validation error from PatternHelpViewModel while the expression cannot be sampled -->
 				<TextBlock
 					Margin       ="4,2,4,4"
 					Foreground   ="{DynamicResource ErrorBrush}"
@@ -254,6 +262,7 @@
 					Visibility   ="{Binding	HasError,
 													Converter={StaticResource BooleanToVisibilityConverter}}" />
 
+				<!-- Generated values for the first sample rows of the current expression -->
 				<ItemsControl
 					Focusable   ="False"
 					ItemsSource ="{Binding Samples}">
@@ -313,6 +322,7 @@
 					Style ="{StaticResource HeadingTextStyle}"
 					Text  ="Combining parts" />
 
+				<!-- Operators table: pattern composition syntax and precedence examples -->
 				<StackPanel
 					Grid.IsSharedSizeScope="True">
 					<ContentControl
@@ -334,6 +344,7 @@
 					Style ="{StaticResource HeadingTextStyle}"
 					Text  ="Functions" />
 
+				<!-- Functions table: generated from PatternLanguageReference plus a nested-function note -->
 				<StackPanel
 					Grid.IsSharedSizeScope="True">
 					<ContentControl
@@ -355,6 +366,7 @@
 					Style ="{StaticResource HeadingTextStyle}"
 					Text  ="Examples" />
 
+				<!-- Ready-made patterns; Try it copies the example into the editable box above -->
 				<ItemsControl
 					Style                  ="{StaticResource TableStyle}"
 					BorderThickness        ="1,1,1,0"

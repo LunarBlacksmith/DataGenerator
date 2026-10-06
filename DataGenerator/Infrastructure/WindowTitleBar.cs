@@ -5,7 +5,7 @@ using System.Windows.Interop;
 namespace DataGenerator.Infrastructure;
 
 /// <summary>
-/// Switches a window's title bar between the light and dark Windows styles, so it matches the application theme.
+///	Switches a window's title bar between the light and dark Windows styles, so it matches the application theme.
 /// </summary>
 public static class WindowTitleBar
 {
@@ -14,8 +14,17 @@ public static class WindowTitleBar
 	private const int S_OK                                     = 0;
 
 	/// <summary>
-	/// Asks Windows to draw the title bar dark or light; does nothing when the window has no handle yet or Windows does not support it.
+	///	Asks Windows to draw the title bar dark or light; does nothing when the window has no handle yet or Windows does not support it.
 	/// </summary>
+	/// <param name="window">
+	///	The window whose title bar should be updated.
+	/// </param>
+	/// <param name="useDarkMode">
+	///	Whether the title bar should use the dark Windows style.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="window"/> is <see langword="null"/>.
+	/// </exception>
 	public static void Apply(Window window, bool useDarkMode)
 	{
 		ArgumentNullException.ThrowIfNull(window);
@@ -36,6 +45,24 @@ public static class WindowTitleBar
 		}
 	}
 
+	/// <summary>
+	///	Sets a Desktop Window Manager attribute on a native window handle.
+	/// </summary>
+	/// <param name="handle">
+	///	The native window handle to update.
+	/// </param>
+	/// <param name="attribute">
+	///	The DWM attribute identifier to set.
+	/// </param>
+	/// <param name="value">
+	///	The integer value to assign to the attribute.
+	/// </param>
+	/// <param name="size">
+	///	The size, in bytes, of <paramref name="value"/>.
+	/// </param>
+	/// <returns>
+	///	The HRESULT returned by DWM; <c>0</c> means success.
+	/// </returns>
 	[DllImport("dwmapi.dll")]
 	private static extern int DwmSetWindowAttribute(IntPtr handle, int attribute, ref int value, int size);
 }

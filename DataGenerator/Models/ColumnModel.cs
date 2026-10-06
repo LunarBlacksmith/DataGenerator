@@ -91,8 +91,8 @@ public sealed class ColumnModel : ObservableObject
 	}
 
 	/// <summary>
-	/// Columns whose name ends with "ftk" (any casing) are treated as foreign table keys by naming convention,
-	/// even when SQL Server has no foreign key constraint for them.
+	///	Columns whose name ends with "ftk" (any casing) are treated as foreign table keys by naming convention,
+	///	even when SQL Server has no foreign key constraint for them.
 	/// </summary>
 	public bool IsForeignTableKey
 		=> Name.Length > FOREIGN_TABLE_KEY_SUFFIX.Length

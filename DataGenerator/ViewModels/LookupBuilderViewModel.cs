@@ -5,7 +5,7 @@ using DataGenerator.Models;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// Builds the setting of the Value from table mode by picking a table and column from lists instead of typing it.
+///	Builds the setting of the Value from table mode by picking a table and column from lists instead of typing it.
 /// </summary>
 public sealed class LookupBuilderViewModel : ObservableObject
 {
@@ -37,8 +37,31 @@ public sealed class LookupBuilderViewModel : ObservableObject
 	private string           _expression = string.Empty;
 	private string?          _errorMessage;
 
-	/// <param name="current">The lookup the column uses now, which the lists start with.</param>
-	/// <param name="onChanged">Called whenever the expression changes, so the Apply command can update.</param>
+	/// <summary>
+	///	Creates a lookup builder for one target column and initialises it from the current lookup when present.
+	/// </summary>
+	/// <param name="tables">
+	///	The loaded tables whose values can be used by the lookup.
+	/// </param>
+	/// <param name="targetTable">
+	///	The table that contains the column being configured.
+	/// </param>
+	/// <param name="targetColumn">
+	///	The column being configured.
+	/// </param>
+	/// <param name="current">
+	///	The lookup the column uses now, which the lists start with.
+	/// </param>
+	/// <param name="parser">
+	///	The parser used to format and validate the lookup expression.
+	/// </param>
+	/// <param name="onChanged">
+	///	Called whenever the expression changes, so the Apply command can update.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="tables"/>, <paramref name="targetTable"/>, <paramref name="targetColumn"/>,
+	///	<paramref name="parser"/> or <paramref name="onChanged"/> is <see langword="null"/>.
+	/// </exception>
 	public LookupBuilderViewModel(
 		IReadOnlyList<TableModel> tables,
 		TableModel                targetTable,
@@ -171,7 +194,7 @@ public sealed class LookupBuilderViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// The setting the choices make, which Apply puts into the Settings cell.
+	///	The setting the choices make, which Apply puts into the Settings cell.
 	/// </summary>
 	public string Expression
 	{
@@ -195,6 +218,9 @@ public sealed class LookupBuilderViewModel : ObservableObject
 
 	public bool CanApply => _errorMessage is null && _expression.Length > 0;
 
+	/// <summary>
+	///	Rebuilds the Settings expression from the chosen table, column, scope and filter, then validates it.
+	/// </summary>
 	private void UpdateExpression()
 	{
 		if (_selectedTable is null || _selectedColumn is null)

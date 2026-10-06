@@ -26,6 +26,22 @@ internal static class PatternFunctionFactory
 	private const string LOWER_LETTERS            = "abcdefghijklmnopqrstuvwxyz";
 	private const string DIGITS                   = "0123456789";
 
+	/// <summary>
+	///	Creates the pattern node for a recognised function call, evaluating static arguments immediately and preserving
+	///	nested-function arguments for row-time evaluation.
+	/// </summary>
+	/// <param name="nameToken">
+	///	The token that names the function.
+	/// </param>
+	/// <param name="arguments">
+	///	The parsed arguments supplied to the function.
+	/// </param>
+	/// <returns>
+	///	The node that implements the function call.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the function name is unknown or one of its arguments is invalid.
+	/// </exception>
 	public static PatternNode Create(PatternToken nameToken, IReadOnlyList<PatternArgument> arguments)
 	{
 		string functionName = nameToken.Text.ToUpperInvariant();
@@ -76,9 +92,21 @@ internal static class PatternFunctionFactory
 	}
 
 	/// <summary>
-	/// A function whose arguments include nested function calls. When the nested calls do not depend on other columns,
-	/// they are tried once now so that mistakes such as a wrong parameter are reported while the pattern is typed.
+	///	Creates a function node whose arguments include nested function calls. When the nested calls do not depend on
+	///	other columns, they are tried once now so mistakes such as a wrong parameter are reported while the pattern is typed.
 	/// </summary>
+	/// <param name="nameToken">
+	///	The token that names the outer function.
+	/// </param>
+	/// <param name="arguments">
+	///	The parsed arguments, including expression arguments for nested function calls.
+	/// </param>
+	/// <returns>
+	///	A dynamic function node that evaluates nested calls for each generated row.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when an argument-only validation run finds an invalid nested function result.
+	/// </exception>
 	private static PatternNode CreateDynamic(PatternToken nameToken, IReadOnlyList<PatternArgument> arguments)
 	{
 		DynamicFunctionPatternNode node              = new(nameToken, arguments) { FunctionName = nameToken.Text.ToUpperInvariant() };
@@ -101,6 +129,18 @@ internal static class PatternFunctionFactory
 		return node;
 	}
 
+	/// <summary>
+	///	Creates a SEQ or SEQUENCE node that counts through a whole-number range and wraps at the end.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <returns>
+	///	A sequence node configured with range, start, step and padding.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the range, start, step or digits arguments are invalid.
+	/// </exception>
 	private static PatternNode CreateSequence(PatternArgumentBinder binder)
 	{
 		(decimal rangeStart, decimal rangeEnd) = binder.RequireRange("SEQ(1-1000)");
@@ -125,6 +165,21 @@ internal static class PatternFunctionFactory
 		return new SequencePatternNode(minimum, maximum, start, step, digits);
 	}
 
+	/// <summary>
+	///	Creates a random whole-number node from a required inclusive range and optional padding width.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <param name="example">
+	///	An example call used when reporting a missing or malformed range.
+	/// </param>
+	/// <returns>
+	///	A random-number node configured with the parsed range and digits.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the range or digits arguments are invalid.
+	/// </exception>
 	private static PatternNode CreateRandomNumber(PatternArgumentBinder binder, string example)
 	{
 		(decimal rangeStart, decimal rangeEnd) = binder.RequireRange(example);
@@ -138,9 +193,18 @@ internal static class PatternFunctionFactory
 	}
 
 	/// <summary>
-	/// NUM(min, max, digits) with every parameter optional: without a range, NUM(digits=5) is 00000 to 99999 and NUM()
-	/// is 0 to 999,999,999.
+	///	Creates a NUM node. With a range it behaves like RAND_NUM; without a range it uses either the requested digit
+	///	width or the default broad number range.
 	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <returns>
+	///	A random-number node for the NUM function.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the optional range or digits arguments are invalid.
+	/// </exception>
 	private static PatternNode CreateNumber(PatternArgumentBinder binder)
 	{
 		if (binder.HasRangeArgument())
@@ -149,15 +213,28 @@ internal static class PatternFunctionFactory
 		}
 
 		decimal? requestedDigits = binder.OptionalNumber("digits");
-		int      digits          = requestedDigits.HasValue
-			? binder.ToCount(requestedDigits.Value, "digits", NO_PADDING, MAXIMUM_NUMBER_DIGITS)
-			: NO_PADDING;
+		int      digits          =
+			requestedDigits.HasValue
+				? binder.ToCount(requestedDigits.Value, "digits", NO_PADDING, MAXIMUM_NUMBER_DIGITS)
+				: NO_PADDING;
 		long     maximum         = digits == NO_PADDING ? DEFAULT_NUMBER_MAXIMUM : (long)PatternTemplateSet.Pow10(digits) - 1;
 
 		binder.EnsureComplete("min", "max", "digits");
 		return new RandomNumberPatternNode(0, maximum, digits);
 	}
 
+	/// <summary>
+	///	Creates a ROW node that emits the one-based row number with optional zero padding.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <returns>
+	///	A row-number node configured with the parsed digit width.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the digits argument is outside the allowed range.
+	/// </exception>
 	private static PatternNode CreateRowNumber(PatternArgumentBinder binder)
 	{
 		int digits = binder.ToCount(binder.OptionalNumber("digits") ?? NO_PADDING, "digits", NO_PADDING, MAXIMUM_DIGITS);
@@ -166,6 +243,18 @@ internal static class PatternFunctionFactory
 		return new RowNumberPatternNode(digits);
 	}
 
+	/// <summary>
+	///	Creates a CYCLE node that returns the supplied values in row order, wrapping after the last value.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <returns>
+	///	A cycle node containing the positional values.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when no values are supplied or a value is written as an unquoted range.
+	/// </exception>
 	private static PatternNode CreateCycle(PatternArgumentBinder binder)
 	{
 		IReadOnlyList<string> values = ReadValues(binder, binder.TakeRemainingPositional());
@@ -180,9 +269,24 @@ internal static class PatternFunctionFactory
 	}
 
 	/// <summary>
-	/// FIRST(value) / LAST(value) for the first or last row, or FIRST(n, v1, …, vn) / LAST(n, v1, …, vn) for the first or
-	/// last n rows (one value per row, or one value for all of them). Other rows get else= (empty by default).
+	///	Creates a FIRST or LAST node that supplies special values for the first or last rows and an optional else value for
+	///	all other rows.
 	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <param name="functionName">
+	///	The FIRST or LAST function name used in error messages.
+	/// </param>
+	/// <param name="fromEnd">
+	///	Whether positions are counted from the end of the row set.
+	/// </param>
+	/// <returns>
+	///	A row-position node configured with the chosen rows and other-row value.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the value list is missing, the row count is invalid, or the number of values does not match the count.
+	/// </exception>
 	private static PatternNode CreateRowPosition(PatternArgumentBinder binder, string functionName, bool fromEnd)
 	{
 		IReadOnlyList<PatternArgument> arguments  = binder.TakeRemainingPositional();
@@ -224,6 +328,24 @@ internal static class PatternFunctionFactory
 		return new RowPositionPatternNode(fromEnd, values, otherValue);
 	}
 
+	/// <summary>
+	///	Creates a literal node from text converted to upper or lower case.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <param name="functionName">
+	///	The function name used in the example when text is missing.
+	/// </param>
+	/// <param name="upperCase">
+	///	Whether to convert the text to upper case; otherwise it is converted to lower case.
+	/// </param>
+	/// <returns>
+	///	A literal node containing the converted text.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the text argument is missing or invalid.
+	/// </exception>
 	private static PatternNode CreateCase(PatternArgumentBinder binder, string functionName, bool upperCase)
 	{
 		string text = binder.RequireValue("text", $"{functionName}(COL(Name))");
@@ -232,6 +354,24 @@ internal static class PatternFunctionFactory
 		return new LiteralPatternNode(upperCase ? text.ToUpperInvariant() : text.ToLowerInvariant());
 	}
 
+	/// <summary>
+	///	Creates a literal node from the leftmost or rightmost characters of supplied text.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <param name="functionName">
+	///	The LEFT or RIGHT function name used in examples.
+	/// </param>
+	/// <param name="fromEnd">
+	///	Whether to take characters from the end of the text.
+	/// </param>
+	/// <returns>
+	///	A literal node containing the requested slice, or an empty literal when the length is 0.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the text or length arguments are missing or invalid.
+	/// </exception>
 	private static PatternNode CreateTextPart(PatternArgumentBinder binder, string functionName, bool fromEnd)
 	{
 		string  text   = binder.RequireValue("text", $"{functionName}(COL(Name), 3)");
@@ -242,6 +382,18 @@ internal static class PatternFunctionFactory
 		return new LiteralPatternNode(fromEnd ? text[^count..] : text[..count]);
 	}
 
+	/// <summary>
+	///	Creates a literal node from text padded on the left to a requested length with a single character.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <returns>
+	///	A literal node containing the padded text.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when text or length is missing, length is invalid, or the pad character is not exactly one character.
+	/// </exception>
 	private static PatternNode CreatePad(PatternArgumentBinder binder)
 	{
 		string  text      = binder.RequireValue("text", "PAD(COL(Number), 6)");
@@ -257,6 +409,21 @@ internal static class PatternFunctionFactory
 		return new LiteralPatternNode(text.PadLeft(binder.ToCount(length, "length", 0, MAXIMUM_TEXT_LENGTH), character[0]));
 	}
 
+	/// <summary>
+	///	Reads positional arguments as literal values and rejects unquoted ranges that probably meant text.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder used to create validation errors.
+	/// </param>
+	/// <param name="arguments">
+	///	The positional arguments to read.
+	/// </param>
+	/// <returns>
+	///	The argument texts in their original order.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when one of the values was parsed as a range.
+	/// </exception>
 	private static IReadOnlyList<string> ReadValues(PatternArgumentBinder binder, IReadOnlyList<PatternArgument> arguments)
 	{
 		foreach (PatternArgument argument in arguments)
@@ -270,6 +437,18 @@ internal static class PatternFunctionFactory
 		return [.. arguments.Select(argument => argument.Text)];
 	}
 
+	/// <summary>
+	///	Creates a RAND_DECIMAL node from a decimal range and optional number of decimal places.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <returns>
+	///	A random-decimal node configured with range and precision.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the range or decimals arguments are invalid.
+	/// </exception>
 	private static PatternNode CreateRandomDecimal(PatternArgumentBinder binder)
 	{
 		(decimal minimum, decimal maximum) = binder.RequireRange("RAND_DECIMAL(0, 100)");
@@ -283,6 +462,27 @@ internal static class PatternFunctionFactory
 		return new RandomDecimalPatternNode(minimum, maximum, decimals);
 	}
 
+	/// <summary>
+	///	Creates a random text node for letters, digits, or letters and digits, with fixed or ranged length.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <param name="example">
+	///	An example call used when reporting a missing or malformed length.
+	/// </param>
+	/// <param name="includeLetters">
+	///	Whether the generated alphabet includes letters.
+	/// </param>
+	/// <param name="includeDigits">
+	///	Whether the generated alphabet includes digits.
+	/// </param>
+	/// <returns>
+	///	A random-text node configured with alphabet and length bounds.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the length or case arguments are invalid.
+	/// </exception>
 	private static PatternNode CreateRandomText(PatternArgumentBinder binder, string example, bool includeLetters, bool includeDigits)
 	{
 		(decimal lengthStart, decimal lengthEnd) = binder.RequireLength(example);
@@ -313,6 +513,18 @@ internal static class PatternFunctionFactory
 		return new RandomTextPatternNode(alphabet, minimumLength, maximumLength);
 	}
 
+	/// <summary>
+	///	Creates a RAND_DATE node from two parsed dates and an optional output format.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <returns>
+	///	A random-date node configured with inclusive date-time bounds and format.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when dates are missing, invalid, reversed, or the format is invalid.
+	/// </exception>
 	private static PatternNode CreateRandomDate(PatternArgumentBinder binder)
 	{
 		string   minimumText = binder.RequireText("min", "RAND_DATE('2020-01-01', '2024-12-31')");
@@ -336,6 +548,18 @@ internal static class PatternFunctionFactory
 		return new RandomDatePatternNode(minimum, maximum, format);
 	}
 
+	/// <summary>
+	///	Creates a TODAY node using either the current generation time or a random time within today.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <returns>
+	///	A today node configured with the selected time mode and format.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the time mode or date format is invalid.
+	/// </exception>
 	private static PatternNode CreateToday(PatternArgumentBinder binder)
 	{
 		string timeText = binder.OptionalText("time") ?? TIME_NOW;
@@ -355,6 +579,18 @@ internal static class PatternFunctionFactory
 		return new TodayPatternNode(time == TIME_ANY, format);
 	}
 
+	/// <summary>
+	///	Creates a choice node that picks one of the supplied values at random.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <returns>
+	///	A choice node containing one literal option per supplied value.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when no values are supplied or an unknown named parameter remains.
+	/// </exception>
 	private static PatternNode CreateOneOf(PatternArgumentBinder binder)
 	{
 		IReadOnlyList<PatternArgument> values = binder.TakeRemainingPositional();
@@ -368,6 +604,18 @@ internal static class PatternFunctionFactory
 		return new ChoicePatternNode([.. values.Select(value => new LiteralPatternNode(value.Text))]);
 	}
 
+	/// <summary>
+	///	Creates a GUID node that emits a new identifier in upper or lower case.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <returns>
+	///	A GUID node configured with the requested letter case.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the case argument is not UPPER or LOWER.
+	/// </exception>
 	private static PatternNode CreateGuid(PatternArgumentBinder binder)
 	{
 		string letterCase = (binder.OptionalText("case") ?? "UPPER").ToUpperInvariant();
@@ -381,6 +629,18 @@ internal static class PatternFunctionFactory
 		return new GuidPatternNode(letterCase == "UPPER");
 	}
 
+	/// <summary>
+	///	Creates a COL or COLUMN node that reads another column value from the current row.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <returns>
+	///	A column-reference node for the trimmed column name.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the name argument is missing, invalid or empty.
+	/// </exception>
 	private static PatternNode CreateColumnReference(PatternArgumentBinder binder)
 	{
 		string columnName = binder.RequireText("name", "COL(Colour) or COL('Shirt colour')").Trim();
@@ -395,8 +655,26 @@ internal static class PatternFunctionFactory
 	}
 
 	/// <summary>
-	/// Reads the optional digits argument: the fixed width numbers are zero-padded to, or 0 for no padding.
+	///	Reads the optional digits argument for fixed-width numbers and checks it can contain the largest range value.
 	/// </summary>
+	/// <param name="binder">
+	///	The argument binder for the function call.
+	/// </param>
+	/// <param name="minimum">
+	///	The inclusive minimum value that may be formatted.
+	/// </param>
+	/// <param name="maximum">
+	///	The inclusive maximum value that may be formatted.
+	/// </param>
+	/// <param name="defaultDigits">
+	///	The digit width to use when the argument is omitted.
+	/// </param>
+	/// <returns>
+	///	The requested digit width, or 0 for no padding.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the width is outside the allowed range or too small for the values.
+	/// </exception>
 	private static int ReadDigits(PatternArgumentBinder binder, long minimum, long maximum, int defaultDigits)
 	{
 		decimal? requestedDigits = binder.OptionalNumber("digits");
@@ -426,6 +704,18 @@ internal static class PatternFunctionFactory
 		return digits;
 	}
 
+	/// <summary>
+	///	Checks that a date-time format string can be used to format a date.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder used to create validation errors.
+	/// </param>
+	/// <param name="format">
+	///	The .NET date-time format string to validate.
+	/// </param>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when <paramref name="format"/> is not a valid date-time format string.
+	/// </exception>
 	private static void EnsureValidDateFormat(PatternArgumentBinder binder, string format)
 	{
 		try
@@ -438,10 +728,26 @@ internal static class PatternFunctionFactory
 		}
 	}
 
+	/// <summary>
+	///	Parses a date argument using invariant-culture date rules.
+	/// </summary>
+	/// <param name="binder">
+	///	The argument binder used to create validation errors.
+	/// </param>
+	/// <param name="text">
+	///	The text to parse as a date.
+	/// </param>
+	/// <returns>
+	///	The parsed date and time.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when <paramref name="text"/> is not a valid date.
+	/// </exception>
 	private static DateTime ParseDate(PatternArgumentBinder binder, string text)
 	{
-		return DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out DateTime value)
-			? value
-			: throw binder.Error($"'{text}' is not a valid date. Use the form 'yyyy-MM-dd', e.g. '2024-12-31'.");
+		return
+			DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out DateTime value)
+				? value
+				: throw binder.Error($"'{text}' is not a valid date. Use the form 'yyyy-MM-dd', e.g. '2024-12-31'.");
 	}
 }

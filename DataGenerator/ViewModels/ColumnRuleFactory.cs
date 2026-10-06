@@ -3,19 +3,42 @@
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// Creates the column rules of a new row set, linking each column to the table it references (declared or inferred) and
-/// applying the saved settings that are marked to be used automatically.
+///	Creates the column rules of a new row set, linking each column to the table it references (declared or inferred) and
+///	applying the saved settings that are marked to be used automatically.
 /// </summary>
 public sealed class ColumnRuleFactory
 {
 	private readonly ColumnRuleServices _services;
 
+	/// <summary>
+	///	Creates a rule factory that uses the shared column-rule services.
+	/// </summary>
+	/// <param name="services">
+	///	The services passed to each created column rule.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="services"/> is <see langword="null"/>.
+	/// </exception>
 	public ColumnRuleFactory(ColumnRuleServices services)
 	{
 		_services = services ?? throw new ArgumentNullException(nameof(services));
 	}
 
-	/// <param name="isUpdate">Whether the rules are for an update set; their columns keep their current values until changed.</param>
+	/// <summary>
+	///	Creates one rule for each column of a table and attaches its declared or inferred reference.
+	/// </summary>
+	/// <param name="table">
+	///	The table whose columns need generation rules.
+	/// </param>
+	/// <param name="isUpdate">
+	///	Whether the rules are for an update set; their columns keep their current values until changed.
+	/// </param>
+	/// <returns>
+	///	The created rules, in the same order as the table columns.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="table"/> is <see langword="null"/>.
+	/// </exception>
 	public IReadOnlyList<ColumnRuleViewModel> CreateRules(TableModel table, bool isUpdate = false)
 	{
 		ArgumentNullException.ThrowIfNull(table);
@@ -44,6 +67,18 @@ public sealed class ColumnRuleFactory
 	}
 
 	// Declared foreign keys win over relationships inferred from the FTK naming convention.
+	/// <summary>
+	///	Finds the foreign key that belongs to a column, preferring declared keys over inferred ones.
+	/// </summary>
+	/// <param name="table">
+	///	The table that owns the column and its foreign-key metadata.
+	/// </param>
+	/// <param name="column">
+	///	The column whose reference is being looked up.
+	/// </param>
+	/// <returns>
+	///	The matching reference, or <see langword="null"/> when the column has none.
+	/// </returns>
 	private static ForeignKeyModel? FindReference(TableModel table, ColumnModel column)
 		=> table.ForeignKeys
 			.Where(foreignKey => string.Equals(foreignKey.ParentColumn, column.Name, StringComparison.OrdinalIgnoreCase))

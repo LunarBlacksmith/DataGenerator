@@ -19,6 +19,7 @@
 	UseLayoutRounding     ="True"
 	WindowStartupLocation ="CenterOwner">
 	<Window.Resources>
+		<!-- Shared DataGrid text style: centred and trimmed so long saved-setting values fit the row -->
 		<Style
 			x:Key      ="GridCellTextStyle"
 			TargetType ="TextBlock">
@@ -33,6 +34,7 @@
 				Value    ="CharacterEllipsis" />
 		</Style>
 
+		<!-- Monospace variant for saved setting summaries -->
 		<Style
 			x:Key      ="GridCodeTextStyle"
 			TargetType ="TextBlock"
@@ -56,6 +58,7 @@
 				Height="Auto" />
 		</Grid.RowDefinitions>
 
+		<!-- Explains how saved settings are picked, applied automatically and shared -->
 		<TextBlock
 			Grid.Row     ="0"
 			Margin       ="4,0,4,8"
@@ -65,6 +68,7 @@
 
 		<Grid
 			Grid.Row ="1">
+			<!-- Editable list of saved settings; selection enables delete and row edits save through the manager view model -->
 			<DataGrid
 				AutoGenerateColumns ="False"
 				CanUserAddRows      ="False"
@@ -75,6 +79,7 @@
 				SelectionMode       ="Single"
 				ToolTip             ="{StaticResource SavedSettingsGridHint}">
 				<DataGrid.Columns>
+					<!-- Name column edits the saved setting name and validates on lost focus -->
 					<DataGridTemplateColumn
 						Width    ="1.2*"
 						MinWidth ="140">
@@ -98,6 +103,7 @@
 						</DataGridTemplateColumn.CellTemplate>
 					</DataGridTemplateColumn>
 
+					<!-- Generation mode that the saved values belong to -->
 					<DataGridTemplateColumn
 						Width    ="110"
 						MinWidth ="90">
@@ -117,6 +123,7 @@
 						</DataGridTemplateColumn.CellTemplate>
 					</DataGridTemplateColumn>
 
+					<!-- Human-readable summary of the stored rule values -->
 					<DataGridTemplateColumn
 						Width    ="2*"
 						MinWidth ="160">
@@ -137,6 +144,7 @@
 						</DataGridTemplateColumn.CellTemplate>
 					</DataGridTemplateColumn>
 
+					<!-- Automatic toggle is enabled only when the setting still has a target column -->
 					<DataGridTemplateColumn
 						Width    ="90"
 						MinWidth ="80">
@@ -160,6 +168,7 @@
 						</DataGridTemplateColumn.CellTemplate>
 					</DataGridTemplateColumn>
 
+					<!-- Target table or column scope used for automatic application -->
 					<DataGridTemplateColumn
 						Width    ="1.4*"
 						MinWidth ="140">
@@ -182,6 +191,7 @@
 				</DataGrid.Columns>
 			</DataGrid>
 
+			<!-- Empty state shown until the library contains at least one saved setting -->
 			<TextBlock
 				Style      ="{StaticResource PlaceholderTextStyle}"
 				Text       ="No saved settings yet. Open the saved-settings menu of a column (the button at the right of its Settings cell) and choose 'Save these settings…', or import a file a colleague exported."
@@ -192,6 +202,7 @@
 		<DockPanel
 			Grid.Row ="2"
 			Margin   ="0,8,0,0">
+			<!-- Window actions and saved-settings library operations -->
 			<Button
 				DockPanel.Dock ="Right"
 				MinWidth       ="90"
@@ -234,6 +245,7 @@
 		<DockPanel
 			Grid.Row ="3"
 			Margin   ="4,6,4,0">
+			<!-- Last operation result on the right, storage location on the left -->
 			<TextBlock
 				DockPanel.Dock ="Right"
 				Margin         ="12,0,0,0"

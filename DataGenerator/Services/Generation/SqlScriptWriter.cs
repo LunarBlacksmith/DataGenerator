@@ -7,7 +7,7 @@ using DataGenerator.Models;
 namespace DataGenerator.Services.Generation;
 
 /// <summary>
-/// Writes a <see cref="GenerationBlueprint"/> as one transactional T-SQL script.
+///	Writes a <see cref="GenerationBlueprint"/> as one transactional T-SQL script.
 /// </summary>
 internal sealed class SqlScriptWriter
 {
@@ -20,6 +20,18 @@ internal sealed class SqlScriptWriter
 	private readonly ISqlValueConverter _converter;
 	private readonly RowValueBuilder    _rowValueBuilder;
 
+	/// <summary>
+	///	Creates the service that writes transactional generation scripts.
+	/// </summary>
+	/// <param name="converter">
+	///	The converter used to format SQL literals and type declarations.
+	/// </param>
+	/// <param name="rowValueBuilder">
+	///	The builder used to generate row values.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any dependency is <see langword="null"/>.
+	/// </exception>
 	public SqlScriptWriter(ISqlValueConverter converter, RowValueBuilder rowValueBuilder)
 	{
 		_converter       = converter       ?? throw new ArgumentNullException(nameof(converter));
@@ -27,8 +39,20 @@ internal sealed class SqlScriptWriter
 	}
 
 	/// <summary>
-	/// Writes to a temporary file first, so an existing script is only replaced when the new one is complete.
+	///	Writes to a temporary file first, so an existing script is only replaced when the new one is complete.
 	/// </summary>
+	/// <param name="blueprint">
+	///	The generation blueprint to write.
+	/// </param>
+	/// <param name="outputFilePath">
+	///	The script file path to create or replace.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for row writing.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel script generation.
+	/// </param>
 	public Task WriteAsync(
 		GenerationBlueprint blueprint,
 		string              outputFilePath,
@@ -37,6 +61,24 @@ internal sealed class SqlScriptWriter
 	)
 		=> Task.Run(() => Write(blueprint, outputFilePath, progress, cancellationToken), cancellationToken);
 
+	/// <summary>
+	///	Writes the script to a temporary file and then atomically replaces the target file.
+	/// </summary>
+	/// <param name="blueprint">
+	///	The generation blueprint to write.
+	/// </param>
+	/// <param name="outputFilePath">
+	///	The script file path to create or replace.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for row writing.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel script generation.
+	/// </param>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when the output path has no containing folder.
+	/// </exception>
 	private void Write(
 		GenerationBlueprint blueprint,
 		string              outputFilePath,
@@ -68,6 +110,24 @@ internal sealed class SqlScriptWriter
 		}
 	}
 
+	/// <summary>
+	///	Writes the full transaction script, including cleanup, row generation, post-generation SQL and error handling.
+	/// </summary>
+	/// <param name="writer">
+	///	The text writer receiving the script.
+	/// </param>
+	/// <param name="blueprint">
+	///	The generation blueprint to write.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for row writing.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel script generation.
+	/// </param>
+	/// <exception cref="OperationCanceledException">
+	///	Thrown when <paramref name="cancellationToken"/> is cancelled.
+	/// </exception>
 	private void WriteScript(
 		TextWriter          writer,
 		GenerationBlueprint blueprint,
@@ -148,6 +208,15 @@ internal sealed class SqlScriptWriter
 		writer.WriteLine("END CATCH;");
 	}
 
+	/// <summary>
+	///	Writes the script banner, totals, run order and warnings.
+	/// </summary>
+	/// <param name="writer">
+	///	The text writer receiving the script.
+	/// </param>
+	/// <param name="blueprint">
+	///	The generation blueprint being described.
+	/// </param>
 	private static void WriteHeader(TextWriter writer, GenerationBlueprint blueprint)
 	{
 		string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
@@ -204,6 +273,15 @@ internal sealed class SqlScriptWriter
 		writer.WriteLine();
 	}
 
+	/// <summary>
+	///	Writes table-variable declarations and cleanup for generated keys, sampled pools and temporary tables.
+	/// </summary>
+	/// <param name="writer">
+	///	The text writer receiving the script.
+	/// </param>
+	/// <param name="blueprint">
+	///	The generation blueprint whose declarations are needed.
+	/// </param>
 	private void WriteDeclarations(TextWriter writer, GenerationBlueprint blueprint)
 	{
 		bool hasDeclarations = false;
@@ -264,6 +342,15 @@ internal sealed class SqlScriptWriter
 		}
 	}
 
+	/// <summary>
+	///	Writes optional table deletion and identity reseed statements.
+	/// </summary>
+	/// <param name="writer">
+	///	The text writer receiving the script.
+	/// </param>
+	/// <param name="blueprint">
+	///	The generation blueprint whose cleanup settings are written.
+	/// </param>
 	private static void WriteCleanup(TextWriter writer, GenerationBlueprint blueprint)
 	{
 		if (blueprint.TablesToClear.Count == 0)
@@ -280,9 +367,10 @@ internal sealed class SqlScriptWriter
 
 		writer.WriteLine();
 
-		List<TableModel> identityTables = blueprint.ResetIdentitySeeds
-			? [.. blueprint.TablesToClear.Where(SqlCleanupStatements.HasIdentityColumn)]
-			: [];
+		List<TableModel> identityTables =
+			blueprint.ResetIdentitySeeds
+				? [.. blueprint.TablesToClear.Where(SqlCleanupStatements.HasIdentityColumn)]
+				: [];
 
 		if (identityTables.Count == 0)
 		{
@@ -303,9 +391,15 @@ internal sealed class SqlScriptWriter
 	}
 
 	/// <summary>
-	/// Writes the stored procedures and SQL the user asked to run after the inserts. Their SQL is written exactly as typed
-	/// (not indented), so text that spans several lines inside quotes is not changed.
+	///	Writes the stored procedures and SQL the user asked to run after the inserts. Their SQL is written exactly as typed
+	///	(not indented), so text that spans several lines inside quotes is not changed.
 	/// </summary>
+	/// <param name="writer">
+	///	The text writer receiving the script.
+	/// </param>
+	/// <param name="blueprint">
+	///	The generation blueprint whose post-generation SQL is written.
+	/// </param>
 	private static void WritePostGeneration(TextWriter writer, GenerationBlueprint blueprint)
 	{
 		if (blueprint.PostGeneration is not PostGenerationScript postGeneration)
@@ -335,8 +429,14 @@ internal sealed class SqlScriptWriter
 	}
 
 	/// <summary>
-	/// Copies the rows that exist before anything is inserted, for the "Generated rows" and "Existing rows" scopes.
+	///	Copies the rows that exist before anything is inserted, for the "Generated rows" and "Existing rows" scopes.
 	/// </summary>
+	/// <param name="writer">
+	///	The text writer receiving the script.
+	/// </param>
+	/// <param name="blueprint">
+	///	The generation blueprint whose snapshots are written.
+	/// </param>
 	private static void WriteSnapshots(TextWriter writer, GenerationBlueprint blueprint)
 	{
 		if (blueprint.Snapshots.Count == 0)
@@ -354,6 +454,15 @@ internal sealed class SqlScriptWriter
 		writer.WriteLine();
 	}
 
+	/// <summary>
+	///	Writes SQL that loads and validates one value-from-table lookup variable.
+	/// </summary>
+	/// <param name="writer">
+	///	The text writer receiving the script.
+	/// </param>
+	/// <param name="lookup">
+	///	The lookup pool to load.
+	/// </param>
 	private static void WriteLookupLoad(TextWriter writer, LookupPool lookup)
 	{
 		string valueColumn = SqlSyntax.QuoteIdentifier(GeneratedKeyTable.GetValueColumnName(0));
@@ -373,8 +482,29 @@ internal sealed class SqlScriptWriter
 	}
 
 	/// <summary>
-	/// Writes an update set: its new values go into a staging table, then randomly chosen matching rows are changed.
+	///	Writes an update set: its new values go into a staging table, then randomly chosen matching rows are changed.
 	/// </summary>
+	/// <param name="writer">
+	///	The text writer receiving the script.
+	/// </param>
+	/// <param name="table">
+	///	The table blueprint that owns the row set.
+	/// </param>
+	/// <param name="rowSet">
+	///	The row set whose values are written.
+	/// </param>
+	/// <param name="update">
+	///	The update metadata with staging and update SQL.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for row writing.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel script generation.
+	/// </param>
+	/// <exception cref="OperationCanceledException">
+	///	Thrown when <paramref name="cancellationToken"/> is cancelled.
+	/// </exception>
 	private void WriteUpdate(
 		TextWriter         writer,
 		TableBlueprint     table,
@@ -430,6 +560,15 @@ internal sealed class SqlScriptWriter
 		writer.WriteLine();
 	}
 
+	/// <summary>
+	///	Formats one operation for the script run-order header.
+	/// </summary>
+	/// <param name="operation">
+	///	The operation to describe.
+	/// </param>
+	/// <returns>
+	///	A readable step, table, row-set and action description.
+	/// </returns>
 	private static string DescribeOperation(GenerationOperation operation)
 	{
 		RowSetPlan plan   = operation.RowSet.Plan;
@@ -438,6 +577,15 @@ internal sealed class SqlScriptWriter
 		return $"Step {plan.Step}: {operation.Table.Table.FullyQualifiedName} › Set '{plan.Name}' ({action})";
 	}
 
+	/// <summary>
+	///	Writes SQL that loads and validates one existing-key sample variable.
+	/// </summary>
+	/// <param name="writer">
+	///	The text writer receiving the script.
+	/// </param>
+	/// <param name="pool">
+	///	The existing-key pool to load.
+	/// </param>
 	private void WritePoolLoad(TextWriter writer, ExistingKeyPool pool)
 	{
 		string columns = string.Join(
@@ -457,6 +605,27 @@ internal sealed class SqlScriptWriter
 		writer.WriteLine();
 	}
 
+	/// <summary>
+	///	Writes the INSERT statements for one insert row set and records any captured keys.
+	/// </summary>
+	/// <param name="writer">
+	///	The text writer receiving the script.
+	/// </param>
+	/// <param name="table">
+	///	The table blueprint that owns the row set.
+	/// </param>
+	/// <param name="rowSet">
+	///	The row set whose rows are written.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for row writing.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel script generation.
+	/// </param>
+	/// <exception cref="OperationCanceledException">
+	///	Thrown when <paramref name="cancellationToken"/> is cancelled.
+	/// </exception>
 	private void WriteRowSet(
 		TextWriter         writer,
 		TableBlueprint     table,
@@ -512,6 +681,18 @@ internal sealed class SqlScriptWriter
 		writer.WriteLine();
 	}
 
+	/// <summary>
+	///	Writes a pending multi-row VALUES batch and clears it.
+	/// </summary>
+	/// <param name="writer">
+	///	The text writer receiving the script.
+	/// </param>
+	/// <param name="insertPrefix">
+	///	The INSERT prefix that precedes VALUES.
+	/// </param>
+	/// <param name="batch">
+	///	The formatted value rows to write.
+	/// </param>
 	private static void WriteBatch(TextWriter writer, string insertPrefix, List<string> batch)
 	{
 		if (batch.Count == 0)
@@ -529,6 +710,18 @@ internal sealed class SqlScriptWriter
 		batch.Clear();
 	}
 
+	/// <summary>
+	///	Builds the INSERT prefix for a row set.
+	/// </summary>
+	/// <param name="table">
+	///	The table receiving the inserted rows.
+	/// </param>
+	/// <param name="rowSet">
+	///	The row set whose source columns are inserted.
+	/// </param>
+	/// <returns>
+	///	The INSERT statement prefix, without VALUES or DEFAULT VALUES.
+	/// </returns>
 	private static string CreateInsertPrefix(TableModel table, RowSetBlueprint rowSet)
 	{
 		if (rowSet.Sources.Count == 0)
@@ -542,8 +735,14 @@ internal sealed class SqlScriptWriter
 	}
 
 	/// <summary>
-	/// Captures key values that SQL Server produces (for example identities) for later "Generated key" references.
+	///	Captures key values that SQL Server produces (for example identities) for later "Generated key" references.
 	/// </summary>
+	/// <param name="keys">
+	///	The generated-key table to capture into, or <see langword="null"/> when no keys are captured.
+	/// </param>
+	/// <returns>
+	///	The OUTPUT clause, or an empty string when no script variable is needed.
+	/// </returns>
 	private static string CreateOutputClause(GeneratedKeyTable? keys)
 	{
 		if (keys?.OutputVariableName is null)
@@ -560,6 +759,18 @@ internal sealed class SqlScriptWriter
 		return $" OUTPUT {insertedColumns} INTO {keys.OutputVariableName} ({valueColumns})";
 	}
 
+	/// <summary>
+	///	Formats one generated row as SQL literals in source order.
+	/// </summary>
+	/// <param name="rowSet">
+	///	The row-set blueprint that supplies column metadata.
+	/// </param>
+	/// <param name="values">
+	///	The generated values to format.
+	/// </param>
+	/// <returns>
+	///	The comma-separated SQL literal list for the row.
+	/// </returns>
 	private string FormatValues(RowSetBlueprint rowSet, object?[] values)
 	{
 		StringBuilder builder = new();
@@ -577,6 +788,15 @@ internal sealed class SqlScriptWriter
 		return builder.ToString();
 	}
 
+	/// <summary>
+	///	Describes the columns of a script table variable used for captured values.
+	/// </summary>
+	/// <param name="columns">
+	///	The value columns to include after the row number.
+	/// </param>
+	/// <returns>
+	///	A comma-separated list of table-variable column declarations.
+	/// </returns>
 	private string DescribeVariableColumns(IReadOnlyList<ColumnModel> columns)
 	{
 		StringBuilder builder = new("[RowNumber] INT IDENTITY(1, 1) PRIMARY KEY");
@@ -594,9 +814,27 @@ internal sealed class SqlScriptWriter
 		return builder.ToString();
 	}
 
+	/// <summary>
+	///	Formats a count and noun for script comments.
+	/// </summary>
+	/// <param name="count">
+	///	The count to format.
+	/// </param>
+	/// <param name="noun">
+	///	The singular noun to pluralise when needed.
+	/// </param>
+	/// <returns>
+	///	The formatted count and noun.
+	/// </returns>
 	private static string FormatCount(long count, string noun)
 		=> $"{count.ToString("N0", CultureInfo.InvariantCulture)} {noun}{(count == 1 ? string.Empty : "s")}";
 
+	/// <summary>
+	///	Tries to delete an incomplete temporary script file, ignoring harmless file-system failures.
+	/// </summary>
+	/// <param name="path">
+	///	The file path to delete.
+	/// </param>
 	private static void TryDeleteFile(string path)
 	{
 		try

@@ -5,13 +5,25 @@ using DataGenerator.Models;
 namespace DataGenerator.Services;
 
 /// <summary>
-/// Stores saved column settings as indented JSON, so the files can be read, reviewed, kept in source control and shared.
+///	Stores saved column settings as indented JSON, so the files can be read, reviewed, kept in source control and shared.
 /// </summary>
 public sealed class JsonSavedSettingsStore : ISavedSettingsStore
 {
 	private const int    FORMAT_VERSION   = 1;
 	private const string FILE_DESCRIPTION = "saved column settings file";
 
+	/// <summary>
+	///	Creates a store for the saved column settings library file.
+	/// </summary>
+	/// <param name="libraryFilePath">
+	///	The JSON file path used for the saved column settings library.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="libraryFilePath"/> is <see langword="null"/>.
+	/// </exception>
+	/// <exception cref="ArgumentException">
+	///	Thrown when <paramref name="libraryFilePath"/> is empty or white space.
+	/// </exception>
 	public JsonSavedSettingsStore(string libraryFilePath)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(libraryFilePath);
@@ -20,18 +32,66 @@ public sealed class JsonSavedSettingsStore : ISavedSettingsStore
 
 	public string LibraryFilePath { get; }
 
+	/// <summary>
+	///	Loads the saved column settings library when it exists.
+	/// </summary>
+	/// <returns>
+	///	The saved column settings, or an empty list when the library file does not exist.
+	/// </returns>
 	public IReadOnlyList<SavedColumnSetting> LoadLibrary() => File.Exists(LibraryFilePath) ? Read(LibraryFilePath) : [];
 
+	/// <summary>
+	///	Saves the column settings library file.
+	/// </summary>
+	/// <param name="settings">
+	///	The settings to save.
+	/// </param>
 	public void SaveLibrary(IReadOnlyList<SavedColumnSetting> settings) => Write(LibraryFilePath, settings);
 
+	/// <summary>
+	///	Moves the library file aside when it exists.
+	/// </summary>
+	/// <returns>
+	///	The new path of the renamed library file, or <see langword="null"/> when it does not exist.
+	/// </returns>
 	public string? SetAsideLibraryFile() => JsonDocumentFile.SetAside(LibraryFilePath);
 
+	/// <summary>
+	///	Reads saved column settings from an import file.
+	/// </summary>
+	/// <param name="filePath">
+	///	The import file to read.
+	/// </param>
+	/// <returns>
+	///	The imported saved column settings.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="filePath"/> is <see langword="null"/>.
+	/// </exception>
+	/// <exception cref="ArgumentException">
+	///	Thrown when <paramref name="filePath"/> is empty or white space.
+	/// </exception>
 	public IReadOnlyList<SavedColumnSetting> Import(string filePath)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 		return Read(filePath);
 	}
 
+	/// <summary>
+	///	Writes saved column settings to an export file.
+	/// </summary>
+	/// <param name="filePath">
+	///	The export file to write.
+	/// </param>
+	/// <param name="settings">
+	///	The settings to export.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="filePath"/> is <see langword="null"/>.
+	/// </exception>
+	/// <exception cref="ArgumentException">
+	///	Thrown when <paramref name="filePath"/> is empty or white space.
+	/// </exception>
 	public void Export(string filePath, IReadOnlyList<SavedColumnSetting> settings)
 	{
 		ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
@@ -39,10 +99,20 @@ public sealed class JsonSavedSettingsStore : ISavedSettingsStore
 	}
 
 	/// <summary>
-	/// Checks a setting read from a file and fills in missing text. <paramref name="location"/> describes where the
-	/// setting was found, e.g. "Setting 3 in 'settings.json'".
-	/// Throws <see cref="InvalidDataException"/> when the setting cannot be used.
+	///	Checks a setting read from a file, trims text and fills in missing optional values.
 	/// </summary>
+	/// <param name="setting">
+	///	The setting to validate and normalise.
+	/// </param>
+	/// <param name="location">
+	///	The user-facing location of the setting in the file.
+	/// </param>
+	/// <returns>
+	///	The validated and normalised setting.
+	/// </returns>
+	/// <exception cref="InvalidDataException">
+	///	Thrown when the setting has no name or an unknown generation mode.
+	/// </exception>
 	internal static SavedColumnSetting Normalize(SavedColumnSetting? setting, string location)
 	{
 		if (setting is null || string.IsNullOrWhiteSpace(setting.Name))
@@ -69,6 +139,18 @@ public sealed class JsonSavedSettingsStore : ISavedSettingsStore
 		return setting;
 	}
 
+	/// <summary>
+	///	Reads and normalises a saved column settings document.
+	/// </summary>
+	/// <param name="filePath">
+	///	The JSON file to read.
+	/// </param>
+	/// <returns>
+	///	The normalised saved column settings from the file.
+	/// </returns>
+	/// <exception cref="InvalidDataException">
+	///	Thrown when the file is not a saved column settings document or was saved by a newer format.
+	/// </exception>
 	private static List<SavedColumnSetting> Read(string filePath)
 	{
 		SavedSettingsDocument? document = JsonDocumentFile.Read<SavedSettingsDocument>(filePath, FILE_DESCRIPTION);
@@ -95,6 +177,18 @@ public sealed class JsonSavedSettingsStore : ISavedSettingsStore
 		return settings;
 	}
 
+	/// <summary>
+	///	Writes saved column settings inside the current document format.
+	/// </summary>
+	/// <param name="filePath">
+	///	The JSON file to write.
+	/// </param>
+	/// <param name="settings">
+	///	The settings to write.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="settings"/> is <see langword="null"/>.
+	/// </exception>
 	private static void Write(string filePath, IReadOnlyList<SavedColumnSetting> settings)
 	{
 		ArgumentNullException.ThrowIfNull(settings);

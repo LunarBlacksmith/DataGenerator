@@ -6,8 +6,8 @@ using DataGenerator.Models;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// Which optional columns the column rules grid shows. The choice applies to every row set and is remembered for the next
-/// start of the application.
+///	Which optional columns the column rules grid shows. The choice applies to every row set and is remembered for the next
+///	start of the application.
 /// </summary>
 public sealed class RuleGridColumnsViewModel : ObservableObject
 {
@@ -23,6 +23,18 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 
 	private bool _isMenuOpen;
 
+	/// <summary>
+	///	Creates the grid-column menu and loads the user's hidden-column choices.
+	/// </summary>
+	/// <param name="preferencesStore">
+	///	The preferences store that remembers hidden columns.
+	/// </param>
+	/// <param name="dialogService">
+	///	The dialog service used when preferences cannot be saved.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="preferencesStore"/> or <paramref name="dialogService"/> is <see langword="null"/>.
+	/// </exception>
 	public RuleGridColumnsViewModel(IUserPreferencesStore preferencesStore, IDialogService dialogService)
 	{
 		_preferencesStore = preferencesStore ?? throw new ArgumentNullException(nameof(preferencesStore));
@@ -84,7 +96,7 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// Whether the drop-down list of the columns is open.
+	///	Whether the drop-down list of the columns is open.
 	/// </summary>
 	public bool IsMenuOpen
 	{
@@ -92,9 +104,30 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 		set => SetProperty(ref _isMenuOpen, value);
 	}
 
+	/// <summary>
+	///	Creates one grid-column choice from the saved hidden-column set.
+	/// </summary>
+	/// <param name="key">
+	///	The preference key for the column.
+	/// </param>
+	/// <param name="displayName">
+	///	The text shown in the columns menu.
+	/// </param>
+	/// <param name="description">
+	///	The explanation shown for the column.
+	/// </param>
+	/// <param name="hiddenColumns">
+	///	The column keys hidden in the user's preferences.
+	/// </param>
+	/// <returns>
+	///	The created column option.
+	/// </returns>
 	private RuleGridColumnOption CreateOption(string key, string displayName, string description, HashSet<string> hiddenColumns)
 		=> new RuleGridColumnOption(key, displayName, description, !hiddenColumns.Contains(key), OnVisibilityChanged);
 
+	/// <summary>
+	///	Shows every optional grid column.
+	/// </summary>
 	private void ShowAll()
 	{
 		foreach (RuleGridColumnOption option in Options)
@@ -103,6 +136,12 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Refreshes the menu text and saves preferences after one option changes visibility.
+	/// </summary>
+	/// <param name="option">
+	///	The option whose visibility changed.
+	/// </param>
 	private void OnVisibilityChanged(RuleGridColumnOption option)
 	{
 		OnPropertyChanged(nameof(HasHiddenColumns));
@@ -111,6 +150,9 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 		SaveHiddenColumns();
 	}
 
+	/// <summary>
+	///	Saves the list of hidden grid columns to the user's preferences.
+	/// </summary>
 	private void SaveHiddenColumns()
 	{
 		try

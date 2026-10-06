@@ -3,14 +3,23 @@
 namespace DataGenerator.Services.Generation;
 
 /// <summary>
-/// Orders tables so referenced tables are handled before the tables that depend on them.
+///	Orders tables so referenced tables are handled before the tables that depend on them.
 /// </summary>
 internal static class TableDependencySorter
 {
 	/// <summary>
-	/// "Generated key" references are hard dependencies (a cycle is an error); "Existing key" references between
-	/// generated tables are preferences that are dropped when they would form a cycle.
+	///	"Generated key" references are hard dependencies (a cycle is an error); "Existing key" references between
+	///	generated tables are preferences that are dropped when they would form a cycle.
 	/// </summary>
+	/// <param name="plans">
+	///	The table plans to order for insertion.
+	/// </param>
+	/// <returns>
+	///	The plans ordered with referenced tables before dependent tables.
+	/// </returns>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when required generated-key dependencies form a cycle.
+	/// </exception>
 	public static IReadOnlyList<TableGenerationPlan> SortForInsertion(IReadOnlyList<TableGenerationPlan> plans)
 	{
 		Dictionary<string, TableGenerationPlan> plansByKey   = new(StringComparer.OrdinalIgnoreCase);
@@ -51,8 +60,14 @@ internal static class TableDependencySorter
 	}
 
 	/// <summary>
-	/// Orders tables for DELETE statements: tables that reference others (through declared foreign keys) come first.
+	///	Orders tables for DELETE statements: tables that reference others (through declared foreign keys) come first.
 	/// </summary>
+	/// <param name="tables">
+	///	The tables to order for deletion.
+	/// </param>
+	/// <returns>
+	///	The tables ordered so dependent tables are deleted before referenced tables.
+	/// </returns>
 	public static IReadOnlyList<TableModel> SortForDeletion(IReadOnlyList<TableModel> tables)
 	{
 		Dictionary<string, TableModel>       tablesByKey  = new(StringComparer.OrdinalIgnoreCase);
@@ -80,6 +95,24 @@ internal static class TableDependencySorter
 		return [.. parentsFirst.Select(key => tablesByKey[key])];
 	}
 
+	/// <summary>
+	///	Topologically sorts keys using the supplied dependency graph.
+	/// </summary>
+	/// <param name="keys">
+	///	The keys to sort.
+	/// </param>
+	/// <param name="dependencies">
+	///	Dependencies keyed by the item that depends on them.
+	/// </param>
+	/// <param name="plansByKey">
+	///	Optional table plans used to produce friendly cycle messages.
+	/// </param>
+	/// <returns>
+	///	The sorted keys with dependencies before dependants.
+	/// </returns>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when required dependencies form a cycle.
+	/// </exception>
 	private static List<string> Sort(
 		IEnumerable<string>                        keys,
 		Dictionary<string, List<Dependency>>       dependencies,
@@ -98,6 +131,30 @@ internal static class TableDependencySorter
 		return result;
 	}
 
+	/// <summary>
+	///	Visits one key and appends it after its dependencies have been visited.
+	/// </summary>
+	/// <param name="key">
+	///	The key to visit.
+	/// </param>
+	/// <param name="dependencies">
+	///	Dependencies keyed by item.
+	/// </param>
+	/// <param name="plansByKey">
+	///	Optional table plans used to produce friendly cycle messages.
+	/// </param>
+	/// <param name="visited">
+	///	The keys already added to the result.
+	/// </param>
+	/// <param name="path">
+	///	The current recursion path, used to detect cycles.
+	/// </param>
+	/// <param name="result">
+	///	The sorted result being built.
+	/// </param>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when required dependencies form a cycle.
+	/// </exception>
 	private static void Visit(
 		string                                   key,
 		Dictionary<string, List<Dependency>>     dependencies,
@@ -136,6 +193,24 @@ internal static class TableDependencySorter
 		result.Add(key);
 	}
 
+	/// <summary>
+	///	Builds the validation message for a required generated-key dependency cycle.
+	/// </summary>
+	/// <param name="path">
+	///	The current dependency path.
+	/// </param>
+	/// <param name="pathIndex">
+	///	The index in the path where the cycle begins.
+	/// </param>
+	/// <param name="dependency">
+	///	The dependency that closes the cycle.
+	/// </param>
+	/// <param name="plansByKey">
+	///	Optional table plans used to display table names.
+	/// </param>
+	/// <returns>
+	///	A user-facing description of the cycle.
+	/// </returns>
 	private static string DescribeCycle(
 		List<string>                             path,
 		int                                      pathIndex,

@@ -25,11 +25,40 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 
 	private readonly ISqlValueConverter _converter;
 
+	/// <summary>
+	///	Creates a caster that uses the shared SQL value converter for column metadata and SQL type conversions.
+	/// </summary>
+	/// <param name="converter">
+	///	The converter used to classify SQL types and produce CLR values that fit each column.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="converter"/> is <see langword="null"/>.
+	/// </exception>
 	public ColumnValueCaster(ISqlValueConverter converter)
 	{
 		_converter = converter ?? throw new ArgumentNullException(nameof(converter));
 	}
 
+	/// <summary>
+	///	Converts a copied value so it fits the target column, applying SQL Server-like leniency for copied pattern values.
+	/// </summary>
+	/// <param name="target">
+	///	The column that receives the value.
+	/// </param>
+	/// <param name="value">
+	///	The source value to copy. <see cref="DBNull"/> is treated as <see langword="null"/>, and SQL fragments are
+	///	returned unchanged.
+	/// </param>
+	/// <returns>
+	///	The converted value, <see langword="null"/> when the target is nullable and the source is null, or the original
+	///	SQL fragment.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="target"/> is <see langword="null"/>.
+	/// </exception>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when values cannot be copied into the target SQL type.
+	/// </exception>
 	public object? Cast(ColumnModel target, object? value)
 	{
 		ArgumentNullException.ThrowIfNull(target);
@@ -68,6 +97,18 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		};
 	}
 
+	/// <summary>
+	///	Formats a generated or copied value as invariant text for pattern substitution.
+	/// </summary>
+	/// <param name="value">
+	///	The value to format. <see langword="null"/> and <see cref="DBNull"/> become an empty string.
+	/// </param>
+	/// <returns>
+	///	The text representation of the value, or an empty string for null values.
+	/// </returns>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when <paramref name="value"/> is a SQL fragment whose runtime value is not available.
+	/// </exception>
 	public string ToText(object? value) => value switch
 	{
 		null or DBNull                => string.Empty,
@@ -77,9 +118,10 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		),
 		string text                   => text,
 		bool booleanValue             => booleanValue ? "1" : "0",
-		DateTime dateTimeValue        => dateTimeValue.TimeOfDay == TimeSpan.Zero
-			? dateTimeValue.ToString(DATE_FORMAT, INVARIANT)
-			: dateTimeValue.ToString(DATE_TIME_FORMAT, INVARIANT),
+		DateTime dateTimeValue        =>
+			dateTimeValue.TimeOfDay == TimeSpan.Zero
+				? dateTimeValue.ToString(DATE_FORMAT, INVARIANT)
+				: dateTimeValue.ToString(DATE_TIME_FORMAT, INVARIANT),
 		DateTimeOffset offsetValue    => offsetValue.ToString("yyyy-MM-dd HH:mm:ss zzz", INVARIANT),
 		TimeSpan timeValue            => timeValue.ToString(@"hh\:mm\:ss", INVARIANT),
 		Guid guidValue                => guidValue.ToString("D").ToUpperInvariant(),
@@ -88,11 +130,27 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		_                             => value.ToString() ?? string.Empty
 	};
 
+	/// <summary>
+	///	Converts a value to an integer SQL type, truncating decimals and clamping it to the type range.
+	/// </summary>
+	/// <param name="target">
+	///	The integer column that receives the value.
+	/// </param>
+	/// <param name="sqlType">
+	///	The normalised SQL type name used to choose the integer range.
+	/// </param>
+	/// <param name="value">
+	///	The source value to convert.
+	/// </param>
+	/// <returns>
+	///	A CLR value suitable for the target integer column.
+	/// </returns>
 	private object CastToInteger(ColumnModel target, string sqlType, object? value)
 	{
-		decimal number = TryGetNumber(value, out decimal numericValue)
-			? decimal.Truncate(numericValue)
-			: ParseDigits(ToText(value), allowDecimalPoint: false);
+		decimal number =
+			TryGetNumber(value, out decimal numericValue)
+				? decimal.Truncate(numericValue)
+				: ParseDigits(ToText(value), allowDecimalPoint: false);
 
 		(long minimum, long maximum) = sqlType switch
 		{
@@ -105,19 +163,36 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		return _converter.ConvertSequenceValue(target, Math.Clamp(number, minimum, maximum));
 	}
 
+	/// <summary>
+	///	Converts a value to a decimal, money or floating-point SQL type, rounding and clamping to the column shape.
+	/// </summary>
+	/// <param name="target">
+	///	The numeric column that receives the value.
+	/// </param>
+	/// <param name="sqlType">
+	///	The normalised SQL type name used to choose precision, scale and range rules.
+	/// </param>
+	/// <param name="value">
+	///	The source value to convert.
+	/// </param>
+	/// <returns>
+	///	A CLR numeric value suitable for the target column.
+	/// </returns>
 	private object CastToDecimal(ColumnModel target, string sqlType, object? value)
 	{
-		decimal number = TryGetNumber(value, out decimal numericValue)
-			? numericValue
-			: ParseDigits(ToText(value), allowDecimalPoint: true);
+		decimal number =
+			TryGetNumber(value, out decimal numericValue)
+				? numericValue
+				: ParseDigits(ToText(value), allowDecimalPoint: true);
 
 		if (sqlType is "float" or "real")
 		{
 			double floatingValue = (double)number;
 
-			return sqlType == "real"
-				? (float)Math.Clamp(floatingValue, -REAL_MAXIMUM, REAL_MAXIMUM)
-				: floatingValue;
+			return
+				sqlType == "real"
+					? (float)Math.Clamp(floatingValue, -REAL_MAXIMUM, REAL_MAXIMUM)
+					: floatingValue;
 		}
 
 		int     scale;
@@ -141,6 +216,15 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		return _converter.ConvertSequenceValue(target, Math.Clamp(rounded, -maximum, maximum));
 	}
 
+	/// <summary>
+	///	Converts a value to a Boolean, accepting non-zero numbers and common true words.
+	/// </summary>
+	/// <param name="value">
+	///	The source value to convert.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the value is true, non-zero or a true word; otherwise <see langword="false"/>.
+	/// </returns>
 	private object CastToBoolean(object? value)
 	{
 		if (value is bool booleanValue)
@@ -158,18 +242,43 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		return TRUE_WORDS.Contains(text, StringComparer.OrdinalIgnoreCase) || ParseDigits(text, allowDecimalPoint: true) != 0;
 	}
 
+	/// <summary>
+	///	Converts a value to text and truncates it to the target column length when required.
+	/// </summary>
+	/// <param name="target">
+	///	The text column that receives the value.
+	/// </param>
+	/// <param name="value">
+	///	The source value to convert.
+	/// </param>
+	/// <returns>
+	///	The formatted text, shortened when it is longer than the target column allows.
+	/// </returns>
 	private object CastToText(ColumnModel target, object? value)
 	{
 		string text          = ToText(value);
 		int?   maximumLength = _converter.GetMaximumTextLength(target);
 
-		return maximumLength.HasValue && text.Length > maximumLength.Value
-			? text[..maximumLength.Value]
-			: text;
+		return
+			maximumLength.HasValue && text.Length > maximumLength.Value
+				? text[..maximumLength.Value]
+				: text;
 	}
 
+	/// <summary>
+	///	Converts a value to a SQL date or time-related CLR value, clamping to SQL Server date ranges where needed.
+	/// </summary>
+	/// <param name="sqlType">
+	///	The normalised SQL type name used to choose date, smalldatetime, datetime or datetimeoffset behaviour.
+	/// </param>
+	/// <param name="value">
+	///	The source value to convert.
+	/// </param>
+	/// <returns>
+	///	A <see cref="DateTime"/> or <see cref="DateTimeOffset"/> value suitable for the requested SQL type.
+	/// </returns>
 	/// <remarks>
-	/// A number is read as a count of days after 1900-01-01, like CONVERT(datetime, number) in SQL Server.
+	///	A number is read as a count of days after 1900-01-01, like CONVERT(datetime, number) in SQL Server.
 	/// </remarks>
 	private object CastToDateTime(string sqlType, object? value)
 	{
@@ -227,6 +336,15 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		}
 	}
 
+	/// <summary>
+	///	Reads a value as a date and time, falling back to digit extraction when normal parsing fails.
+	/// </summary>
+	/// <param name="value">
+	///	The source value to parse.
+	/// </param>
+	/// <returns>
+	///	The parsed date and time, or a date offset from 1900-01-01 when the value is numeric.
+	/// </returns>
 	private DateTime ParseDateTime(object? value)
 	{
 		if (TryGetNumber(value, out decimal days))
@@ -244,6 +362,18 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		return AddDays(ParseDigits(text, allowDecimalPoint: false));
 	}
 
+	/// <summary>
+	///	Converts a value to a time of day, using converter parsing and midnight as the fallback.
+	/// </summary>
+	/// <param name="target">
+	///	The time column that receives the value.
+	/// </param>
+	/// <param name="value">
+	///	The source value to convert.
+	/// </param>
+	/// <returns>
+	///	A <see cref="TimeSpan"/> value within a day, or <see cref="TimeSpan.Zero"/> when no time can be read.
+	/// </returns>
 	private object CastToTime(ColumnModel target, object? value)
 	{
 		switch (value)
@@ -264,11 +394,24 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 			}
 		}
 
-		return _converter.TryConvertText(target, ToText(value), out object? converted, out _) && converted is not null
-			? converted
-			: TimeSpan.Zero;
+		return
+			_converter.TryConvertText(target, ToText(value), out object? converted, out _) && converted is not null
+				? converted
+				: TimeSpan.Zero;
 	}
 
+	/// <summary>
+	///	Converts a value to a GUID, deriving a stable GUID from text when it is not already a valid GUID.
+	/// </summary>
+	/// <param name="target">
+	///	The GUID column that receives the value.
+	/// </param>
+	/// <param name="value">
+	///	The source value to convert.
+	/// </param>
+	/// <returns>
+	///	The existing GUID, a parsed GUID, <see cref="Guid.Empty"/> for empty text, or a stable hash-based GUID.
+	/// </returns>
 	private object CastToGuid(ColumnModel target, object? value)
 	{
 		if (value is Guid guidValue)
@@ -287,6 +430,18 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		return text.Length == 0 ? Guid.Empty : new Guid(MD5.HashData(Encoding.UTF8.GetBytes(text)));
 	}
 
+	/// <summary>
+	///	Converts a value to bytes and truncates it to the target binary length when required.
+	/// </summary>
+	/// <param name="target">
+	///	The binary column that receives the value.
+	/// </param>
+	/// <param name="value">
+	///	The source value to convert.
+	/// </param>
+	/// <returns>
+	///	The byte array from the source value, GUID, hex text or UTF-8 text, shortened when the target column requires it.
+	/// </returns>
 	private object CastToBinary(ColumnModel target, object? value)
 	{
 		byte[] bytes;
@@ -303,16 +458,30 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		{
 			string text = ToText(value);
 
-			bytes = _converter.TryConvertText(target, text, out object? converted, out _) && converted is byte[] hexBytes
-				? hexBytes
-				: Encoding.UTF8.GetBytes(text);
+			bytes =
+				_converter.TryConvertText(target, text, out object? converted, out _) && converted is byte[] hexBytes
+					? hexBytes
+					: Encoding.UTF8.GetBytes(text);
 		}
 
-		return target.MaximumLength is > 0 && bytes.Length > target.MaximumLength.Value
-			? bytes[..target.MaximumLength.Value]
-			: bytes;
+		return
+			target.MaximumLength is > 0 && bytes.Length > target.MaximumLength.Value
+				? bytes[..target.MaximumLength.Value]
+				: bytes;
 	}
 
+	/// <summary>
+	///	Attempts to read a value as a finite decimal number.
+	/// </summary>
+	/// <param name="value">
+	///	The value to inspect.
+	/// </param>
+	/// <param name="number">
+	///	The numeric value when conversion succeeds, or zero when conversion fails.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when a number was read; otherwise <see langword="false"/>.
+	/// </returns>
 	private static bool TryGetNumber(object? value, out decimal number)
 	{
 		switch (value)
@@ -356,9 +525,18 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 	}
 
 	/// <summary>
-	/// Keeps only the digits of <paramref name="text"/> (and the first decimal point when allowed), e.g. '-AB12.5C' gives -12.5.
-	/// Text without digits gives 0; numbers too large for a decimal give the largest decimal.
+	///	Keeps only the digits of <paramref name="text"/> and the first decimal point when allowed.
+	///	Text without digits gives 0; numbers too large for a decimal give the largest decimal.
 	/// </summary>
+	/// <param name="text">
+	///	The text whose digits are read. A leading minus sign makes the result negative.
+	/// </param>
+	/// <param name="allowDecimalPoint">
+	///	Whether the first decimal point after a digit is kept.
+	/// </param>
+	/// <returns>
+	///	The decimal represented by the digits, zero when there are no digits, or decimal maximum when too large.
+	/// </returns>
 	private static decimal ParseDigits(string text, bool allowDecimalPoint)
 	{
 		StringBuilder builder         = new();
@@ -384,13 +562,23 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 			return 0;
 		}
 
-		decimal number = decimal.TryParse(digits, NumberStyles.AllowDecimalPoint, INVARIANT, out decimal parsed)
-			? parsed
-			: decimal.MaxValue;
+		decimal number =
+			decimal.TryParse(digits, NumberStyles.AllowDecimalPoint, INVARIANT, out decimal parsed)
+				? parsed
+				: decimal.MaxValue;
 
 		return text.TrimStart().StartsWith('-') ? -number : number;
 	}
 
+	/// <summary>
+	///	Adds a day count to the default SQL Server date while staying inside the CLR date range.
+	/// </summary>
+	/// <param name="days">
+	///	The number of days after 1900-01-01.
+	/// </param>
+	/// <returns>
+	///	The resulting date and time, clamped so it can be represented by <see cref="DateTime"/>.
+	/// </returns>
 	private static DateTime AddDays(decimal days)
 	{
 		double minimumDays = (DateTime.MinValue - DEFAULT_DATE).TotalDays;
@@ -399,6 +587,15 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		return DEFAULT_DATE.AddDays(Math.Clamp((double)days, minimumDays, maximumDays));
 	}
 
+	/// <summary>
+	///	Calculates a power of ten using decimal arithmetic.
+	/// </summary>
+	/// <param name="exponent">
+	///	The non-negative exponent.
+	/// </param>
+	/// <returns>
+	///	Ten raised to <paramref name="exponent"/>.
+	/// </returns>
 	private static decimal Pow10(int exponent)
 	{
 		decimal value = 1;

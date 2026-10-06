@@ -2,7 +2,7 @@
 	xmlns   ="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x ="http://schemas.microsoft.com/winfx/2006/xaml">
 
-	<!-- Window and text -->
+	<!-- Window and text: application background and default foregrounds -->
 	<SolidColorBrush
 		x:Key ="WindowBackgroundBrush"
 		Color ="#EEF1F5" />
@@ -56,7 +56,7 @@
 		x:Key ="OutputAccentBrush"
 		Color ="#C08A2E" />
 
-	<!-- Rows of the database tree and the column rules grid -->
+	<!-- Database explorer and column rules rows: alternating, selected, hidden and key states -->
 	<SolidColorBrush
 		x:Key ="RowBrush"
 		Color ="#FFFFFF" />
@@ -109,7 +109,7 @@
 		x:Key ="ForeignKeyAlternateRowBrush"
 		Color ="#FAD7B2" />
 
-	<!-- Status -->
+	<!-- Status: validation and warning colours used by inputs, banners and icons -->
 	<SolidColorBrush
 		x:Key ="ErrorBrush"
 		Color ="#B3261E" />
@@ -126,7 +126,7 @@
 		x:Key ="WarningBrush"
 		Color ="#B26A00" />
 
-	<!-- Buttons and inputs -->
+	<!-- Buttons, inputs and chrome: shared accents, borders, headers and status bar colours -->
 	<SolidColorBrush
 		x:Key ="AccentBrush"
 		Color ="#2B6CB0" />
@@ -183,7 +183,7 @@
 		x:Key ="StatusBarBorderBrush"
 		Color ="#CDD4DE" />
 
-	<!-- Pop-ups, hints and scroll bars -->
+	<!-- Pop-ups, hints and scroll bars: floating surfaces and scroll thumb colours -->
 	<SolidColorBrush
 		x:Key ="PopupBackgroundBrush"
 		Color ="#FFFFFF" />
@@ -208,7 +208,7 @@
 		x:Key ="ScrollBarThumbHoverBrush"
 		Color ="#A3ADB9" />
 
-	<!-- Key badges -->
+	<!-- Key badges: small labels for primary keys, foreign keys, identity columns and row sets -->
 	<SolidColorBrush
 		x:Key ="PrimaryKeyBadgeBrush"
 		Color ="#F3B3AE" />

@@ -3,22 +3,52 @@
 namespace DataGenerator.Services.Generation;
 
 /// <summary>
-/// T-SQL used to empty tables before new data is inserted. Shared by the script writer and the direct inserter.
+///	T-SQL used to empty tables before new data is inserted. Shared by the script writer and the direct inserter.
 /// </summary>
 internal static class SqlCleanupStatements
 {
 	public const string RESEED_VARIABLE_NAME = "@dg_reseed";
 
+	/// <summary>
+	///	Checks whether a table contains an identity column.
+	/// </summary>
+	/// <param name="table">
+	///	The table to inspect.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the table has an identity column; otherwise <see langword="false"/>.
+	/// </returns>
 	public static bool HasIdentityColumn(TableModel table) => table.Columns.Any(column => column.IsIdentity);
 
+	/// <summary>
+	///	Builds the SQL statement that deletes all rows from a table.
+	/// </summary>
+	/// <param name="table">
+	///	The table to empty.
+	/// </param>
+	/// <returns>
+	///	A DELETE statement for the table.
+	/// </returns>
 	public static string CreateDeleteStatement(TableModel table) => $"DELETE FROM {table.FullyQualifiedName};";
 
+	/// <summary>
+	///	Builds the variable declaration required by identity reseed statements.
+	/// </summary>
+	/// <returns>
+	///	A DECLARE statement for the reseed value variable.
+	/// </returns>
 	public static string CreateReseedDeclaration() => $"DECLARE {RESEED_VARIABLE_NAME} BIGINT;";
 
 	/// <summary>
-	/// Restarts the identity at its seed, so the next inserted row receives the seed value. Tables that never
-	/// contained rows already start at their seed and are skipped. Requires <see cref="CreateReseedDeclaration"/>.
+	///	Restarts the identity at its seed, so the next inserted row receives the seed value. Tables that never
+	///	contained rows already start at their seed and are skipped. Requires <see cref="CreateReseedDeclaration"/>.
 	/// </summary>
+	/// <param name="table">
+	///	The table whose identity value should be reset.
+	/// </param>
+	/// <returns>
+	///	The SQL statements that read and apply the reseed value.
+	/// </returns>
 	public static IReadOnlyList<string> CreateReseedStatements(TableModel table)
 	{
 		string databaseName = SqlSyntax.QuoteIdentifier(table.DatabaseName);

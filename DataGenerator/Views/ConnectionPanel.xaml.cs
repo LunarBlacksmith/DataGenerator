@@ -3,10 +3,13 @@
 namespace DataGenerator.Views;
 
 /// <summary>
-/// SQL Server connection details and the button that loads the database metadata.
+///	SQL Server connection details and the button that loads the database metadata.
 /// </summary>
 public partial class ConnectionPanel : UserControl
 {
+	/// <summary>
+	///	Creates the panel and loads its XAML-defined connection controls.
+	/// </summary>
 	public ConnectionPanel()
 	{
 		InitializeComponent();

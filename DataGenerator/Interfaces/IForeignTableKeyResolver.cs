@@ -3,13 +3,24 @@
 namespace DataGenerator.Interfaces;
 
 /// <summary>
-/// Infers relationships from the column naming convention: a column named "&lt;prefix&gt;FTK" (any casing) that is not a
-/// declared foreign key is linked to a key column with the same prefix in another table of the same database: one named
-/// "&lt;prefix&gt;PK" (any casing), "&lt;prefix&gt;TK" where the prefix ends in a lower-case letter, or "&lt;prefix&gt;_tk"
-/// (any casing). An underscore between the prefix and the suffix is ignored, so tag_FTK also matches tagPK.
+///	Infers relationships from the column naming convention: a column named "&lt;prefix&gt;FTK" (any casing) that is not a
+///	declared foreign key is linked to a key column with the same prefix in another table of the same database: one named
+///	"&lt;prefix&gt;PK" (any casing), "&lt;prefix&gt;TK" where the prefix ends in a lower-case letter, or "&lt;prefix&gt;_tk"
+///	(any casing). An underscore between the prefix and the suffix is ignored, so tag_FTK also matches tagPK.
 /// </summary>
 public interface IForeignTableKeyResolver
 {
-	/// <returns>The number of inferred relationships that were added to the tables' foreign keys.</returns>
+	/// <summary>
+	///	Adds inferred foreign-key relationships for columns that follow the FTK naming convention.
+	/// </summary>
+	/// <param name="databases">
+	///	The loaded databases whose tables are inspected and updated in place.
+	/// </param>
+	/// <returns>
+	///	The number of inferred relationships that were added to the tables' foreign keys.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="databases"/> is <see langword="null"/>.
+	/// </exception>
 	int ResolveInferredKeys(IReadOnlyList<DatabaseModel> databases);
 }

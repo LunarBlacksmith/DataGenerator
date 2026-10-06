@@ -3,7 +3,7 @@
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// One entry of the generation mode drop-down, with the text shown to the user.
+///	One entry of the generation mode drop-down, with the text shown to the user.
 /// </summary>
 public sealed class GenerationModeOption
 {
@@ -72,6 +72,18 @@ public sealed class GenerationModeOption
 		)
 	];
 
+	/// <summary>
+	///	Creates a generation mode option with the text shown in the UI.
+	/// </summary>
+	/// <param name="mode">
+	///	The generation mode the option chooses.
+	/// </param>
+	/// <param name="displayName">
+	///	The short label shown in the mode list.
+	/// </param>
+	/// <param name="description">
+	///	The explanatory text shown for the mode.
+	/// </param>
 	private GenerationModeOption(ValueGenerationMode mode, string displayName, string description)
 	{
 		Mode        = mode;
@@ -83,7 +95,22 @@ public sealed class GenerationModeOption
 	public string              DisplayName { get; }
 	public string              Description { get; }
 
+	/// <summary>
+	///	Finds the option for a generation mode.
+	/// </summary>
+	/// <param name="mode">
+	///	The generation mode to find.
+	/// </param>
+	/// <returns>
+	///	The matching option.
+	/// </returns>
 	public static GenerationModeOption Get(ValueGenerationMode mode) => ALL_OPTIONS.First(option => option.Mode == mode);
 
+	/// <summary>
+	///	Returns the text shown for this generation mode.
+	/// </summary>
+	/// <returns>
+	///	The display name.
+	/// </returns>
 	public override string ToString() => DisplayName;
 }

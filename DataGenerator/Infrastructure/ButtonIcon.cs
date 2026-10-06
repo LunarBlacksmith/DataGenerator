@@ -3,8 +3,8 @@
 namespace DataGenerator.Infrastructure;
 
 /// <summary>
-/// Attaches an icon to a button: a character of the Segoe Fluent Icons (or Segoe MDL2 Assets) font. The button templates in
-/// Themes\Controls.xaml show the icon in front of the button content.
+///	Attaches an icon to a button: a character of the Segoe Fluent Icons (or Segoe MDL2 Assets) font. The button templates in
+///	Themes\Controls.xaml show the icon in front of the button content.
 /// </summary>
 public static class ButtonIcon
 {
@@ -16,6 +16,25 @@ public static class ButtonIcon
 			new FrameworkPropertyMetadata(null)
 		);
 
+	/// <summary>
+	///	Gets the icon glyph attached to a button or other dependency object.
+	/// </summary>
+	/// <param name="element">
+	///	The element that stores the attached glyph.
+	/// </param>
+	/// <returns>
+	///	The glyph string, or <see langword="null"/> when none is set.
+	/// </returns>
 	public static string? GetGlyph(DependencyObject element) => (string?)element.GetValue(GLYPH_PROPERTY);
+
+	/// <summary>
+	///	Sets the icon glyph attached to a button or other dependency object.
+	/// </summary>
+	/// <param name="element">
+	///	The element that stores the attached glyph.
+	/// </param>
+	/// <param name="value">
+	///	The glyph string to show, or <see langword="null"/> to clear the value.
+	/// </param>
 	public static void SetGlyph(DependencyObject element, string? value) => element.SetValue(GLYPH_PROPERTY, value);
 }

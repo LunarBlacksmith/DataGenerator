@@ -5,14 +5,14 @@ using DataGenerator.Services.Patterns;
 namespace DataGenerator.Services.Generation;
 
 /// <summary>
-/// Turns the "Value from table" rules of a row set into <see cref="LookupPool"/>s with the T-SQL that reads their values.
+///	Turns the "Value from table" rules of a row set into <see cref="LookupPool"/>s with the T-SQL that reads their values.
 /// </summary>
 internal sealed class LookupPoolFactory
 {
 	public const int MAXIMUM_SAMPLE_SIZE = ExistingKeyPool.MAXIMUM_SAMPLE_SIZE;
 
 	/// <summary>
-	/// The source row alias that SQL filters (WHERE SQL …) use, e.g. s.[Colour] = 'Red'.
+	///	The source row alias that SQL filters (WHERE SQL …) use, e.g. s.[Colour] = 'Red'.
 	/// </summary>
 	public const string SOURCE_ALIAS = "s";
 
@@ -28,6 +28,25 @@ internal sealed class LookupPoolFactory
 	private readonly bool                  _usesScriptVariables;
 	private int                            _poolCount;
 
+	/// <summary>
+	///	Creates the factory that turns value-from-table rules into lookup pools.
+	/// </summary>
+	/// <param name="converter">
+	///	The converter used to describe and compare SQL Server values.
+	/// </param>
+	/// <param name="translator">
+	///	The translator used for pattern filters.
+	/// </param>
+	/// <param name="snapshots">
+	///	The snapshot set used for generated-row and existing-row scopes.
+	/// </param>
+	/// <param name="usesScriptVariables">
+	///	Whether generated SQL scripts will choose values from table variables.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="converter"/>, <paramref name="translator"/> or <paramref name="snapshots"/> is
+	///	<see langword="null"/>.
+	/// </exception>
 	public LookupPoolFactory(ISqlValueConverter converter, IPatternSqlTranslator translator, RowSnapshotSet snapshots, bool usesScriptVariables)
 	{
 		_converter           = converter  ?? throw new ArgumentNullException(nameof(converter));
@@ -36,6 +55,24 @@ internal sealed class LookupPoolFactory
 		_usesScriptVariables = usesScriptVariables;
 	}
 
+	/// <summary>
+	///	Creates the lookup pool for one value-from-table column rule.
+	/// </summary>
+	/// <param name="targetTable">
+	///	The table whose row set receives the lookup value.
+	/// </param>
+	/// <param name="rowSet">
+	///	The row set that contains the rule.
+	/// </param>
+	/// <param name="rule">
+	///	The column rule with a resolved lookup source.
+	/// </param>
+	/// <returns>
+	///	A lookup pool with the SQL needed to read its values.
+	/// </returns>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when the rule has no resolved lookup source.
+	/// </exception>
 	public LookupPool Create(TableModel targetTable, RowSetPlan rowSet, ColumnRule rule)
 	{
 		ColumnLookup lookup   = rule.Lookup
@@ -56,6 +93,30 @@ internal sealed class LookupPoolFactory
 		);
 	}
 
+	/// <summary>
+	///	Builds the randomised SQL statement that reads lookup values from the source table.
+	/// </summary>
+	/// <param name="lookup">
+	///	The resolved lookup source and filter.
+	/// </param>
+	/// <param name="targetTable">
+	///	The table whose column receives the values.
+	/// </param>
+	/// <param name="targetColumn">
+	///	The target column used for conversion and uniqueness checks.
+	/// </param>
+	/// <param name="topCount">
+	///	The maximum number of values to read.
+	/// </param>
+	/// <param name="location">
+	///	The user-facing location used in filter errors.
+	/// </param>
+	/// <returns>
+	///	A SELECT statement that returns converted, non-null values in random order.
+	/// </returns>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when a pattern filter cannot be translated to SQL.
+	/// </exception>
 	private string BuildSelectStatement(ColumnLookup lookup, TableModel targetTable, ColumnModel targetColumn, int topCount, string location)
 	{
 		string       sourceColumn = $"{SOURCE_ALIAS}.{SqlSyntax.QuoteIdentifier(lookup.SourceColumn.Name)}";
@@ -101,6 +162,24 @@ internal sealed class LookupPoolFactory
 			+ "ORDER BY NEWID()";
 	}
 
+	/// <summary>
+	///	Builds the optional WHERE condition for a lookup filter.
+	/// </summary>
+	/// <param name="lookup">
+	///	The lookup whose filter should be converted.
+	/// </param>
+	/// <param name="sourceColumn">
+	///	The SQL expression for the source column.
+	/// </param>
+	/// <param name="location">
+	///	The user-facing location used in pattern errors.
+	/// </param>
+	/// <returns>
+	///	The SQL condition, or <see langword="null"/> when there is no filter.
+	/// </returns>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when a pattern filter cannot be translated to SQL.
+	/// </exception>
 	private string? BuildFilter(ColumnLookup lookup, string sourceColumn, string location)
 	{
 		if (lookup.FilterKind == LookupFilterKind.None || string.IsNullOrWhiteSpace(lookup.FilterText))
@@ -131,8 +210,17 @@ internal sealed class LookupPoolFactory
 	}
 
 	/// <summary>
-	/// The source value as text, the way filters see it: dates as yyyy-mm-dd hh:mi:ss.mmm and binary values as 0x….
+	///	The source value as text, the way filters see it: dates as yyyy-mm-dd hh:mi:ss.mmm and binary values as 0x….
 	/// </summary>
+	/// <param name="column">
+	///	The source column whose category controls the conversion.
+	/// </param>
+	/// <param name="sourceColumn">
+	///	The SQL expression for the source column.
+	/// </param>
+	/// <returns>
+	///	A SQL expression that converts the source value to filter text.
+	/// </returns>
 	private string DescribeAsText(ColumnModel column, string sourceColumn)
 		=> _converter.GetCategory(column) switch
 		{

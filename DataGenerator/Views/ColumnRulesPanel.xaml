@@ -43,6 +43,7 @@
 			</ContextMenu.ItemContainerStyle>
 		</ContextMenu>
 
+		<!-- Applies the optional-column context menu to every header in the rules grid -->
 		<Style
 			x:Key      ="RuleGridColumnHeaderStyle"
 			TargetType ="DataGridColumnHeader"
@@ -52,6 +53,7 @@
 				Value    ="{StaticResource RuleGridColumnsMenu}" />
 		</Style>
 
+		<!-- Shared heading text used at the top of the set, lookup and saved-settings pop-ups -->
 		<Style
 			x:Key      ="PopupHeaderTextStyle"
 			TargetType ="TextBlock"
@@ -67,6 +69,7 @@
 				Value    ="CharacterEllipsis" />
 		</Style>
 
+		<!-- Compact text editor used by settings cells where the current generation mode accepts typed input -->
 		<Style
 			x:Key      ="CellTextBoxStyle"
 			TargetType ="TextBox"
@@ -76,6 +79,7 @@
 				Value    ="0,2" />
 		</Style>
 
+		<!-- Code-style settings editor for expressions, regexes, patterns and lookup formulas -->
 		<Style
 			x:Key      ="CellCodeTextBoxStyle"
 			TargetType ="TextBox"
@@ -88,6 +92,7 @@
 				Value    ="Wrap" />
 		</Style>
 
+		<!-- Compact combo box used inside grid cells, so mode-specific choices align with text editors -->
 		<Style
 			x:Key      ="CellComboBoxStyle"
 			TargetType ="ComboBox"
@@ -97,6 +102,7 @@
 				Value    ="0,2" />
 		</Style>
 
+		<!-- Secondary line under the column name; hidden when the column is not a foreign-key reference -->
 		<Style
 			x:Key      ="ReferenceTextStyle"
 			TargetType ="TextBlock"
@@ -119,6 +125,7 @@
 			</Style.Triggers>
 		</Style>
 
+		<!-- Sample values use the code font and switch to the error brush when the preview is a validation problem -->
 		<Style
 			x:Key      ="SampleTextStyle"
 			TargetType ="TextBlock">
@@ -180,6 +187,7 @@
 				Value    ="Disabled" />
 		</Style>
 
+		<!-- Watermark over the regex preset combo until the current pattern matches one of the saved profiles -->
 		<Style
 			x:Key      ="PresetWatermarkStyle"
 			TargetType ="TextBlock"
@@ -200,6 +208,7 @@
 		</Style>
 
 		<!-- Editors of the generation modes; a column only shows the editor of its own mode. Two-way bindings set UpdateSourceTrigger=PropertyChanged (see the grid below) -->
+		<!-- Fixed value: one typed value is reused for every generated row, filtered to the column's SQL type -->
 		<DataTemplate
 			x:Key    ="FixedSettingsTemplate"
 			DataType ="{x:Type viewModels:ColumnRuleViewModel}">
@@ -215,6 +224,7 @@
 			</Grid>
 		</DataTemplate>
 
+		<!-- Sequence: start and step are typed separately and constrained to integer or decimal input as needed -->
 		<DataTemplate
 			x:Key    ="SequenceSettingsTemplate"
 			DataType ="{x:Type viewModels:ColumnRuleViewModel}">
@@ -270,6 +280,7 @@
 			</Grid>
 		</DataTemplate>
 
+		<!-- Regex: free-form pattern plus optional preset list, with the placeholder shown when no preset matches -->
 		<DataTemplate
 			x:Key    ="RegexSettingsTemplate"
 			DataType ="{x:Type viewModels:ColumnRuleViewModel}">
@@ -315,6 +326,7 @@
 			</Grid>
 		</DataTemplate>
 
+		<!-- Pattern: expression editor wired to pattern auto-completion and the pattern-language help button -->
 		<DataTemplate
 			x:Key    ="PatternSettingsTemplate"
 			DataType ="{x:Type viewModels:ColumnRuleViewModel}">
@@ -351,6 +363,7 @@
 			</Grid>
 		</DataTemplate>
 
+		<!-- Copy of column: choose another column in the same row set as the source value -->
 		<DataTemplate
 			x:Key    ="CopyColumnSettingsTemplate"
 			DataType ="{x:Type viewModels:ColumnRuleViewModel}">
@@ -429,6 +442,7 @@
 					</ToggleButton.Style>
 				</ToggleButton>
 
+				<!-- Lookup builder pop-up works on a temporary LookupBuilderViewModel until Apply copies the expression back -->
 				<Popup
 					AllowsTransparency ="True"
 					IsOpen             ="{Binding	IsLookupBuilderOpen,
@@ -441,6 +455,7 @@
 					<Border
 						x:Name ="LookupBuilderBorder"
 						Style  ="{StaticResource PopupMenuBorderStyle}">
+						<!-- Lists source table, source column, row scope and optional filter for the lookup expression -->
 						<Grid
 							Width       ="400"
 							Margin      ="0,0,0,6"
@@ -562,6 +577,7 @@
 																		UpdateSourceTrigger=PropertyChanged}"
 								ToolTip           ="{Binding SelectedFilter.Description}" />
 
+							<!-- Filter text is only visible for pattern, regex or SQL filters; no-filter lookups skip this row -->
 							<Grid
 								Grid.Row    ="6"
 								Grid.Column ="1"
@@ -589,6 +605,7 @@
 								</StackPanel>
 							</Grid>
 
+							<!-- Live expression preview and validation error before it is applied to the column rule -->
 							<StackPanel
 								Grid.Row        ="7"
 								Grid.ColumnSpan ="2"
@@ -625,6 +642,7 @@
 			</Grid>
 		</DataTemplate>
 
+		<!-- Modes with no editable settings show a short description rather than an empty editor -->
 		<DataTemplate
 			x:Key    ="SummarySettingsTemplate"
 			DataType ="{x:Type viewModels:ColumnRuleViewModel}">
@@ -635,6 +653,7 @@
 				TextWrapping ="Wrap" />
 		</DataTemplate>
 
+		<!-- Chooses the correct settings template from the selected generation mode of the column rule -->
 		<Style
 			x:Key      ="SettingsEditorStyle"
 			TargetType ="ContentControl">
@@ -699,6 +718,7 @@
 			</Style.Triggers>
 		</Style>
 
+		<!-- Generation-mode drop-down items carry their explanatory text as a tooltip -->
 		<Style
 			x:Key      ="ModeItemStyle"
 			TargetType ="ComboBoxItem">
@@ -707,6 +727,7 @@
 				Value    ="{Binding Description}" />
 		</Style>
 
+		<!-- Row-set tabs: insert and update sets share the same strip, with the selected tab accented -->
 		<Style
 			x:Key      ="RowSetTabStyle"
 			TargetType ="TabItem">
@@ -831,10 +852,12 @@
 
 	</UserControl.Resources>
 
+	<!-- Selected-table column-rules panel: row-set tabs, update settings, bulk edit and the rules grid -->
 	<GroupBox
 		Header ="Column rules"
 		Style  ="{StaticResource RulesSectionStyle}">
 		<Grid>
+			<!-- Empty-state message until DatabaseExplorerViewModel.ActiveTable is set by clicking a table -->
 			<TextBlock
 				Style      ="{StaticResource PlaceholderTextStyle}"
 				Text       ="Click a table in the database explorer to choose how its columns are generated."
@@ -888,6 +911,7 @@
 															Mode=OneWay}" />
 					</TextBlock>
 
+					<!-- Includes or excludes the active table from generation without leaving the rules panel -->
 					<CheckBox
 						Grid.Column ="1"
 						Content     ="Include in generation"
@@ -895,6 +919,7 @@
 														Mode=TwoWay}"
 						ToolTip     ="{StaticResource IncludeActiveTableHint}" />
 
+					<!-- Row-set toolbar: add insert sets, add update sets, duplicate the selected set or remove it -->
 					<StackPanel
 						Grid.Column ="2"
 						Margin      ="8,0,0,0"
@@ -929,6 +954,7 @@
 					</StackPanel>
 				</Grid>
 
+				<!-- One tab per row set of the active table; the selected tab supplies the RowSetViewModel below -->
 				<TabControl
 					Grid.Row           ="1"
 					Padding            ="6,4,6,6"
@@ -938,6 +964,7 @@
 					SelectedItem       ="{Binding	ActiveTable.SelectedRowSet,
 															Mode=TwoWay}">
 					<TabControl.ItemTemplate>
+						<!-- Tab header shows the row-set name, row count, step badge, update marker and validation warning -->
 						<DataTemplate
 							DataType="{x:Type viewModels:RowSetViewModel}">
 							<StackPanel
@@ -980,6 +1007,7 @@
 					</TabControl.ItemTemplate>
 
 					<TabControl.ContentTemplate>
+						<!-- Row-set editor: common set fields first, then update-only options, bulk edit and column rules -->
 						<DataTemplate
 							DataType="{x:Type viewModels:RowSetViewModel}">
 							<Grid>
@@ -994,6 +1022,7 @@
 										Height="*" />
 								</Grid.RowDefinitions>
 
+								<!-- Row-set identity and toolbar: name, row count, step, set configuration and validation status -->
 								<WrapPanel
 									Grid.Row ="0"
 									Margin   ="0,0,0,2">
@@ -1082,6 +1111,7 @@
 											</ToggleButton.Style>
 										</ToggleButton>
 
+										<!-- Set configuration pop-up saves or loads all configurable column settings for this row set -->
 										<Popup
 											AllowsTransparency ="True"
 											IsOpen             ="{Binding	IsMenuOpen,
@@ -1148,6 +1178,7 @@
 													<Separator
 														Margin ="4" />
 
+													<!-- Load choices are saved configurations sharing at least one column with this table -->
 													<TextBlock
 														Style   ="{StaticResource PopupHeaderTextStyle}"
 														Text    ="Load into this set"
@@ -1237,6 +1268,7 @@
 													<Separator
 														Margin ="4" />
 
+													<!-- Import and export operate on the whole saved set-configuration library -->
 													<Button
 														Style   ="{StaticResource PopupMenuButtonStyle}"
 														Command ="{Binding ImportCommand}"
@@ -1383,6 +1415,7 @@
 																				Mode=TwoWay,
 																				UpdateSourceTrigger=PropertyChanged}" />
 
+											<!-- Placeholder is shown only while the update Where condition is empty -->
 											<TextBlock
 												Margin            ="6,0"
 												VerticalAlignment ="Center"
@@ -1442,6 +1475,7 @@
 												Text=". Hover for more examples." />
 										</TextBlock>
 
+										<!-- Validation warning for update sets that would not change any columns -->
 										<StackPanel
 											Grid.Row        ="2"
 											Grid.ColumnSpan ="5"
@@ -1487,6 +1521,7 @@
 												ToolTip        ="{StaticResource BulkSelectAllHint}"
 												infrastructure:ButtonIcon.Glyph ="&#xE8B3;" />
 
+											<!-- Help text until enough grid rows are selected to activate the bulk editor -->
 											<TextBlock
 												Margin            ="4,0"
 												VerticalAlignment ="Center"
@@ -1497,6 +1532,7 @@
 												Visibility        ="{Binding	IsActive,
 																						Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
 
+											<!-- Bulk editor appears for multi-selection and applies a mode or setting value to selected rules -->
 											<WrapPanel
 												Visibility="{Binding	IsActive,
 																			Converter={StaticResource BooleanToVisibilityConverter}}">
@@ -1574,6 +1610,7 @@
 											</WrapPanel>
 										</DockPanel>
 
+										<!-- Outcome of the latest bulk action, with skipped-column details in the tooltip -->
 										<TextBlock
 											Margin       ="4,0,4,3"
 											Text         ="{Binding ResultText}"
@@ -1620,6 +1657,7 @@
 									infrastructure:GridCellNavigation.IsEnabled ="True"
 									infrastructure:MultiSelection.SelectedItems ="{Binding BulkEdit.SelectedRules}">
 									<DataGrid.Columns>
+										<!-- Optional Keys column: badges for primary key, foreign key, naming-convention FTK and identity -->
 										<DataGridTemplateColumn
 											Width      ="68"
 											MinWidth   ="68"
@@ -1689,6 +1727,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
 
+										<!-- Column column: database column name plus referenced table display when this is a key relationship -->
 										<DataGridTemplateColumn
 											Width    ="*"
 											MinWidth ="110">
@@ -1724,6 +1763,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
 
+										<!-- Optional SQL type column: read-only display of the converter's SQL Server type text -->
 										<DataGridTemplateColumn
 											Width      ="Auto"
 											MinWidth   ="90"
@@ -1748,6 +1788,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
 
+										<!-- Optional Nullable column: shows whether the database column accepts NULL -->
 										<DataGridTemplateColumn
 											Width      ="70"
 											MinWidth   ="70"
@@ -1771,6 +1812,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
 
+										<!-- Generation mode column: limits choices to modes the column type and key role can use -->
 										<DataGridTemplateColumn
 											Width    ="158"
 											MinWidth ="158">
@@ -1798,6 +1840,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
 
+										<!-- Settings column: mode-specific editor plus the per-column saved-settings menu -->
 										<DataGridTemplateColumn
 											Width    ="2.4*"
 											MinWidth ="180">
@@ -1833,6 +1876,7 @@
 															ToolTip     ="{Binding SavedSettingsButtonHint}"
 															infrastructure:ButtonIcon.Glyph ="&#xE728;" />
 
+														<!-- Per-column saved-settings pop-up saves this rule or applies reusable settings that suit it -->
 														<Popup
 															AllowsTransparency ="True"
 															IsOpen             ="{Binding	IsSavedSettingsMenuOpen,
@@ -1936,6 +1980,7 @@
 											</DataGridTemplateColumn.CellTemplate>
 										</DataGridTemplateColumn>
 
+										<!-- Optional Sample values column: lazy preview text, or the validation problem when generation fails -->
 										<DataGridTemplateColumn
 											Width      ="1.2*"
 											MinWidth   ="100"
@@ -1991,6 +2036,7 @@
 						ToolTip        ="{StaticResource ManageSavedSettingsHint}"
 						infrastructure:ButtonIcon.Glyph ="&#xE728;" />
 
+					<!-- Opens the same optional-column choices as the grid header context menu and remembers them in preferences -->
 					<ToggleButton
 						x:Name         ="GridColumnsButton"
 						DockPanel.Dock ="Right"
@@ -2018,6 +2064,7 @@
 						</ToggleButton.Style>
 					</ToggleButton>
 
+					<!-- Grid-columns pop-up: toggles optional columns and can restore every column at once -->
 					<Popup
 						AllowsTransparency ="True"
 						IsOpen             ="{Binding	RuleGridColumns.IsMenuOpen,
@@ -2070,6 +2117,7 @@
 						</Border>
 					</Popup>
 
+					<!-- Colour legend mirrors the row badges and backgrounds used for key and identity columns -->
 					<StackPanel
 						Background  ="Transparent"
 						Orientation ="Horizontal"

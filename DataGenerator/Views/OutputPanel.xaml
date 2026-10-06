@@ -10,6 +10,7 @@
 	d:DataContext        ="{d:DesignInstance Type=viewModels:MainViewModel}">
 
 	<UserControl.Resources>
+		<!-- Shows placeholder guidance over the post-generation SQL box until text is entered -->
 		<Style
 			x:Key      ="PostGenerationWatermarkStyle"
 			TargetType ="TextBlock"
@@ -29,6 +30,7 @@
 			</Style.Triggers>
 		</Style>
 
+		<!-- Summary text turns warning-coloured when the post-generation SQL is incomplete or invalid -->
 		<Style
 			x:Key      ="PostGenerationSummaryStyle"
 			TargetType ="TextBlock"
@@ -45,6 +47,7 @@
 		</Style>
 	</UserControl.Resources>
 
+	<!-- Output and cleanup options bound to MainViewModel; Generate starts the configured generation run -->
 	<GroupBox
 		Header ="Generation output"
 		Style  ="{StaticResource OutputSectionStyle}">
@@ -109,6 +112,7 @@
 				Grid.Column ="0"
 				Content     ="SQL script:" />
 
+			<!-- SQL file path controls: browse chooses the script, open folder reveals it after generation -->
 			<Grid
 				Grid.Row    ="1"
 				Grid.Column ="1">
@@ -195,6 +199,7 @@
 				VerticalAlignment ="Top"
 				Content           ="Finally run:" />
 
+			<!-- Optional statements parsed by PostGenerationSqlViewModel and run just before commit -->
 			<Grid
 				Grid.Row    ="3"
 				Grid.Column ="1">
@@ -241,6 +246,7 @@
 					Text              ="Optional: stored procedure names (one per line, e.g. dbo.RebuildTotals) or SQL to run before the commit"
 					TextTrimming      ="CharacterEllipsis" />
 
+				<!-- Database selection follows loaded metadata until the user chooses a database explicitly -->
 				<Label
 					Grid.Row          ="0"
 					Grid.Column       ="1"
@@ -258,6 +264,7 @@
 															Mode=TwoWay}"
 					ToolTip           ="{StaticResource PostGenerationDatabaseHint}" />
 
+				<!-- Parse result shown only when statements or a problem exist -->
 				<TextBlock
 					Grid.Row        ="1"
 					Grid.Column     ="0"
@@ -270,6 +277,7 @@
 														Converter={StaticResource BooleanToVisibilityConverter}}" />
 			</Grid>
 
+			<!-- Live summary of how many included rows and tables are ready to generate -->
 			<TextBlock
 				Grid.Row     ="4"
 				Grid.Column  ="1"

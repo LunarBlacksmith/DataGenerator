@@ -139,6 +139,7 @@
 			</ControlTemplate.Triggers>
 		</ControlTemplate>
 
+		<!-- Base tree item style shared by database and table rows; keeps custom rows virtualised and full-width -->
 		<Style
 			x:Key      ="ExplorerItemBaseStyle"
 			TargetType ="TreeViewItem">
@@ -237,6 +238,7 @@
 			</Style.Triggers>
 		</Style>
 
+		<!-- Table rows use the same selection, hidden and filtered states as database rows, with normal row colours -->
 		<Style
 			x:Key      ="TableItemStyle"
 			TargetType ="TreeViewItem"
@@ -336,6 +338,7 @@
 			</Style.Triggers>
 		</Style>
 
+		<!-- Table row contents: include checkbox, name, validation badge, row-set badge, row count and visibility toggle -->
 		<DataTemplate
 			x:Key    ="TableNodeTemplate"
 			DataType ="{x:Type viewModels:TableNodeViewModel}">
@@ -412,6 +415,7 @@
 			</Grid>
 		</DataTemplate>
 
+		<!-- Database row contents and child table binding; its checkbox includes or excludes all child tables -->
 		<HierarchicalDataTemplate
 			x:Key              ="DatabaseNodeTemplate"
 			DataType           ="{x:Type viewModels:DatabaseNodeViewModel}"
@@ -459,6 +463,7 @@
 			</Grid>
 		</HierarchicalDataTemplate>
 
+		<!-- Clear button is only shown while a search filter is active -->
 		<Style
 			x:Key      ="ClearFilterButtonStyle"
 			TargetType ="Button"
@@ -474,6 +479,7 @@
 			</Style.Triggers>
 		</Style>
 
+		<!-- Search watermark is drawn over the filter box until FilterText has a value -->
 		<Style
 			x:Key      ="FilterWatermarkStyle"
 			TargetType ="TextBlock"
@@ -759,6 +765,7 @@
 					VirtualizingPanel.IsVirtualizing                 ="True"
 					VirtualizingPanel.ScrollUnit                     ="Pixel"
 					infrastructure:TreeViewMultiSelect.SelectCommand ="{Binding SelectNodeCommand}">
+					<!-- Ctrl+A selects visible rows, Esc clears selection; the attached behaviour handles click selection modes -->
 					<TreeView.InputBindings>
 						<KeyBinding
 							Key       ="A"
@@ -776,6 +783,7 @@
 						</ItemsPanelTemplate>
 					</TreeView.ItemsPanel>
 
+					<!-- Context menu acts on the current multi-selection through DatabaseExplorerViewModel commands -->
 					<TreeView.ContextMenu>
 						<ContextMenu
 							DataContext="{Binding	PlacementTarget.DataContext,
@@ -853,6 +861,7 @@
 					</TreeView.ContextMenu>
 				</TreeView>
 
+				<!-- Empty state before metadata has been loaded -->
 				<TextBlock
 					Grid.Row         ="1"
 					Style            ="{StaticResource PlaceholderTextStyle}"
@@ -861,6 +870,7 @@
 					Visibility       ="{Binding	HasDatabases,
 															Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
 
+				<!-- Empty state when filters hide every loaded database and table -->
 				<TextBlock
 					Grid.Row         ="1"
 					Style            ="{StaticResource PlaceholderTextStyle}"

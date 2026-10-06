@@ -4,8 +4,8 @@ using System.ComponentModel;
 namespace DataGenerator.Infrastructure;
 
 /// <summary>
-/// <see cref="ObservableObject"/> that reports one validation message per property through <see cref="INotifyDataErrorInfo"/>,
-/// so bound controls show the standard WPF error template and tooltip.
+///	<see cref="ObservableObject"/> that reports one validation message per property through <see cref="INotifyDataErrorInfo"/>,
+///	so bound controls show the standard WPF error template and tooltip.
 /// </summary>
 public abstract class ValidatableObservableObject : ObservableObject, INotifyDataErrorInfo
 {
@@ -17,14 +17,42 @@ public abstract class ValidatableObservableObject : ObservableObject, INotifyDat
 
 	public bool HasErrors => _errors.Count > 0;
 
+	/// <summary>
+	///	Gets the validation messages for one property.
+	/// </summary>
+	/// <param name="propertyName">
+	///	The property whose messages are requested.
+	/// </param>
+	/// <returns>
+	///	The property's validation message as a one-item sequence, or an empty sequence when it has no message.
+	/// </returns>
 	public IEnumerable GetErrors(string? propertyName)
-		=> !string.IsNullOrEmpty(propertyName) && _errors.TryGetValue(propertyName, out string? error)
-			? new string[] { error }
-			: NO_ERRORS;
+		=>
+			!string.IsNullOrEmpty(propertyName) && _errors.TryGetValue(propertyName, out string? error)
+				? new string[] { error }
+				: NO_ERRORS;
 
+	/// <summary>
+	///	Gets the validation message currently stored for one property.
+	/// </summary>
+	/// <param name="propertyName">
+	///	The property whose message is requested.
+	/// </param>
+	/// <returns>
+	///	The current validation message, or <see langword="null"/> when the property has no message.
+	/// </returns>
 	protected string? GetError(string propertyName)
 		=> _errors.TryGetValue(propertyName, out string? error) ? error : null;
 
+	/// <summary>
+	///	Adds, changes or clears the validation message for one property and raises the related notifications.
+	/// </summary>
+	/// <param name="propertyName">
+	///	The property whose validation message changed.
+	/// </param>
+	/// <param name="error">
+	///	The message to store, or <see langword="null"/> or empty to clear the property.
+	/// </param>
 	protected void SetError(string propertyName, string? error)
 	{
 		bool hadErrors = HasErrors;
@@ -56,6 +84,12 @@ public abstract class ValidatableObservableObject : ObservableObject, INotifyDat
 		OnErrorsChanged();
 	}
 
+	/// <summary>
+	///	Clears validation messages for the supplied properties.
+	/// </summary>
+	/// <param name="propertyNames">
+	///	The property names whose messages should be removed.
+	/// </param>
 	protected void ClearErrors(params string[] propertyNames)
 	{
 		foreach (string propertyName in propertyNames)
@@ -65,7 +99,7 @@ public abstract class ValidatableObservableObject : ObservableObject, INotifyDat
 	}
 
 	/// <summary>
-	/// Called after any validation message was added, changed or removed.
+	///	Called after any validation message was added, changed or removed.
 	/// </summary>
 	protected virtual void OnErrorsChanged()
 	{

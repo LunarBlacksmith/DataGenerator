@@ -9,6 +9,7 @@
 	mc:Ignorable         ="d"
 	d:DataContext        ="{d:DesignInstance Type=viewModels:MainViewModel}">
 
+	<!-- Connection details for the SQL Server; Enter in any of the boxes runs Load metadata -->
 	<GroupBox
 		Header ="SQL Server connection"
 		Style  ="{StaticResource ConnectionSectionStyle}">
@@ -90,6 +91,10 @@
 				Target      ="{Binding ElementName=PasswordInput}"
 				ToolTip     ="{StaticResource PasswordHint}" />
 
+			<!--
+				PasswordBox.Password is not a dependency property, so PasswordBoxBinding copies it to and from
+				MainViewModel.Password. The password stays in memory only.
+			-->
 			<PasswordBox
 				x:Name      ="PasswordInput"
 				Grid.Row    ="0"
@@ -107,6 +112,7 @@
 				</PasswordBox.InputBindings>
 			</PasswordBox>
 
+			<!-- Loads the databases, tables and columns of the server into the explorer -->
 			<Button
 				Grid.Row    ="0"
 				Grid.Column ="6"
@@ -116,6 +122,7 @@
 				ToolTip     ="{StaticResource LoadMetadataHint}"
 				infrastructure:ButtonIcon.Glyph ="&#xE72C;" />
 
+			<!-- Connection security options (Trust server certificate is ticked by default) and a note on credentials -->
 			<WrapPanel
 				Grid.Row        ="1"
 				Grid.Column     ="0"

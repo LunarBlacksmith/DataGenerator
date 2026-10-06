@@ -3,8 +3,8 @@
 namespace DataGenerator.Services.Generation;
 
 /// <summary>
-/// The values a "Value from table" rule can use, read from the source table right before the rows of its row set are
-/// generated. UNIQUE lookups give every row a different value; other lookups pick a random value for every row.
+///	The values a "Value from table" rule can use, read from the source table right before the rows of its row set are
+///	generated. UNIQUE lookups give every row a different value; other lookups pick a random value for every row.
 /// </summary>
 internal sealed class LookupPool
 {
@@ -12,6 +12,30 @@ internal sealed class LookupPool
 
 	private List<object?>? _values;
 
+	/// <summary>
+	///	Creates a pool descriptor for one value-from-table rule.
+	/// </summary>
+	/// <param name="number">
+	///	Unique number used in generated script variable names.
+	/// </param>
+	/// <param name="lookup">
+	///	The lookup rule that selects source values.
+	/// </param>
+	/// <param name="targetColumn">
+	///	The column that receives the lookup values.
+	/// </param>
+	/// <param name="requiredCount">
+	///	The minimum number of values the lookup must return.
+	/// </param>
+	/// <param name="selectStatement">
+	///	The SQL statement that reads candidate values.
+	/// </param>
+	/// <param name="location">
+	///	The user-facing location of the rule.
+	/// </param>
+	/// <param name="usesScriptVariables">
+	///	Whether generated scripts, rather than in-memory values, choose from the pool.
+	/// </param>
 	public LookupPool(
 		int          number,
 		ColumnLookup lookup,
@@ -35,22 +59,22 @@ internal sealed class LookupPool
 	public ColumnLookup Lookup              { get; }
 
 	/// <summary>
-	/// The column that receives the values; the values are converted to its type.
+	///	The column that receives the values; the values are converted to its type.
 	/// </summary>
 	public ColumnModel  TargetColumn        { get; }
 
 	/// <summary>
-	/// The number of values needed: one per row for UNIQUE lookups, otherwise one.
+	///	The number of values needed: one per row for UNIQUE lookups, otherwise one.
 	/// </summary>
 	public int          RequiredCount       { get; }
 
 	/// <summary>
-	/// Selects the values, already converted to the type of the target column, in random order.
+	///	Selects the values, already converted to the type of the target column, in random order.
 	/// </summary>
 	public string       SelectStatement     { get; }
 
 	/// <summary>
-	/// The table, row set and column that use the values, for error messages.
+	///	The table, row set and column that use the values, for error messages.
 	/// </summary>
 	public string       Location            { get; }
 
@@ -59,6 +83,12 @@ internal sealed class LookupPool
 	public string VariableName      => $"@dg_lookup_{Number}";
 	public string CountVariableName => $"@dg_lookup_{Number}_count";
 
+	/// <summary>
+	///	Describes why the lookup cannot supply enough values.
+	/// </summary>
+	/// <returns>
+	///	A user-facing explanation for missing lookup values.
+	/// </returns>
 	public string DescribeShortage()
 	{
 		string filter = Lookup.FilterKind == LookupFilterKind.None ? string.Empty : " that match the WHERE filter";
@@ -69,13 +99,26 @@ internal sealed class LookupPool
 			_                  => string.Empty
 		};
 
-		return Lookup.IsUnique
-			? $"'Value from table' needs {RequiredCount:N0} different values of {Lookup.SourceDisplayName}{scope}{filter} "
-				+ "that are not used in this column yet, but fewer were found. Generate fewer rows, remove UNIQUE, or loosen the filter."
-			: $"No values of {Lookup.SourceDisplayName}{scope}{filter} were found for 'Value from table'. "
-				+ "Generate rows for that table first (in an earlier step), or loosen the filter.";
+		return
+			Lookup.IsUnique
+				? $"'Value from table' needs {RequiredCount:N0} different values of {Lookup.SourceDisplayName}{scope}{filter} "
+					+ "that are not used in this column yet, but fewer were found. Generate fewer rows, remove UNIQUE, or loosen the filter."
+				: $"No values of {Lookup.SourceDisplayName}{scope}{filter} were found for 'Value from table'. "
+					+ "Generate rows for that table first (in an earlier step), or loosen the filter.";
 	}
 
+	/// <summary>
+	///	Stores the values read for direct insertion and verifies that enough were found.
+	/// </summary>
+	/// <param name="values">
+	///	The values read from the source table.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="values"/> is <see langword="null"/>.
+	/// </exception>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when fewer values than required were read.
+	/// </exception>
 	public void Load(List<object?> values)
 	{
 		ArgumentNullException.ThrowIfNull(values);
@@ -89,15 +132,28 @@ internal sealed class LookupPool
 	}
 
 	/// <summary>
-	/// The value for a row. In script mode the value is resolved by SQL Server from the table variable.
+	///	The value for a row. In script mode the value is resolved by SQL Server from the table variable.
 	/// </summary>
+	/// <param name="rowIndex">
+	///	Zero-based index of the row within its row set.
+	/// </param>
+	/// <param name="random">
+	///	The random number generator used for non-unique lookups.
+	/// </param>
+	/// <returns>
+	///	The lookup value for the row, or a SQL fragment that reads it from the script variable.
+	/// </returns>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when direct insertion asks for a value before the lookup has been loaded.
+	/// </exception>
 	public object? GetValue(long rowIndex, Random random)
 	{
 		if (UsesScriptVariables)
 		{
-			string rowNumber = Lookup.IsUnique
-				? $"{rowIndex + 1}"
-				: $"1 + ({random.Next(SCRIPT_CHOICE_RANGE)} % {CountVariableName})";
+			string rowNumber =
+				Lookup.IsUnique
+					? $"{rowIndex + 1}"
+					: $"1 + ({random.Next(SCRIPT_CHOICE_RANGE)} % {CountVariableName})";
 
 			return new SqlFragment(
 				$"(SELECT {SqlSyntax.QuoteIdentifier(GeneratedKeyTable.GetValueColumnName(0))} FROM {VariableName} WHERE [RowNumber] = {rowNumber})"

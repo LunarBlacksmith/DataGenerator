@@ -8,10 +8,10 @@ using System.Windows.Media.Media3D;
 namespace DataGenerator.Infrastructure;
 
 /// <summary>
-/// Adds Explorer-style multi-selection to a <see cref="TreeView"/>: click selects one item, Ctrl+click toggles an item,
-/// Shift+click selects a range, right-click selects an item that is not already selected and Ctrl+Space toggles the
-/// focused item. The selection itself lives in the view model; this behaviour only reports what the user did through
-/// <see cref="TreeSelectionRequest"/> command parameters.
+///	Adds Explorer-style multi-selection to a <see cref="TreeView"/>: click selects one item, Ctrl+click toggles an item,
+///	Shift+click selects a range, right-click selects an item that is not already selected and Ctrl+Space toggles the
+///	focused item. The selection itself lives in the view model; this behaviour only reports what the user did through
+///	<see cref="TreeSelectionRequest"/> command parameters.
 /// </summary>
 public static class TreeViewMultiSelect
 {
@@ -23,9 +23,37 @@ public static class TreeViewMultiSelect
 			new PropertyMetadata(null, OnSelectCommandChanged)
 		);
 
+	/// <summary>
+	///	Gets the command that receives tree selection requests.
+	/// </summary>
+	/// <param name="element">
+	///	The element that stores the attached command.
+	/// </param>
+	/// <returns>
+	///	The selection command, or <see langword="null"/> when the behaviour is disabled.
+	/// </returns>
 	public static ICommand? GetSelectCommand(DependencyObject element) => (ICommand?)element.GetValue(SELECT_COMMAND_PROPERTY);
+
+	/// <summary>
+	///	Sets the command that receives tree selection requests.
+	/// </summary>
+	/// <param name="element">
+	///	The element that stores the attached command.
+	/// </param>
+	/// <param name="value">
+	///	The command to execute for selection gestures, or <see langword="null"/> to disable the behaviour.
+	/// </param>
 	public static void SetSelectCommand(DependencyObject element, ICommand? value) => element.SetValue(SELECT_COMMAND_PROPERTY, value);
 
+	/// <summary>
+	///	Adds or removes the mouse and keyboard handlers when the selection command changes.
+	/// </summary>
+	/// <param name="sender">
+	///	The element whose attached command changed.
+	/// </param>
+	/// <param name="e">
+	///	The old and new command values.
+	/// </param>
 	private static void OnSelectCommandChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
 	{
 		if (sender is not TreeView treeView)
@@ -47,6 +75,15 @@ public static class TreeViewMultiSelect
 		}
 	}
 
+	/// <summary>
+	///	Translates left and right mouse clicks on tree items into selection requests.
+	/// </summary>
+	/// <param name="sender">
+	///	The tree view that received the mouse event.
+	/// </param>
+	/// <param name="e">
+	///	The mouse button event raised by WPF.
+	/// </param>
 	private static void OnPreviewMouseButtonDown(object sender, MouseButtonEventArgs e)
 	{
 		if (e.OriginalSource is not DependencyObject source)
@@ -75,6 +112,15 @@ public static class TreeViewMultiSelect
 	}
 
 	// Keyboard navigation moves the native selection; mouse clicks are already handled above.
+	/// <summary>
+	///	Translates keyboard-driven native selection changes into view model selection requests.
+	/// </summary>
+	/// <param name="sender">
+	///	The tree view whose selected item changed.
+	/// </param>
+	/// <param name="e">
+	///	The old and new selected items.
+	/// </param>
 	private static void OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
 	{
 		if (e.NewValue is null || Mouse.LeftButton == MouseButtonState.Pressed)
@@ -96,6 +142,15 @@ public static class TreeViewMultiSelect
 		);
 	}
 
+	/// <summary>
+	///	Handles Ctrl+Space to toggle the currently selected tree item.
+	/// </summary>
+	/// <param name="sender">
+	///	The tree view that received the key event.
+	/// </param>
+	/// <param name="e">
+	///	The preview key event raised by WPF.
+	/// </param>
 	private static void OnPreviewKeyDown(object sender, KeyEventArgs e)
 	{
 		TreeView treeView = (TreeView)sender;
@@ -113,6 +168,18 @@ public static class TreeViewMultiSelect
 		e.Handled = true;
 	}
 
+	/// <summary>
+	///	Builds and executes a selection request for a tree item when the command can run.
+	/// </summary>
+	/// <param name="treeView">
+	///	The tree view that stores the selection command.
+	/// </param>
+	/// <param name="item">
+	///	The item to select, toggle or use as the range end.
+	/// </param>
+	/// <param name="mode">
+	///	The kind of selection gesture requested by the user.
+	/// </param>
 	private static void Execute(TreeView treeView, object? item, TreeSelectionMode mode)
 	{
 		ICommand? command = GetSelectCommand(treeView);
@@ -131,9 +198,18 @@ public static class TreeViewMultiSelect
 	}
 
 	/// <summary>
-	/// Finds the tree item that contains <paramref name="source"/> and whether the click landed on a control inside the item
-	/// (button, check box, text box or combo box) that handles the mouse itself.
+	///	Finds the tree item that contains <paramref name="source"/> and whether the click landed on a control inside the item
+	///	(button, check box, text box or combo box) that handles the mouse itself.
 	/// </summary>
+	/// <param name="source">
+	///	The original dependency object under the mouse.
+	/// </param>
+	/// <param name="isInsideInteractiveElement">
+	///	Whether the source is inside a control that should handle the mouse itself.
+	/// </param>
+	/// <returns>
+	///	The containing tree view item, or <see langword="null"/> when none is found.
+	/// </returns>
 	private static TreeViewItem? FindItemContainer(DependencyObject source, out bool isInsideInteractiveElement)
 	{
 		isInsideInteractiveElement = false;
@@ -161,8 +237,18 @@ public static class TreeViewMultiSelect
 		return null;
 	}
 
+	/// <summary>
+	///	Gets the visual or logical parent of an element.
+	/// </summary>
+	/// <param name="element">
+	///	The element whose parent is needed.
+	/// </param>
+	/// <returns>
+	///	The parent dependency object, or <see langword="null"/> when the element has no parent.
+	/// </returns>
 	private static DependencyObject? GetParent(DependencyObject element)
-		=> element is Visual or Visual3D
-			? VisualTreeHelper.GetParent(element)
-			: LogicalTreeHelper.GetParent(element);
+		=>
+			element is Visual or Visual3D
+				? VisualTreeHelper.GetParent(element)
+				: LogicalTreeHelper.GetParent(element);
 }

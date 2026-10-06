@@ -5,8 +5,8 @@ using DataGenerator.Models;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// A table in the explorer tree, with the row sets that describe the data to generate for it.
-/// Row sets (and their column rules) are created on first use so large databases load quickly.
+///	A table in the explorer tree, with the row sets that describe the data to generate for it.
+///	Row sets (and their column rules) are created on first use so large databases load quickly.
 /// </summary>
 public sealed class TableNodeViewModel : TreeNodeViewModel
 {
@@ -22,6 +22,21 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	private bool             _isIncluded;
 	private int              _pendingRowCount = DEFAULT_ROW_COUNT;
 
+	/// <summary>
+	///	Creates a table node and stores the factory used when row sets are first needed.
+	/// </summary>
+	/// <param name="model">
+	///	The table metadata represented by the node.
+	/// </param>
+	/// <param name="database">
+	///	The database node that owns this table.
+	/// </param>
+	/// <param name="ruleFactory">
+	///	The factory used to create column rules for new row sets.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any argument is <see langword="null"/>.
+	/// </exception>
 	public TableNodeViewModel(TableModel model, DatabaseNodeViewModel database, ColumnRuleFactory ruleFactory)
 	{
 		Model        = model ?? throw new ArgumentNullException(nameof(model));
@@ -33,7 +48,7 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	}
 
 	/// <summary>
-	/// Raised when inclusion, row counts or the validity of the rules change.
+	///	Raised when inclusion, row counts or the validity of the rules change.
 	/// </summary>
 	public event EventHandler? GenerationSettingsChanged;
 
@@ -77,8 +92,8 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	}
 
 	/// <summary>
-	/// Rows to generate. With several row sets (or an update set) this is the (read-only) total of the insert sets.
-	/// Editing it also includes the table, because a row count only matters for included tables.
+	///	Rows to generate. With several row sets (or an update set) this is the (read-only) total of the insert sets.
+	///	Editing it also includes the table, because a row count only matters for included tables.
 	/// </summary>
 	public int RowCount
 	{
@@ -101,12 +116,13 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	}
 
 	/// <summary>
-	/// New rows the insert sets generate. Update sets change existing rows, so they do not add to it.
+	///	New rows the insert sets generate. Update sets change existing rows, so they do not add to it.
 	/// </summary>
 	public int TotalRowCount
-		=> RowSets.Count == 0
-			? _pendingRowCount
-			: RowSets.Where(rowSet => !rowSet.IsUpdate).Sum(rowSet => rowSet.RowCount);
+		=>
+			RowSets.Count == 0
+				? _pendingRowCount
+				: RowSets.Where(rowSet => !rowSet.IsUpdate).Sum(rowSet => rowSet.RowCount);
 
 	public int  UpdateSetCount     => RowSets.Count(rowSet => rowSet.IsUpdate);
 	public bool HasUpdateSets      => RowSets.Any(rowSet => rowSet.IsUpdate);
@@ -117,27 +133,32 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	public int  ColumnCount        => Model.Columns.Count;
 
 	public string RowSetSummary
-		=> !HasRowSetSummary
-			? string.Empty
-			: UpdateSetCount == 0
-				? $"{RowSets.Count} sets"
-				: $"{RowSets.Count} {(RowSets.Count == 1 ? "set" : "sets")}, {UpdateSetCount} update";
+		=>
+			!HasRowSetSummary
+				? string.Empty
+				: UpdateSetCount == 0
+					? $"{RowSets.Count} sets"
+					: $"{RowSets.Count} {(RowSets.Count == 1 ? "set" : "sets")}, {UpdateSetCount} update";
 
 	public string RowCountToolTip
-		=> CanEditRowCount
-			? "Number of rows to generate for this table (1 to 1,000,000). Changing it also includes the table."
-			: $"New rows of the {RowSets.Count - UpdateSetCount} insert set(s); update sets change existing rows instead. "
-				+ "Edit each set's row count in the column rules panel.";
+		=>
+			CanEditRowCount
+				? "Number of rows to generate for this table (1 to 1,000,000). Changing it also includes the table."
+				: $"New rows of the {RowSets.Count - UpdateSetCount} insert set(s); update sets change existing rows instead. "
+					+ "Edit each set's row count in the column rules panel.";
 
 	public int InvalidRowSetCount => RowSets.Count(rowSet => !rowSet.IsValid);
 
 	public bool HasInvalidRowSets => RowSets.Any(rowSet => !rowSet.IsValid);
 
 	/// <summary>
-	/// Lets the explorer refresh the add/duplicate/remove commands when the selected row set changes.
+	///	Lets the explorer refresh the add/duplicate/remove commands when the selected row set changes.
 	/// </summary>
 	internal Action? RefreshRowSetCommands { get; set; }
 
+	/// <summary>
+	///	Creates the first insert row set when the table has not yet been expanded or edited.
+	/// </summary>
 	public void EnsureRowSets()
 	{
 		if (RowSets.Count == 0)
@@ -146,6 +167,12 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		}
 	}
 
+	/// <summary>
+	///	Adds a new insert row set to the table and selects it.
+	/// </summary>
+	/// <returns>
+	///	The added row set.
+	/// </returns>
 	public RowSetViewModel AddRowSet()
 	{
 		EnsureRowSets();
@@ -157,9 +184,12 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	}
 
 	/// <summary>
-	/// Adds a set that changes rows already in the table (or inserted by an earlier step). It runs in step 2 by default,
-	/// after the insert sets of step 1.
+	///	Adds a set that changes rows already in the table (or inserted by an earlier step). It runs in step 2 by default,
+	///	after the insert sets of step 1.
 	/// </summary>
+	/// <returns>
+	///	The added update row set.
+	/// </returns>
 	public RowSetViewModel AddUpdateSet()
 	{
 		EnsureRowSets();
@@ -175,6 +205,18 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		return rowSet;
 	}
 
+	/// <summary>
+	///	Copies an existing row set, including its column rules, and selects the copy.
+	/// </summary>
+	/// <param name="source">
+	///	The row set to duplicate.
+	/// </param>
+	/// <returns>
+	///	The duplicated row set.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="source"/> is <see langword="null"/>.
+	/// </exception>
 	public RowSetViewModel DuplicateRowSet(RowSetViewModel source)
 	{
 		ArgumentNullException.ThrowIfNull(source);
@@ -198,6 +240,18 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		return rowSet;
 	}
 
+	/// <summary>
+	///	Removes a row set when at least one other row set remains.
+	/// </summary>
+	/// <param name="rowSet">
+	///	The row set to remove.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the row set was removed; otherwise <see langword="false"/>.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="rowSet"/> is <see langword="null"/>.
+	/// </exception>
 	public bool RemoveRowSet(RowSetViewModel rowSet)
 	{
 		ArgumentNullException.ThrowIfNull(rowSet);
@@ -215,6 +269,12 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		return true;
 	}
 
+	/// <summary>
+	///	Sets the row count used by all insert row sets, or stores it until the first row set is created.
+	/// </summary>
+	/// <param name="rowCount">
+	///	The requested row count, clamped to the row-set limits.
+	/// </param>
 	public void SetRowCountForAllSets(int rowCount)
 	{
 		int clampedRowCount = RowSetViewModel.ClampRowCount(rowCount);
@@ -236,6 +296,12 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		}
 	}
 
+	/// <summary>
+	///	Creates the generation plan for this table and all of its row sets.
+	/// </summary>
+	/// <returns>
+	///	The table generation plan.
+	/// </returns>
 	public TableGenerationPlan CreatePlan()
 	{
 		EnsureRowSets();
@@ -247,8 +313,17 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		};
 	}
 
+	/// <summary>
+	///	Refreshes dimming after the parent database is hidden or shown.
+	/// </summary>
 	internal void RaiseDatabaseHiddenChanged() => RaiseDimmedChanged();
 
+	/// <summary>
+	///	Adds a row set to the collection, hooks its settings changes and selects it.
+	/// </summary>
+	/// <param name="rowSet">
+	///	The row set to add.
+	/// </param>
 	private void AddRowSetCore(RowSetViewModel rowSet)
 	{
 		rowSet.SettingsChanged += OnRowSetSettingsChanged;
@@ -256,6 +331,9 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		SelectedRowSet = rowSet;
 	}
 
+	/// <summary>
+	///	Refreshes row-set summary and row-count state after the row-set collection changes.
+	/// </summary>
 	private void OnRowSetsChanged()
 	{
 		OnPropertyChanged(nameof(CanEditRowCount));
@@ -269,8 +347,20 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		OnRowCountChanged();
 	}
 
+	/// <summary>
+	///	Refreshes table row counts after one row set changes.
+	/// </summary>
+	/// <param name="sender">
+	///	The row set whose settings changed.
+	/// </param>
+	/// <param name="e">
+	///	The event data for the row-set settings change.
+	/// </param>
 	private void OnRowSetSettingsChanged(object? sender, EventArgs e) => OnRowCountChanged();
 
+	/// <summary>
+	///	Refreshes row-count and validity properties and notifies the explorer.
+	/// </summary>
 	private void OnRowCountChanged()
 	{
 		OnPropertyChanged(nameof(RowCount));
@@ -281,8 +371,20 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		RaiseGenerationSettingsChanged();
 	}
 
+	/// <summary>
+	///	Raises the generation settings changed event.
+	/// </summary>
 	private void RaiseGenerationSettingsChanged() => GenerationSettingsChanged?.Invoke(this, EventArgs.Empty);
 
+	/// <summary>
+	///	Chooses the next unused row-set name for the supplied prefix.
+	/// </summary>
+	/// <param name="prefix">
+	///	The prefix for insert or update set names.
+	/// </param>
+	/// <returns>
+	///	A row-set name that is not already used by this table.
+	/// </returns>
 	private string GetNextRowSetName(string prefix = ROW_SET_NAME_PREFIX)
 	{
 		int number = RowSets.Count(rowSet => rowSet.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) + 1;
@@ -295,6 +397,15 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		return prefix + number;
 	}
 
+	/// <summary>
+	///	Adds a numeric suffix to a base name until it is unique among this table's row sets.
+	/// </summary>
+	/// <param name="baseName">
+	///	The preferred row-set name.
+	/// </param>
+	/// <returns>
+	///	The base name or a suffixed name that is unique.
+	/// </returns>
 	private string GetUniqueName(string baseName)
 	{
 		string name   = baseName;
@@ -309,6 +420,12 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		return name;
 	}
 
+	/// <summary>
+	///	Builds the tooltip that describes the table, its columns and its references.
+	/// </summary>
+	/// <returns>
+	///	The multi-line tooltip text.
+	/// </returns>
 	private string BuildToolTipText()
 	{
 		StringBuilder builder          = new();
@@ -342,6 +459,15 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		return builder.ToString();
 	}
 
+	/// <summary>
+	///	Describes the referenced tables for declared or inferred foreign keys.
+	/// </summary>
+	/// <param name="inferred">
+	///	Whether to describe inferred FTK references instead of declared references.
+	/// </param>
+	/// <returns>
+	///	A comma-separated list of referenced schema and table names.
+	/// </returns>
 	private string DescribeReferences(bool inferred)
 		=> string.Join(
 				", ",

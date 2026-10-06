@@ -11,8 +11,8 @@ using Microsoft.Win32;
 namespace DataGenerator.Services;
 
 /// <summary>
-/// Switches themes by replacing the application's brush dictionary; every brush is looked up dynamically, so open windows recolour at once.
-/// Create one per application: it also gives each window that opens later the title bar of the current theme.
+///	Switches themes by replacing the application's brush dictionary; every brush is looked up dynamically, so open windows recolour at once.
+///	Create one per application: it also gives each window that opens later the title bar of the current theme.
 /// </summary>
 public sealed class ThemeService : IThemeService
 {
@@ -24,6 +24,15 @@ public sealed class ThemeService : IThemeService
 
 	private readonly Application _application;
 
+	/// <summary>
+	///	Creates the theme service and registers a handler that applies title-bar colours to windows as they load.
+	/// </summary>
+	/// <param name="application">
+	///	The WPF application whose resources and windows are themed.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="application"/> is <see langword="null"/>.
+	/// </exception>
 	public ThemeService(Application application)
 	{
 		_application = application ?? throw new ArgumentNullException(nameof(application));
@@ -33,15 +42,22 @@ public sealed class ThemeService : IThemeService
 
 	public AppTheme CurrentTheme { get; private set; } = AppTheme.Light;
 
+	/// <summary>
+	///	Reads the user's Windows application theme preference.
+	/// </summary>
+	/// <returns>
+	///	<see cref="AppTheme.Dark"/> when Windows is set to dark apps; otherwise <see cref="AppTheme.Light"/>.
+	/// </returns>
 	public AppTheme GetWindowsTheme()
 	{
 		try
 		{
 			using RegistryKey? key = Registry.CurrentUser.OpenSubKey(PERSONALIZE_KEY_PATH);
 
-			return key?.GetValue(APPS_USE_LIGHT_THEME) is int flag && flag == WINDOWS_DARK_THEME_FLAG
-				? AppTheme.Dark
-				: AppTheme.Light;
+			return
+				key?.GetValue(APPS_USE_LIGHT_THEME) is int flag && flag == WINDOWS_DARK_THEME_FLAG
+					? AppTheme.Dark
+					: AppTheme.Light;
 		}
 		catch (Exception exception) when (exception is SecurityException or UnauthorizedAccessException or IOException)
 		{
@@ -49,6 +65,15 @@ public sealed class ThemeService : IThemeService
 		}
 	}
 
+	/// <summary>
+	///	Replaces the merged brush dictionary and applies matching title-bar colours to open windows.
+	/// </summary>
+	/// <param name="theme">
+	///	The theme to apply.
+	/// </param>
+	/// <exception cref="ArgumentOutOfRangeException">
+	///	Thrown when <paramref name="theme"/> is not a defined application theme.
+	/// </exception>
 	public void ApplyTheme(AppTheme theme)
 	{
 		if (!Enum.IsDefined(theme))
@@ -82,12 +107,30 @@ public sealed class ThemeService : IThemeService
 		}
 	}
 
+	/// <summary>
+	///	Checks whether a merged resource dictionary is one of the theme brush dictionaries.
+	/// </summary>
+	/// <param name="dictionary">
+	///	The resource dictionary to inspect.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the dictionary source points to theme brushes; otherwise <see langword="false"/>.
+	/// </returns>
 	private static bool IsBrushDictionary(ResourceDictionary dictionary)
 	{
 		return dictionary.Source is not null
 			&& dictionary.Source.OriginalString.Contains(BRUSHES_SOURCE_MARKER, StringComparison.OrdinalIgnoreCase);
 	}
 
+	/// <summary>
+	///	Applies the current theme's title-bar colours to a window as it is loaded.
+	/// </summary>
+	/// <param name="sender">
+	///	The object that raised the loaded event.
+	/// </param>
+	/// <param name="e">
+	///	The loaded event arguments.
+	/// </param>
 	private void OnWindowLoaded(object sender, RoutedEventArgs e)
 	{
 		if (sender is Window window)

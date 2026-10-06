@@ -4,10 +4,22 @@ using DataGenerator.Services;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// Checks the included tables before generating: invalid rules and keys taken from tables that are not included.
+///	Checks the included tables before generating: invalid rules and keys taken from tables that are not included.
 /// </summary>
 public static class GenerationPreflight
 {
+	/// <summary>
+	///	Collects validation problems from the included tables' row sets and column rules.
+	/// </summary>
+	/// <param name="tables">
+	///	The tables that will be generated or updated.
+	/// </param>
+	/// <returns>
+	///	The rule problems that must be fixed before generation; empty when all rules are valid.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="tables"/> is <see langword="null"/>.
+	/// </exception>
 	public static IReadOnlyList<RuleProblem> FindRuleProblems(IEnumerable<TableNodeViewModel> tables)
 	{
 		ArgumentNullException.ThrowIfNull(tables);
@@ -50,9 +62,21 @@ public static class GenerationPreflight
 	}
 
 	/// <summary>
-	/// Finds "Generated key" rules whose referenced table is not included, following the references of those tables too,
-	/// because including a table brings its own default "Generated key" rules with it.
+	///	Finds "Generated key" rules whose referenced table is not included, following the references of those tables too,
+	///	because including a table brings its own default "Generated key" rules with it.
 	/// </summary>
+	/// <param name="explorer">
+	///	The explorer used to find tables by referenced key.
+	/// </param>
+	/// <param name="includedTables">
+	///	The tables already planned for generation.
+	/// </param>
+	/// <returns>
+	///	The missing referenced tables, including ones discovered through the newly required tables.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="explorer"/> or <paramref name="includedTables"/> is <see langword="null"/>.
+	/// </exception>
 	public static IReadOnlyList<MissingReference> FindMissingReferences(
 		DatabaseExplorerViewModel         explorer,
 		IReadOnlyList<TableNodeViewModel> includedTables
@@ -102,11 +126,11 @@ public static class GenerationPreflight
 }
 
 /// <summary>
-/// A rule that must be fixed before generating, with where it is.
+///	A rule that must be fixed before generating, with where it is.
 /// </summary>
 public sealed record RuleProblem(TableNodeViewModel Table, RowSetViewModel RowSet, string Location, string Message);
 
 /// <summary>
-/// A "Generated key" rule of <paramref name="ReferencingTable"/> that needs rows generated for <paramref name="ReferencedTable"/>.
+///	A "Generated key" rule of <paramref name="ReferencingTable"/> that needs rows generated for <paramref name="ReferencedTable"/>.
 /// </summary>
 public sealed record MissingReference(TableNodeViewModel ReferencingTable, ColumnRuleViewModel Rule, TableNodeViewModel ReferencedTable);

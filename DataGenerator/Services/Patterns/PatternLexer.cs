@@ -4,6 +4,18 @@ namespace DataGenerator.Services.Patterns;
 
 internal static class PatternLexer
 {
+	/// <summary>
+	///	Splits a pattern expression into tokens, preserving one-based positions for parser error messages.
+	/// </summary>
+	/// <param name="expression">
+	///	The pattern text to tokenize.
+	/// </param>
+	/// <returns>
+	///	The tokens in source order, ending with an End token.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the expression contains an unsupported character, a lone dot, or unterminated quoted text.
+	/// </exception>
 	public static IReadOnlyList<PatternToken> Tokenize(string expression)
 	{
 		List<PatternToken> tokens = [];
@@ -73,6 +85,21 @@ internal static class PatternLexer
 		return tokens;
 	}
 
+	/// <summary>
+	///	Reads a single- or double-quoted text token, treating doubled quote characters as one literal quote.
+	/// </summary>
+	/// <param name="expression">
+	///	The full pattern expression.
+	/// </param>
+	/// <param name="index">
+	///	The current character index on entry and the first character after the quoted token on return.
+	/// </param>
+	/// <returns>
+	///	A text token containing the unescaped quoted value.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the quoted text reaches the end of the expression without a closing quote.
+	/// </exception>
 	private static PatternToken ReadQuotedText(string expression, ref int index)
 	{
 		char          quote    = expression[index];
@@ -105,6 +132,19 @@ internal static class PatternLexer
 		throw new PatternSyntaxException($"The text starting with {quote} is missing its closing {quote}.", position);
 	}
 
+	/// <summary>
+	///	Reads a word token when the run contains a letter or underscore, otherwise reads a number token with an optional
+	///	fractional part.
+	/// </summary>
+	/// <param name="expression">
+	///	The full pattern expression.
+	/// </param>
+	/// <param name="index">
+	///	The current character index on entry and the first character after the token on return.
+	/// </param>
+	/// <returns>
+	///	A word token or number token covering the consumed characters.
+	/// </returns>
 	private static PatternToken ReadWordOrNumber(string expression, ref int index)
 	{
 		int  start     = index;

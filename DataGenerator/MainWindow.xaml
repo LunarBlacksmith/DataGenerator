@@ -19,6 +19,7 @@
 	UseLayoutRounding     ="True"
 	WindowStartupLocation ="CenterScreen">
 
+	<!-- Window layout: the work area on top, the status bar at the bottom -->
 	<Grid>
 		<Grid.RowDefinitions>
 			<RowDefinition
@@ -27,6 +28,10 @@
 				Height="Auto" />
 		</Grid.RowDefinitions>
 
+		<!--
+			Work area: the connection panel across the top, the database explorer (left) and column rules (right)
+			separated by a splitter, then the error panel (only while there is an error) and the output panel.
+		-->
 		<Grid
 			Grid.Row ="0"
 			Margin   ="8,8,8,4">
@@ -57,6 +62,7 @@
 				Grid.Column     ="0"
 				Grid.ColumnSpan ="3" />
 
+			<!-- The explorer and the column rules both work on the same DatabaseExplorerViewModel -->
 			<views:DatabaseExplorerPanel
 				Grid.Row    ="1"
 				Grid.Column ="0"
@@ -77,6 +83,7 @@
 				Grid.Column ="2"
 				DataContext ="{Binding Explorer}" />
 
+			<!-- Shown only while MainViewModel.HasError is true; its text scrolls, so the rest of the window keeps its size -->
 			<views:ErrorPanel
 				Grid.Row        ="2"
 				Grid.Column     ="0"
@@ -90,7 +97,7 @@
 				Grid.ColumnSpan ="3" />
 		</Grid>
 
-		<!-- Status bar -->
+		<!-- Status bar: theme toggle and busy indicator on the right; the latest status message fills the rest -->
 		<Border
 			Grid.Row        ="1"
 			Padding         ="10,4"

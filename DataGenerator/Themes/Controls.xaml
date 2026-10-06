@@ -580,6 +580,7 @@
 		</Setter>
 	</Style>
 
+	<!-- Labels: compact text aligned with neighbouring inputs -->
 	<Style
 		TargetType="Label">
 		<Setter
@@ -723,6 +724,7 @@
 		</Style.Triggers>
 	</Style>
 
+	<!-- Accent buttons: primary actions such as loading metadata and generating output -->
 	<Style
 		x:Key      ="AccentButtonStyle"
 		TargetType ="Button"
@@ -765,6 +767,7 @@
 		</Style.Triggers>
 	</Style>
 
+	<!-- Icon-only buttons: small square actions used in grids, headers and pop-ups -->
 	<Style
 		x:Key      ="IconButtonStyle"
 		TargetType ="Button"
@@ -786,6 +789,7 @@
 			Value    ="Transparent" />
 	</Style>
 
+	<!-- Toolbar buttons: compact labelled actions in the explorer and rule bars -->
 	<Style
 		x:Key      ="ToolbarButtonStyle"
 		TargetType ="Button"
@@ -1114,6 +1118,7 @@
 		</Setter>
 	</Style>
 
+	<!-- Section variants: apply each screen area's tint and accent colour to the shared card template -->
 	<Style
 		x:Key      ="ConnectionSectionStyle"
 		TargetType ="GroupBox"
@@ -1162,9 +1167,21 @@
 			Value    ="{DynamicResource OutputAccentBrush}" />
 	</Style>
 
-	<!-- Hints: every hint is text, wrapped to a readable width -->
+	<!--
+		Hints: every hint is text, wrapped to a readable width. Hints open beside the mouse pointer rather than under it so
+		the pointer never covers the text; how long a hint stays open is set by HintPresentation from its text length.
+	-->
 	<Style
 		TargetType="ToolTip">
+		<Setter
+			Property ="Placement"
+			Value    ="Mouse" />
+		<Setter
+			Property ="HorizontalOffset"
+			Value    ="{x:Static infrastructure:HintPresentation.HORIZONTAL_OFFSET}" />
+		<Setter
+			Property ="VerticalOffset"
+			Value    ="{x:Static infrastructure:HintPresentation.VERTICAL_OFFSET}" />
 		<Setter
 			Property ="Padding"
 			Value    ="8,5" />
@@ -1340,6 +1357,7 @@
 		</Style.Triggers>
 	</Style>
 
+	<!-- Column rule rows: key-like columns keep their warning colours even when rows alternate -->
 	<Style
 		x:Key      ="ColumnRuleRowStyle"
 		TargetType ="DataGridRow"
@@ -1395,6 +1413,7 @@
 		</Style.Triggers>
 	</Style>
 
+	<!-- Grid cells: transparent content so row selection and key colours show through -->
 	<Style
 		TargetType="DataGridCell">
 		<Setter
@@ -1436,6 +1455,7 @@
 		</Setter>
 	</Style>
 
+	<!-- Column headers: invisible resize grips keep the themed header chrome intact -->
 	<Style
 		x:Key      ="ColumnHeaderGripperStyle"
 		TargetType ="Thumb">
@@ -1596,6 +1616,7 @@
 		</Setter>
 	</Style>
 
+	<!-- Vertical scroll bars: page buttons stay invisible so only the thumb is seen -->
 	<ControlTemplate
 		x:Key      ="VerticalScrollBarTemplate"
 		TargetType ="ScrollBar">
@@ -1638,6 +1659,7 @@
 		</ControlTemplate.Triggers>
 	</ControlTemplate>
 
+	<!-- Horizontal scroll bars: the same thumb styling is rotated for sideways sample scrolling -->
 	<ControlTemplate
 		x:Key      ="HorizontalScrollBarTemplate"
 		TargetType ="ScrollBar">
@@ -1907,6 +1929,7 @@
 			Value    ="{DynamicResource SectionBorderBrush}" />
 	</Style>
 
+	<!-- Progress bar: uses the accent and track brushes instead of fixed Windows colours -->
 	<Style
 		TargetType="ProgressBar">
 		<Setter
@@ -1971,6 +1994,7 @@
 			Value    ="Center" />
 	</Style>
 
+	<!-- Placeholder text: centred italic message used when a panel has nothing to show -->
 	<Style
 		x:Key      ="PlaceholderTextStyle"
 		TargetType ="TextBlock"
@@ -1992,6 +2016,7 @@
 			Value    ="Wrap" />
 	</Style>
 
+	<!-- Icon text: shared Fluent icon font for warning badges and button glyphs -->
 	<Style
 		x:Key      ="IconTextStyle"
 		TargetType ="TextBlock">
@@ -2018,6 +2043,7 @@
 			Value    ="&#xE7BA;" />
 	</Style>
 
+	<!-- Badges: rounded labels for key, identity and row set markers -->
 	<Style
 		x:Key      ="BadgeStyle"
 		TargetType ="Border">
@@ -2102,6 +2128,7 @@
 		</Setter>
 	</Style>
 
+	<!-- Pattern completion popup: suggestions list with details and keyboard help under the editor -->
 	<DataTemplate
 		x:Key="PatternCompletionPopupTemplate">
 		<Border
@@ -2109,6 +2136,7 @@
 			Style   ="{StaticResource PopupMenuBorderStyle}"
 			ToolTip ="{StaticResource PatternSuggestionsHint}">
 			<StackPanel>
+				<!-- Matching functions and keywords; the autocomplete controller owns the selected item -->
 				<ListBox
 					MaxHeight          ="168"
 					Background         ="Transparent"
@@ -2146,6 +2174,7 @@
 					</ListBox.ItemTemplate>
 				</ListBox>
 
+				<!-- Details for the selected completion, including signature, description and example -->
 				<Border
 					Margin          ="0,4,0,0"
 					Padding         ="6,4"
@@ -2172,6 +2201,7 @@
 					</StackPanel>
 				</Border>
 
+				<!-- Keyboard hint stays visible at the bottom of the pop-up -->
 				<Border
 					Padding      ="6,3"
 					Background   ="{DynamicResource HeaderStripBrush}"

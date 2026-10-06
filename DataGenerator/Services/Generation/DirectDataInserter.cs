@@ -7,7 +7,7 @@ using Microsoft.Data.SqlClient;
 namespace DataGenerator.Services.Generation;
 
 /// <summary>
-/// Inserts a <see cref="GenerationBlueprint"/> directly into SQL Server inside one transaction.
+///	Inserts a <see cref="GenerationBlueprint"/> directly into SQL Server inside one transaction.
 /// </summary>
 internal sealed class DirectDataInserter
 {
@@ -25,12 +25,45 @@ internal sealed class DirectDataInserter
 	private readonly ISqlValueConverter _converter;
 	private readonly RowValueBuilder    _rowValueBuilder;
 
+	/// <summary>
+	///	Creates the service that inserts generated rows directly into SQL Server.
+	/// </summary>
+	/// <param name="converter">
+	///	The converter used to configure SQL parameters and type declarations.
+	/// </param>
+	/// <param name="rowValueBuilder">
+	///	The builder used to generate row values.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any dependency is <see langword="null"/>.
+	/// </exception>
 	public DirectDataInserter(ISqlValueConverter converter, RowValueBuilder rowValueBuilder)
 	{
 		_converter       = converter       ?? throw new ArgumentNullException(nameof(converter));
 		_rowValueBuilder = rowValueBuilder ?? throw new ArgumentNullException(nameof(rowValueBuilder));
 	}
 
+	/// <summary>
+	///	Opens a SQL Server transaction, performs all cleanup and generation operations, and commits only when every step succeeds.
+	/// </summary>
+	/// <param name="blueprint">
+	///	The generation blueprint to execute.
+	/// </param>
+	/// <param name="connectionString">
+	///	The SQL Server connection string.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for user-visible status.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel generation before commit.
+	/// </param>
+	/// <exception cref="OperationCanceledException">
+	///	Thrown when <paramref name="cancellationToken"/> is cancelled before commit.
+	/// </exception>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when cleanup, generation or post-generation SQL fails.
+	/// </exception>
 	public async Task InsertAsync(
 		GenerationBlueprint blueprint,
 		string              connectionString,
@@ -105,6 +138,27 @@ internal sealed class DirectDataInserter
 		}
 	}
 
+	/// <summary>
+	///	Deletes requested existing rows and optionally restarts identity values before generation begins.
+	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="blueprint">
+	///	The blueprint containing cleanup settings.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for cleanup messages.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel SQL execution.
+	/// </param>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when a cleanup statement fails.
+	/// </exception>
 	private static async Task ClearTablesAsync(
 		SqlConnection       connection,
 		SqlTransaction      transaction,
@@ -145,9 +199,27 @@ internal sealed class DirectDataInserter
 	}
 
 	/// <summary>
-	/// Copies the rows that exist before anything is inserted, for the "Generated rows" and "Existing rows" scopes. The
-	/// commands have no parameters, so the temporary tables belong to the connection and stay available for later commands.
+	///	Copies the rows that exist before anything is inserted, for the "Generated rows" and "Existing rows" scopes. The
+	///	commands have no parameters, so the temporary tables belong to the connection and stay available for later commands.
 	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="blueprint">
+	///	The blueprint containing the required snapshots.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for snapshot messages.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel SQL execution.
+	/// </param>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when a snapshot cannot be created.
+	/// </exception>
 	private static async Task CreateSnapshotsAsync(
 		SqlConnection       connection,
 		SqlTransaction      transaction,
@@ -172,6 +244,24 @@ internal sealed class DirectDataInserter
 		}
 	}
 
+	/// <summary>
+	///	Drops temporary snapshot tables after the generation transaction has finished using them.
+	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="blueprint">
+	///	The blueprint containing the snapshots.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel SQL execution.
+	/// </param>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when the snapshot tables cannot be removed.
+	/// </exception>
 	private static async Task DropSnapshotsAsync(
 		SqlConnection       connection,
 		SqlTransaction      transaction,
@@ -196,8 +286,32 @@ internal sealed class DirectDataInserter
 	}
 
 	/// <summary>
-	/// Runs a statement without parameters and reports a SQL error as a <see cref="DataGenerationException"/>.
+	///	Runs a statement without parameters and reports a SQL error as a <see cref="DataGenerationException"/>.
 	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The active SQL transaction.
+	/// </param>
+	/// <param name="sql">
+	///	The SQL statement to execute.
+	/// </param>
+	/// <param name="timeoutSeconds">
+	///	The command timeout in seconds.
+	/// </param>
+	/// <param name="failureMessage">
+	///	The message prefix used when execution fails.
+	/// </param>
+	/// <param name="location">
+	///	The user-facing location reported with the failure.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel SQL execution.
+	/// </param>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when SQL Server rejects the statement.
+	/// </exception>
 	private static async Task ExecuteStatementAsync(
 		SqlConnection     connection,
 		SqlTransaction    transaction,
@@ -221,9 +335,30 @@ internal sealed class DirectDataInserter
 	}
 
 	/// <summary>
-	/// Runs the stored procedures and SQL the user asked to run after the inserts, in the chosen database and inside the
-	/// generation transaction, so a failure rolls back the inserted rows too.
+	///	Runs the stored procedures and SQL the user asked to run after the inserts, in the chosen database and inside the
+	///	generation transaction, so a failure rolls back the inserted rows too.
 	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="blueprint">
+	///	The blueprint containing optional post-generation SQL.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for statement messages.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel between statements.
+	/// </param>
+	/// <exception cref="OperationCanceledException">
+	///	Thrown when <paramref name="cancellationToken"/> is cancelled.
+	/// </exception>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when a post-generation statement fails.
+	/// </exception>
 	private static async Task RunPostGenerationAsync(
 		SqlConnection       connection,
 		SqlTransaction      transaction,
@@ -264,6 +399,27 @@ internal sealed class DirectDataInserter
 		}
 	}
 
+	/// <summary>
+	///	Executes one post-generation SQL statement and wraps SQL failures for the UI.
+	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="sql">
+	///	The SQL statement or stored procedure command to execute.
+	/// </param>
+	/// <param name="location">
+	///	The user-facing statement location.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel SQL execution.
+	/// </param>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when SQL Server rejects the post-generation statement.
+	/// </exception>
 	private static async Task ExecutePostGenerationAsync(
 		SqlConnection     connection,
 		SqlTransaction    transaction,
@@ -288,6 +444,27 @@ internal sealed class DirectDataInserter
 		}
 	}
 
+	/// <summary>
+	///	Executes one cleanup statement and wraps SQL failures for the table being cleaned.
+	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="sql">
+	///	The cleanup SQL to execute.
+	/// </param>
+	/// <param name="table">
+	///	The table being cleaned.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel SQL execution.
+	/// </param>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when SQL Server rejects the cleanup statement.
+	/// </exception>
 	private static async Task ExecuteCleanupAsync(
 		SqlConnection     connection,
 		SqlTransaction    transaction,
@@ -312,6 +489,27 @@ internal sealed class DirectDataInserter
 		}
 	}
 
+	/// <summary>
+	///	Reads and stores a sample of existing key values for direct insertion.
+	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="pool">
+	///	The existing-key pool to load.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for sampling messages.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel SQL execution.
+	/// </param>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when key values cannot be read or no rows are available.
+	/// </exception>
 	private async Task LoadPoolAsync(
 		SqlConnection      connection,
 		SqlTransaction     transaction,
@@ -354,6 +552,27 @@ internal sealed class DirectDataInserter
 		pool.Load(rows);
 	}
 
+	/// <summary>
+	///	Reads and stores values for one value-from-table lookup before its row set is generated.
+	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="lookup">
+	///	The lookup pool to load.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for lookup messages.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel SQL execution.
+	/// </param>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when lookup values cannot be read or too few are available.
+	/// </exception>
 	private static async Task LoadLookupAsync(
 		SqlConnection      connection,
 		SqlTransaction     transaction,
@@ -387,9 +606,36 @@ internal sealed class DirectDataInserter
 	}
 
 	/// <summary>
-	/// Stores the new values of an update set in a temporary staging table (in parameterised batches), then changes
-	/// randomly chosen rows of the table that meet the scope and condition to those values.
+	///	Stores the new values of an update set in a temporary staging table (in parameterised batches), then changes
+	///	randomly chosen rows of the table that meet the scope and condition to those values.
 	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="table">
+	///	The table blueprint that owns the row set.
+	/// </param>
+	/// <param name="rowSet">
+	///	The update row-set blueprint.
+	/// </param>
+	/// <param name="update">
+	///	The update metadata with staging and update SQL.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for preparation and update messages.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel row preparation or SQL execution.
+	/// </param>
+	/// <exception cref="OperationCanceledException">
+	///	Thrown when <paramref name="cancellationToken"/> is cancelled.
+	/// </exception>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when staging, updating or the required-row check fails.
+	/// </exception>
 	private async Task UpdateRowSetAsync(
 		SqlConnection      connection,
 		SqlTransaction     transaction,
@@ -480,6 +726,27 @@ internal sealed class DirectDataInserter
 		);
 	}
 
+	/// <summary>
+	///	Runs the UPDATE statement for an update set and reads the number of changed rows.
+	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="update">
+	///	The update metadata to execute.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel SQL execution.
+	/// </param>
+	/// <returns>
+	///	The number of rows changed by the update; 0 when SQL Server returns no count.
+	/// </returns>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when SQL Server rejects the update statement.
+	/// </exception>
 	private static async Task<long> ExecuteUpdateAsync(
 		SqlConnection     connection,
 		SqlTransaction    transaction,
@@ -504,6 +771,27 @@ internal sealed class DirectDataInserter
 		}
 	}
 
+	/// <summary>
+	///	Creates a reusable parameterised command for inserting staged update values.
+	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="rowSet">
+	///	The update row-set blueprint.
+	/// </param>
+	/// <param name="update">
+	///	The update metadata containing the staging table.
+	/// </param>
+	/// <param name="rowCount">
+	///	The number of rows this batch command inserts.
+	/// </param>
+	/// <returns>
+	///	A command with row-number and value parameters configured.
+	/// </returns>
 	private SqlCommand CreateStagingInsertCommand(
 		SqlConnection   connection,
 		SqlTransaction  transaction,
@@ -549,8 +837,20 @@ internal sealed class DirectDataInserter
 	}
 
 	/// <summary>
-	/// Sets the parameters of a staging batch: per row the row number (1-based within the update set), then the values.
+	///	Sets the parameters of a staging batch: per row the row number (1-based within the update set), then the values.
 	/// </summary>
+	/// <param name="command">
+	///	The staging insert command to populate.
+	/// </param>
+	/// <param name="rowSet">
+	///	The update row-set blueprint.
+	/// </param>
+	/// <param name="batch">
+	///	The generated value rows in this batch.
+	/// </param>
+	/// <param name="batchStart">
+	///	The zero-based row index of the first row in the batch.
+	/// </param>
 	private static void SetStagingParameterValues(SqlCommand command, RowSetBlueprint rowSet, List<object?[]> batch, long batchStart)
 	{
 		int columnCount = rowSet.Sources.Count + 1;
@@ -567,9 +867,33 @@ internal sealed class DirectDataInserter
 	}
 
 	/// <summary>
-	/// Inserts the rows in parameterised multi-row batches. Tables referenced by "Generated key" rules return the
-	/// stored key values through an OUTPUT clause; their order does not matter because keys are picked at random.
+	///	Inserts the rows in parameterised multi-row batches. Tables referenced by "Generated key" rules return the
+	///	stored key values through an OUTPUT clause; their order does not matter because keys are picked at random.
 	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="table">
+	///	The table blueprint that owns the row set.
+	/// </param>
+	/// <param name="rowSet">
+	///	The insert row-set blueprint.
+	/// </param>
+	/// <param name="progress">
+	///	The progress reporter for insert messages.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel row generation or SQL execution.
+	/// </param>
+	/// <exception cref="OperationCanceledException">
+	///	Thrown when <paramref name="cancellationToken"/> is cancelled.
+	/// </exception>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when a batch insert fails.
+	/// </exception>
 	private async Task InsertRowSetAsync(
 		SqlConnection      connection,
 		SqlTransaction     transaction,
@@ -630,6 +954,27 @@ internal sealed class DirectDataInserter
 		}
 	}
 
+	/// <summary>
+	///	Creates a reusable parameterised command for one insert batch, including optional key capture.
+	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The generation transaction.
+	/// </param>
+	/// <param name="table">
+	///	The table blueprint receiving rows.
+	/// </param>
+	/// <param name="rowSet">
+	///	The insert row-set blueprint.
+	/// </param>
+	/// <param name="rowCount">
+	///	The number of rows this batch command inserts.
+	/// </param>
+	/// <returns>
+	///	A command with all value parameters configured.
+	/// </returns>
 	private SqlCommand CreateInsertCommand(
 		SqlConnection   connection,
 		SqlTransaction  transaction,
@@ -718,7 +1063,33 @@ internal sealed class DirectDataInserter
 		return command;
 	}
 
-	/// <param name="keys">The key table that receives the keys the batch returns; null when it returns none.</param>
+	/// <summary>
+	///	Executes one insert or update-staging batch and captures generated keys when requested.
+	/// </summary>
+	/// <param name="command">
+	///	The command to execute.
+	/// </param>
+	/// <param name="table">
+	///	The table blueprint being processed.
+	/// </param>
+	/// <param name="keys">
+	///	The key table that receives the keys the batch returns; null when it returns none.
+	/// </param>
+	/// <param name="rowSet">
+	///	The row set whose rows are in the batch.
+	/// </param>
+	/// <param name="batchStart">
+	///	The zero-based row index of the first batch row.
+	/// </param>
+	/// <param name="rowCount">
+	///	The number of rows in the batch.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel SQL execution.
+	/// </param>
+	/// <exception cref="DataGenerationException">
+	///	Thrown when SQL Server rejects the batch.
+	/// </exception>
 	private static async Task ExecuteBatchAsync(
 		SqlCommand         command,
 		TableBlueprint     table,
@@ -751,9 +1122,10 @@ internal sealed class DirectDataInserter
 		}
 		catch (SqlException exception)
 		{
-			string rows = rowCount == 1
-				? $"Row {batchStart + 1:N0}"
-				: $"Rows {batchStart + 1:N0}–{batchStart + rowCount:N0}";
+			string rows =
+				rowCount == 1
+					? $"Row {batchStart + 1:N0}"
+					: $"Rows {batchStart + 1:N0}–{batchStart + rowCount:N0}";
 
 			throw new DataGenerationException(
 				exception.Message,
@@ -763,6 +1135,18 @@ internal sealed class DirectDataInserter
 		}
 	}
 
+	/// <summary>
+	///	Sets value parameters for an insert batch.
+	/// </summary>
+	/// <param name="command">
+	///	The insert command to populate.
+	/// </param>
+	/// <param name="rowSet">
+	///	The insert row-set blueprint.
+	/// </param>
+	/// <param name="batch">
+	///	The generated value rows in this batch.
+	/// </param>
 	private static void SetParameterValues(SqlCommand command, RowSetBlueprint rowSet, List<object?[]> batch)
 	{
 		int columnCount = rowSet.Sources.Count;
@@ -776,6 +1160,24 @@ internal sealed class DirectDataInserter
 		}
 	}
 
+	/// <summary>
+	///	Converts a generated value to a value that can be assigned to a SQL parameter.
+	/// </summary>
+	/// <param name="rowSet">
+	///	The row-set blueprint used for error messages.
+	/// </param>
+	/// <param name="column">
+	///	The source-column index of the value.
+	/// </param>
+	/// <param name="value">
+	///	The generated value to convert.
+	/// </param>
+	/// <returns>
+	///	The original value, or <see cref="DBNull.Value"/> for <see langword="null"/>.
+	/// </returns>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when a SQL-script-only fragment reaches direct insertion.
+	/// </exception>
 	private static object ToParameterValue(RowSetBlueprint rowSet, int column, object? value)
 		=> value switch
 		{
@@ -786,6 +1188,15 @@ internal sealed class DirectDataInserter
 			_           => value
 		};
 
+	/// <summary>
+	///	Configures SQL type, size, precision and scale for a parameter from column metadata.
+	/// </summary>
+	/// <param name="parameter">
+	///	The parameter to configure.
+	/// </param>
+	/// <param name="column">
+	///	The column whose SQL metadata controls the parameter.
+	/// </param>
 	private void ConfigureParameter(SqlParameter parameter, ColumnModel column)
 	{
 		parameter.SqlDbType = _converter.GetSqlDbType(column);
@@ -835,6 +1246,15 @@ internal sealed class DirectDataInserter
 		}
 	}
 
+	/// <summary>
+	///	Describes the table-variable columns used to capture generated keys.
+	/// </summary>
+	/// <param name="columns">
+	///	The generated-key columns to declare.
+	/// </param>
+	/// <returns>
+	///	A comma-separated list of key value column declarations.
+	/// </returns>
 	private string DescribeKeyColumns(IReadOnlyList<ColumnModel> columns)
 		=> string.Join(
 			", ",
@@ -843,19 +1263,79 @@ internal sealed class DirectDataInserter
 			)
 		);
 
+	/// <summary>
+	///	Describes generated value column names for a temporary or table variable.
+	/// </summary>
+	/// <param name="count">
+	///	The number of value columns to include.
+	/// </param>
+	/// <returns>
+	///	A comma-separated list of quoted generated value column names.
+	/// </returns>
 	private static string DescribeValueColumns(int count)
 		=> string.Join(", ", Enumerable.Range(0, count).Select(index => SqlSyntax.QuoteIdentifier(GeneratedKeyTable.GetValueColumnName(index))));
 
+	/// <summary>
+	///	Builds the parameter name for one row and source column.
+	/// </summary>
+	/// <param name="row">
+	///	Zero-based batch row index.
+	/// </param>
+	/// <param name="column">
+	///	Zero-based source-column index.
+	/// </param>
+	/// <returns>
+	///	The SQL parameter name.
+	/// </returns>
 	private static string GetParameterName(int row, int column) => $"@r{row}c{column}";
 
+	/// <summary>
+	///	Builds the row-number parameter name for one staging row.
+	/// </summary>
+	/// <param name="row">
+	///	Zero-based batch row index.
+	/// </param>
+	/// <returns>
+	///	The SQL parameter name for the row number.
+	/// </returns>
 	private static string GetRowNumberParameterName(int row) => $"@r{row}n";
 
+	/// <summary>
+	///	Creates a SQL command bound to the supplied connection, transaction and timeout.
+	/// </summary>
+	/// <param name="connection">
+	///	The open SQL connection.
+	/// </param>
+	/// <param name="transaction">
+	///	The active SQL transaction.
+	/// </param>
+	/// <param name="sql">
+	///	The SQL text to execute.
+	/// </param>
+	/// <param name="timeoutSeconds">
+	///	The command timeout in seconds.
+	/// </param>
+	/// <returns>
+	///	The configured SQL command.
+	/// </returns>
 	private static SqlCommand CreateCommand(SqlConnection connection, SqlTransaction transaction, string sql, int timeoutSeconds)
 		=> new SqlCommand(sql, connection, transaction)
 		{
 			CommandTimeout = timeoutSeconds
 		};
 
+	/// <summary>
+	///	Reads all rows from a data reader into nullable object arrays.
+	/// </summary>
+	/// <param name="reader">
+	///	The data reader positioned before the first row.
+	/// </param>
+	/// <param name="cancellationToken">
+	///	Token used to cancel reading.
+	/// </param>
+	/// <returns>
+	///	The rows read from the current result set.
+	/// </returns>
 	private static async Task<List<object?[]>> ReadRowsAsync(SqlDataReader reader, CancellationToken cancellationToken)
 	{
 		List<object?[]> rows = [];

@@ -3,8 +3,8 @@
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// Common state of the rows in the database explorer tree. Selection, filtering and striping are managed by
-/// <see cref="DatabaseExplorerViewModel"/> so that they work across the whole tree.
+///	Common state of the rows in the database explorer tree. Selection, filtering and striping are managed by
+///	<see cref="DatabaseExplorerViewModel"/> so that they work across the whole tree.
 /// </summary>
 public abstract class TreeNodeViewModel : ObservableObject
 {
@@ -23,8 +23,8 @@ public abstract class TreeNodeViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// Greys the node out (and collapses a database) so the tables being worked on stand out. Hidden tables are still
-	/// generated when they are included.
+	///	Greys the node out (and collapses a database) so the tables being worked on stand out. Hidden tables are still
+	///	generated when they are included.
 	/// </summary>
 	public bool IsHidden
 	{
@@ -43,10 +43,11 @@ public abstract class TreeNodeViewModel : ObservableObject
 	public virtual bool IsDimmed => _isHidden;
 
 	public string VisibilityToolTip
-		=> _isHidden
-			? $"Show {DisplayName} again. With several rows selected, shows all of them."
-			: $"Hide {DisplayName}: greys it out{(this is DatabaseNodeViewModel ? " and collapses it" : string.Empty)}. "
-				+ "With several rows selected, hides all of them.";
+		=>
+			_isHidden
+				? $"Show {DisplayName} again. With several rows selected, shows all of them."
+				: $"Hide {DisplayName}: greys it out{(this is DatabaseNodeViewModel ? " and collapses it" : string.Empty)}. "
+					+ "With several rows selected, hides all of them.";
 
 	public bool IsExpanded
 	{
@@ -55,7 +56,7 @@ public abstract class TreeNodeViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// False when the node is filtered out by the explorer's search text or "included only" option.
+	///	False when the node is filtered out by the explorer's search text or "included only" option.
 	/// </summary>
 	public bool IsVisibleInTree
 	{
@@ -69,9 +70,15 @@ public abstract class TreeNodeViewModel : ObservableObject
 		internal set => SetProperty(ref _isAlternate, value);
 	}
 
+	/// <summary>
+	///	Lets derived nodes react after their hidden state changes.
+	/// </summary>
 	protected virtual void OnHiddenChanged()
 	{
 	}
 
+	/// <summary>
+	///	Notifies bindings that the effective dimmed state changed.
+	/// </summary>
 	protected void RaiseDimmedChanged() => OnPropertyChanged(nameof(IsDimmed));
 }

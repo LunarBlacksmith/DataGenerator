@@ -1,8 +1,8 @@
 ﻿namespace DataGenerator.Services;
 
 /// <summary>
-/// The functions and keywords of the pattern language. The parser, the pattern language reference window and the
-/// suggestions shown while a pattern is typed all use this list, so a new function only needs to be described here.
+///	The functions and keywords of the pattern language. The parser, the pattern language reference window and the
+///	suggestions shown while a pattern is typed all use this list, so a new function only needs to be described here.
 /// </summary>
 public static class PatternLanguageReference
 {
@@ -188,9 +188,45 @@ public static class PatternLanguageReference
 		)
 	];
 
+	/// <summary>
+	///	Creates a pattern-language function entry for the shared reference list.
+	/// </summary>
+	/// <param name="name">
+	///	The function name shown in completions.
+	/// </param>
+	/// <param name="signature">
+	///	The signature shown in the reference window.
+	/// </param>
+	/// <param name="description">
+	///	The user-facing description of what the function generates.
+	/// </param>
+	/// <param name="example">
+	///	An example pattern or result for the function.
+	/// </param>
+	/// <returns>
+	///	A function entry with the supplied display text.
+	/// </returns>
 	private static PatternLanguageEntry Function(string name, string signature, string description, string example)
 		=> new PatternLanguageEntry(name, signature, description, example, PatternLanguageEntryKind.Function);
 
+	/// <summary>
+	///	Creates a pattern-language keyword entry for the shared reference list.
+	/// </summary>
+	/// <param name="name">
+	///	The keyword text shown in completions.
+	/// </param>
+	/// <param name="signature">
+	///	The usage form shown in the reference window.
+	/// </param>
+	/// <param name="description">
+	///	The user-facing description of what the keyword does.
+	/// </param>
+	/// <param name="example">
+	///	An example pattern that uses the keyword.
+	/// </param>
+	/// <returns>
+	///	A keyword entry with the supplied display text.
+	/// </returns>
 	private static PatternLanguageEntry Keyword(string name, string signature, string description, string example)
 		=> new PatternLanguageEntry(name, signature, description, example, PatternLanguageEntryKind.Keyword);
 }

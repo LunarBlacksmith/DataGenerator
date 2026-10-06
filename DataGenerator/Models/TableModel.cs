@@ -51,7 +51,7 @@ public sealed class TableModel : ObservableObject
 			+ $"[{Name.Replace("]", "]]")}]";
 
 	/// <summary>
-	/// Unique, case-insensitive lookup key in the form database.schema.table.
+	///	Unique, case-insensitive lookup key in the form database.schema.table.
 	/// </summary>
 	public string Key => CreateKey(DatabaseName, SchemaName, Name);
 
@@ -60,9 +60,27 @@ public sealed class TableModel : ObservableObject
 	public ObservableCollection<ColumnModel>     Columns     { get; } = [];
 	public ObservableCollection<ForeignKeyModel> ForeignKeys { get; } = [];
 
+	/// <summary>
+	///	Builds the case-insensitive lookup key for a table.
+	/// </summary>
+	/// <param name="databaseName">
+	///	The database name part of the key.
+	/// </param>
+	/// <param name="schemaName">
+	///	The schema name part of the key.
+	/// </param>
+	/// <param name="tableName">
+	///	The table name part of the key.
+	/// </param>
+	/// <returns>
+	///	The key in database.schema.table form.
+	/// </returns>
 	public static string CreateKey(string databaseName, string schemaName, string tableName)
 		=> $"{databaseName}.{schemaName}.{tableName}";
 
+	/// <summary>
+	///	Raises change notifications for all derived table-name properties.
+	/// </summary>
 	private void OnNameChanged()
 	{
 		OnPropertyChanged(nameof(FullyQualifiedName));

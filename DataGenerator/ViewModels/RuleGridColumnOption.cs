@@ -3,7 +3,7 @@
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// An optional column of the column rules grid that the user can hide.
+///	An optional column of the column rules grid that the user can hide.
 /// </summary>
 public sealed class RuleGridColumnOption : ObservableObject
 {
@@ -11,6 +11,31 @@ public sealed class RuleGridColumnOption : ObservableObject
 
 	private bool _isVisible;
 
+	/// <summary>
+	///	Creates a rule-grid column choice and records how visibility changes are saved.
+	/// </summary>
+	/// <param name="key">
+	///	The preference key used to remember the column.
+	/// </param>
+	/// <param name="displayName">
+	///	The label shown in the columns menu.
+	/// </param>
+	/// <param name="description">
+	///	The explanation shown for the column.
+	/// </param>
+	/// <param name="isVisible">
+	///	Whether the column is currently shown.
+	/// </param>
+	/// <param name="onVisibilityChanged">
+	///	The callback invoked after the visibility changes.
+	/// </param>
+	/// <exception cref="ArgumentException">
+	///	Thrown when <paramref name="key"/> or <paramref name="displayName"/> is <see langword="null"/>, empty or white
+	///	space.
+	/// </exception>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="onVisibilityChanged"/> is <see langword="null"/>.
+	/// </exception>
 	public RuleGridColumnOption(
 		string                       key,
 		string                       displayName,
@@ -30,7 +55,7 @@ public sealed class RuleGridColumnOption : ObservableObject
 	}
 
 	/// <summary>
-	/// The name under which the choice is remembered in the user's preferences.
+	///	The name under which the choice is remembered in the user's preferences.
 	/// </summary>
 	public string Key { get; }
 

@@ -6,8 +6,8 @@ using DataGenerator.Models;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// Changes the generation mode or the Settings value of several selected columns of a row set at once. Columns that
-/// cannot take the change keep what they had, and the result says which were skipped and why.
+///	Changes the generation mode or the Settings value of several selected columns of a row set at once. Columns that
+///	cannot take the change keep what they had, and the result says which were skipped and why.
 /// </summary>
 public sealed class BulkColumnEditViewModel : ObservableObject
 {
@@ -24,6 +24,15 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 	private string?                       _resultDetails;
 	private bool                          _resultHasSkips;
 
+	/// <summary>
+	///	Creates the bulk editor for all rules in the active row set and tracks the grid selection.
+	/// </summary>
+	/// <param name="allRules">
+	///	All column rules that can be selected for bulk changes.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="allRules"/> is <see langword="null"/>.
+	/// </exception>
 	public BulkColumnEditViewModel(IReadOnlyList<ColumnRuleViewModel> allRules)
 	{
 		_allRules           = allRules ?? throw new ArgumentNullException(nameof(allRules));
@@ -43,7 +52,7 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// The columns selected in the grid, kept in step with the grid's selection.
+	///	The columns selected in the grid, kept in step with the grid's selection.
 	/// </summary>
 	public ObservableCollection<ColumnRuleViewModel> SelectedRules { get; } = [];
 
@@ -53,14 +62,14 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 	public RelayCommand ClearSelectionCommand    { get; }
 
 	/// <summary>
-	/// Whether enough columns are selected for the bulk tools to be shown.
+	///	Whether enough columns are selected for the bulk tools to be shown.
 	/// </summary>
 	public bool IsActive => SelectedRules.Count >= MINIMUM_SELECTION_COUNT;
 
 	public string SelectionText => $"{SelectedRules.Count:N0} columns selected";
 
 	/// <summary>
-	/// The modes at least one selected column can use, in the usual order.
+	///	The modes at least one selected column can use, in the usual order.
 	/// </summary>
 	public IReadOnlyList<BulkModeOption> ModeOptions
 	{
@@ -81,7 +90,7 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// The value put into the Settings cell of each selected column, for the mode that column uses.
+	///	The value put into the Settings cell of each selected column, for the mode that column uses.
 	/// </summary>
 	public string SettingValue
 	{
@@ -90,7 +99,7 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// What the last bulk change did, or <see langword="null"/> before the first change of the selection.
+	///	What the last bulk change did, or <see langword="null"/> before the first change of the selection.
 	/// </summary>
 	public string? ResultText
 	{
@@ -105,7 +114,7 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// Every skipped column with the reason it was skipped, one per line.
+	///	Every skipped column with the reason it was skipped, one per line.
 	/// </summary>
 	public string? ResultDetails
 	{
@@ -121,6 +130,15 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 		private set => SetProperty(ref _resultHasSkips, value);
 	}
 
+	/// <summary>
+	///	Refreshes the bulk action state after the grid selection changes.
+	/// </summary>
+	/// <param name="sender">
+	///	The selected rules collection that raised the event.
+	/// </param>
+	/// <param name="e">
+	///	The change made to the selected rules collection.
+	/// </param>
 	private void OnSelectedRulesChanged(object? sender, NotifyCollectionChangedEventArgs e)
 	{
 		OnPropertyChanged(nameof(IsActive));
@@ -133,6 +151,10 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 		ClearSelectionCommand.NotifyCanExecuteChanged();
 	}
 
+	/// <summary>
+	///	Builds the generation-mode choices supported by at least one selected column and keeps the previous choice when
+	///	it is still available.
+	/// </summary>
 	private void RefreshModeOptions()
 	{
 		List<BulkModeOption> options = [];
@@ -153,6 +175,10 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 		SelectedModeOption = options.FirstOrDefault(option => option.Mode == selectedMode);
 	}
 
+	/// <summary>
+	///	Applies the selected generation mode to every selected column that can use it and reports any columns left
+	///	unchanged.
+	/// </summary>
 	private void ApplyMode()
 	{
 		if (_selectedModeOption is null)
@@ -183,6 +209,9 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 		ApplySettingValueCommand.NotifyCanExecuteChanged();
 	}
 
+	/// <summary>
+	///	Applies the typed Settings value to every selected column and reports any values that were rejected.
+	/// </summary>
 	private void ApplySettingValue()
 	{
 		List<(string ColumnName, string Problem)> skipped = [];
@@ -203,6 +232,9 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 		ShowResult($"Set the value of {changed:N0} of {SelectedRules.Count:N0} columns.", skipped);
 	}
 
+	/// <summary>
+	///	Adds every rule in the row set to the current selection.
+	/// </summary>
 	private void SelectAll()
 	{
 		foreach (ColumnRuleViewModel rule in _allRules)
@@ -214,12 +246,22 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Shows the outcome of a bulk action and stores the detailed skip reasons for the tooltip.
+	/// </summary>
+	/// <param name="summary">
+	///	The main result text to show when no selected columns were skipped.
+	/// </param>
+	/// <param name="skipped">
+	///	The selected columns left unchanged, with the reason for each one.
+	/// </param>
 	private void ShowResult(string summary, IReadOnlyList<(string ColumnName, string Problem)> skipped)
 	{
 		ResultHasSkips = skipped.Count > 0;
-		ResultDetails  = skipped.Count > 0
-			? string.Join(Environment.NewLine, skipped.Select(skip => $"{skip.ColumnName}: {skip.Problem}"))
-			: null;
+		ResultDetails  =
+			skipped.Count > 0
+				? string.Join(Environment.NewLine, skipped.Select(skip => $"{skip.ColumnName}: {skip.Problem}"))
+				: null;
 
 		if (skipped.Count == 0)
 		{
@@ -235,6 +277,9 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 			+ " (hover for why).";
 	}
 
+	/// <summary>
+	///	Removes the result text and skip details for the previous bulk action.
+	/// </summary>
 	private void ClearResult()
 	{
 		ResultText     = null;

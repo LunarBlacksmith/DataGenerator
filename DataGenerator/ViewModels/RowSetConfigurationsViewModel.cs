@@ -8,9 +8,9 @@ using DataGenerator.Services;
 namespace DataGenerator.ViewModels;
 
 /// <summary>
-/// The "Set configuration" menu of the row set being edited: saves the modes and settings of all its columns under a
-/// name, loads a saved configuration into it, and imports, exports or deletes configurations. Saved column settings,
-/// which each hold one column, are handled by the menu of each column and are never mixed with these.
+///	The "Set configuration" menu of the row set being edited: saves the modes and settings of all its columns under a
+///	name, loads a saved configuration into it, and imports, exports or deletes configurations. Saved column settings,
+///	which each hold one column, are handled by the menu of each column and are never mixed with these.
 /// </summary>
 public sealed class RowSetConfigurationsViewModel : ObservableObject
 {
@@ -27,6 +27,21 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	private string              _newName;
 	private string?             _nameError;
 
+	/// <summary>
+	///	Creates the set-configuration menu and connects it to the saved configuration library.
+	/// </summary>
+	/// <param name="library">
+	///	The saved row-set configuration library.
+	/// </param>
+	/// <param name="dialogService">
+	///	The dialog service used for confirmations and errors.
+	/// </param>
+	/// <param name="fileDialogService">
+	///	The file dialog service used to import and export configurations.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any service argument is <see langword="null"/>.
+	/// </exception>
 	public RowSetConfigurationsViewModel(
 		RowSetConfigurationLibrary library,
 		IDialogService             dialogService,
@@ -57,28 +72,29 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	public RelayCommand ExportCommand { get; }
 
 	/// <summary>
-	/// The saved configurations that share at least one column with the row set; the ones saved from its table come first.
+	///	The saved configurations that share at least one column with the row set; the ones saved from its table come first.
 	/// </summary>
 	public ObservableCollection<RowSetConfigurationOption> Options { get; } = [];
 
 	public bool HasOptions => Options.Count > 0;
 
 	/// <summary>
-	/// How many saved configurations are not offered because none of their columns are in this table.
+	///	How many saved configurations are not offered because none of their columns are in this table.
 	/// </summary>
 	public int OtherTableCount => _library.Configurations.Count - Options.Count;
 
 	public bool HasOtherTables => OtherTableCount > 0;
 
 	public string OtherTablesText
-		=> OtherTableCount == 1
-			? "1 more configuration has no columns of this table."
-			: $"{OtherTableCount} more configurations have no columns of this table.";
+		=>
+			OtherTableCount == 1
+				? "1 more configuration has no columns of this table."
+				: $"{OtherTableCount} more configurations have no columns of this table.";
 
 	public string MenuTitle => RowSet is null ? DIALOG_TITLE : $"Set configuration · {RowSet.Name.Trim()}";
 
 	/// <summary>
-	/// Whether the menu is open. Opening it lists the configurations that suit the row set and suggests a name.
+	///	Whether the menu is open. Opening it lists the configurations that suit the row set and suggests a name.
 	/// </summary>
 	public bool IsMenuOpen
 	{
@@ -95,7 +111,7 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// The name to save the configuration of the row set under.
+	///	The name to save the configuration of the row set under.
 	/// </summary>
 	public string NewName
 	{
@@ -129,8 +145,11 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	private string TableName => _table?.Model.DisplayName ?? string.Empty;
 
 	/// <summary>
-	/// Makes the menu work on the row set shown for a table (the one selected in its tabs).
+	///	Makes the menu work on the row set shown for a table (the one selected in its tabs).
 	/// </summary>
+	/// <param name="table">
+	///	The table whose selected row set is being edited, or <see langword="null"/> when no table is active.
+	/// </param>
 	public void SetTable(TableNodeViewModel? table)
 	{
 		_table     = table;
@@ -139,7 +158,7 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	}
 
 	/// <summary>
-	/// Called when the row set of the table changes, e.g. when another tab is selected.
+	///	Called when the row set of the table changes, e.g. when another tab is selected.
 	/// </summary>
 	public void RefreshCommands()
 	{
@@ -148,6 +167,9 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		OnPropertyChanged(nameof(MenuTitle));
 	}
 
+	/// <summary>
+	///	Refreshes the menu contents and suggests a configuration name for the active row set.
+	/// </summary>
 	private void PrepareMenu()
 	{
 		RefreshOptions();
@@ -156,6 +178,9 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		OnPropertyChanged(nameof(MenuTitle));
 	}
 
+	/// <summary>
+	///	Rebuilds the saved configuration choices that share columns with the active row set.
+	/// </summary>
 	private void RefreshOptions()
 	{
 		Options.Clear();
@@ -185,6 +210,9 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		OnPropertyChanged(nameof(OtherTablesText));
 	}
 
+	/// <summary>
+	///	Saves the active row set's configurable column settings under the entered name.
+	/// </summary>
 	private void Save()
 	{
 		RowSetViewModel? rowSet = RowSet;
@@ -231,6 +259,12 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Loads a saved configuration into the active row set after confirmation.
+	/// </summary>
+	/// <param name="option">
+	///	The saved configuration chosen by the user, or <see langword="null"/> when the command parameter is invalid.
+	/// </param>
 	private void Load(RowSetConfigurationOption? option)
 	{
 		RowSetViewModel? rowSet = RowSet;
@@ -243,18 +277,20 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		SavedRowSetConfiguration configuration = option.Configuration;
 		int                      columnCount   = rowSet.ConfigurableRules.Count();
 		int                      keptCount     = columnCount - option.MatchingColumnCount;
-		string                   scope         = keptCount == 0
-			? $"all {columnCount} of its columns"
-			: $"{option.MatchingColumnCount} of its {columnCount} columns";
+		string                   scope         =
+			keptCount == 0
+				? $"all {columnCount} of its columns"
+				: $"{option.MatchingColumnCount} of its {columnCount} columns";
 
 		IsMenuOpen = false;
 
 		string message = $"Load the set configuration '{configuration.Name}' into the row set '{rowSet.Name.Trim()}' of {TableName}?"
 			+ $"{Environment.NewLine}{Environment.NewLine}This replaces the generation mode and settings of {scope}."
 			+ (keptCount > 0 ? $" The other {keptCount} keep their settings." : string.Empty)
-			+ (option.IsFromActiveTable
-				? string.Empty
-				: $"{Environment.NewLine}{Environment.NewLine}It was saved from {configuration.TableName}; only columns with the same names are changed.");
+			+ (
+				option.IsFromActiveTable
+					? string.Empty
+					: $"{Environment.NewLine}{Environment.NewLine}It was saved from {configuration.TableName}; only columns with the same names are changed.");
 
 		if (!_dialogService.Confirm(DIALOG_TITLE, message))
 		{
@@ -264,6 +300,12 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		rowSet.ConfigurationResult = Describe(configuration.Name, rowSet.ApplyConfiguration(configuration));
 	}
 
+	/// <summary>
+	///	Deletes a saved configuration after confirmation.
+	/// </summary>
+	/// <param name="option">
+	///	The saved configuration to delete, or <see langword="null"/> when the command parameter is invalid.
+	/// </param>
 	private void Delete(RowSetConfigurationOption? option)
 	{
 		if (option is null)
@@ -282,6 +324,9 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Imports set configurations from a file and asks how to handle names that already exist.
+	/// </summary>
 	private void Import()
 	{
 		IsMenuOpen = false;
@@ -345,6 +390,9 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Exports every saved set configuration to a user-chosen file.
+	/// </summary>
 	private void Export()
 	{
 		IsMenuOpen = false;
@@ -367,6 +415,18 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Describes what happened when a configuration was loaded into a row set.
+	/// </summary>
+	/// <param name="name">
+	///	The name of the configuration that was loaded.
+	/// </param>
+	/// <param name="result">
+	///	The load result reported by the row set.
+	/// </param>
+	/// <returns>
+	///	The result text and tooltip details to show beside the row set.
+	/// </returns>
 	private static OperationResultText Describe(string name, RowSetConfigurationLoadResult result)
 	{
 		List<string> details = [.. result.Skipped.Select(skip => $"{skip.ColumnName}: {skip.Problem}")];
@@ -381,18 +441,20 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 			details.Add($"In the configuration but not in this table: {string.Join(", ", result.UnknownColumns)}");
 		}
 
-		string text = result.UpdatedCount == 1
-			? $"Loaded '{name}': 1 column updated."
-			: $"Loaded '{name}': {result.UpdatedCount} columns updated.";
+		string text =
+			result.UpdatedCount == 1
+				? $"Loaded '{name}': 1 column updated."
+				: $"Loaded '{name}': {result.UpdatedCount} columns updated.";
 
 		if (result.Skipped.Count > 0)
 		{
 			string names      = string.Join(", ", result.Skipped.Take(MAXIMUM_NAMED_SKIPS).Select(skip => skip.ColumnName));
 			int    otherCount = result.Skipped.Count - MAXIMUM_NAMED_SKIPS;
 
-			text += otherCount > 0
-				? $" Kept as they were: {names} and {otherCount} more (hover for why)."
-				: $" Kept as they were: {names} (hover for why).";
+			text +=
+				otherCount > 0
+					? $" Kept as they were: {names} and {otherCount} more (hover for why)."
+					: $" Kept as they were: {names} (hover for why).";
 		}
 		else if (details.Count > 0)
 		{
@@ -402,6 +464,12 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		return new OperationResultText(text, details.Count > 0 ? string.Join(Environment.NewLine, details) : null, result.Skipped.Count > 0);
 	}
 
+	/// <summary>
+	///	Shows an import, export or delete result on the active row set when one is selected.
+	/// </summary>
+	/// <param name="result">
+	///	The result message to show.
+	/// </param>
 	private void ReportResult(OperationResultText result)
 	{
 		if (RowSet is not null)
@@ -410,6 +478,18 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Runs a library change and reports file problems to the user.
+	/// </summary>
+	/// <param name="change">
+	///	The library operation to run.
+	/// </param>
+	/// <param name="verb">
+	///	The past-tense action used in the error message.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the change succeeded; otherwise <see langword="false"/>.
+	/// </returns>
 	private bool TryChange(Action change, string verb)
 	{
 		try
@@ -427,6 +507,15 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		}
 	}
 
+	/// <summary>
+	///	Refreshes the open menu when the saved configuration library changes.
+	/// </summary>
+	/// <param name="sender">
+	///	The configuration library that changed.
+	/// </param>
+	/// <param name="e">
+	///	The event data for the library change.
+	/// </param>
 	private void OnLibraryChanged(object? sender, EventArgs e)
 	{
 		if (_isMenuOpen)
@@ -437,6 +526,15 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		ExportCommand.NotifyCanExecuteChanged();
 	}
 
+	/// <summary>
+	///	Whether an exception means the configuration file could not be read or written.
+	/// </summary>
+	/// <param name="exception">
+	///	The exception to classify.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the exception is a file or data problem; otherwise <see langword="false"/>.
+	/// </returns>
 	private static bool IsFileProblem(Exception exception)
 		=> exception is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException or ArgumentException;
 }

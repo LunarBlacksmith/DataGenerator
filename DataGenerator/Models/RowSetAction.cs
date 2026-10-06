@@ -1,7 +1,7 @@
 ﻿namespace DataGenerator.Models;
 
 /// <summary>
-/// Whether a row set inserts new rows or changes rows that are already in the table.
+///	Whether a row set inserts new rows or changes rows that are already in the table.
 /// </summary>
 public enum RowSetAction
 {
