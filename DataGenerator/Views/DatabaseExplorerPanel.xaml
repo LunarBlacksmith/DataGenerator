@@ -1,0 +1,893 @@
+﻿<UserControl
+	x:Class              ="DataGenerator.Views.DatabaseExplorerPanel"
+	xmlns                ="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x              ="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d              ="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc             ="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	xmlns:infrastructure ="clr-namespace:DataGenerator.Infrastructure"
+	xmlns:viewModels     ="clr-namespace:DataGenerator.ViewModels"
+	mc:Ignorable         ="d"
+	d:DataContext        ="{d:DesignInstance Type=viewModels:DatabaseExplorerViewModel}">
+	<UserControl.Resources>
+		<!-- Arrow that expands or collapses a database -->
+		<Style
+			x:Key      ="TreeExpanderStyle"
+			TargetType ="ToggleButton">
+			<Setter
+				Property ="Width"
+				Value    ="18" />
+			<Setter
+				Property ="Height"
+				Value    ="18" />
+			<Setter
+				Property ="Focusable"
+				Value    ="False" />
+			<Setter
+				Property ="Cursor"
+				Value    ="Hand" />
+			<Setter
+				Property ="Foreground"
+				Value    ="{DynamicResource SecondaryTextBrush}" />
+
+			<Setter
+				Property="Template">
+				<Setter.Value>
+					<ControlTemplate
+						TargetType="ToggleButton">
+						<Border
+							Background="Transparent">
+							<TextBlock
+								x:Name              ="Chevron"
+								HorizontalAlignment ="Center"
+								VerticalAlignment   ="Center"
+								FontFamily          ="{StaticResource IconFontFamily}"
+								FontSize            ="10"
+								Text                ="&#xE76C;" />
+						</Border>
+
+						<ControlTemplate.Triggers>
+							<Trigger
+								Property ="IsChecked"
+								Value    ="True">
+								<Setter
+									TargetName ="Chevron"
+									Property   ="Text"
+									Value      ="&#xE70D;" />
+							</Trigger>
+
+							<Trigger
+								Property ="IsMouseOver"
+								Value    ="True">
+								<Setter
+									Property ="Foreground"
+									Value    ="{DynamicResource AccentBrush}" />
+							</Trigger>
+						</ControlTemplate.Triggers>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
+		</Style>
+
+		<!-- A tree row above the rows of its children. Children are not indented, so the row columns line up. -->
+		<ControlTemplate
+			x:Key      ="ExplorerItemTemplate"
+			TargetType ="TreeViewItem">
+			<StackPanel>
+				<Border
+					x:Name              ="PART_Header"
+					Padding             ="{TemplateBinding Padding}"
+					Background          ="{TemplateBinding Background}"
+					BorderBrush         ="{TemplateBinding BorderBrush}"
+					BorderThickness     ="{TemplateBinding BorderThickness}"
+					SnapsToDevicePixels ="True">
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition
+								Width="Auto" />
+							<ColumnDefinition
+								Width="*" />
+						</Grid.ColumnDefinitions>
+
+						<ToggleButton
+							x:Name      ="Expander"
+							Grid.Column ="0"
+							Style       ="{StaticResource TreeExpanderStyle}"
+							IsChecked   ="{Binding	IsExpanded,
+															Mode=TwoWay,
+															RelativeSource={RelativeSource TemplatedParent}}" />
+
+						<ContentPresenter
+							Grid.Column         ="1"
+							HorizontalAlignment ="{TemplateBinding HorizontalContentAlignment}"
+							VerticalAlignment   ="Center"
+							ContentSource       ="Header" />
+					</Grid>
+				</Border>
+
+				<ItemsPresenter
+					x:Name="ItemsHost" />
+			</StackPanel>
+
+			<ControlTemplate.Triggers>
+				<Trigger
+					Property ="IsExpanded"
+					Value    ="False">
+					<Setter
+						TargetName ="ItemsHost"
+						Property   ="Visibility"
+						Value      ="Collapsed" />
+				</Trigger>
+
+				<Trigger
+					Property ="HasItems"
+					Value    ="False">
+					<Setter
+						TargetName ="Expander"
+						Property   ="Visibility"
+						Value      ="Hidden" />
+				</Trigger>
+
+				<Trigger
+					SourceName ="PART_Header"
+					Property   ="IsMouseOver"
+					Value      ="True">
+					<Setter
+						TargetName ="PART_Header"
+						Property   ="BorderBrush"
+						Value      ="{DynamicResource ButtonHoverBorderBrush}" />
+				</Trigger>
+			</ControlTemplate.Triggers>
+		</ControlTemplate>
+
+		<Style
+			x:Key      ="ExplorerItemBaseStyle"
+			TargetType ="TreeViewItem">
+			<Setter
+				Property ="IsExpanded"
+				Value    ="{Binding	IsExpanded,
+											Mode=TwoWay}" />
+			<Setter
+				Property ="Template"
+				Value    ="{StaticResource ExplorerItemTemplate}" />
+			<Setter
+				Property ="Padding"
+				Value    ="4,1,2,1" />
+			<Setter
+				Property ="BorderBrush"
+				Value    ="Transparent" />
+			<Setter
+				Property ="BorderThickness"
+				Value    ="1" />
+			<Setter
+				Property ="Foreground"
+				Value    ="{DynamicResource TextBrush}" />
+			<Setter
+				Property ="HorizontalContentAlignment"
+				Value    ="Stretch" />
+			<Setter
+				Property ="FocusVisualStyle"
+				Value    ="{x:Null}" />
+
+			<Setter
+				Property="ItemsPanel">
+				<Setter.Value>
+					<ItemsPanelTemplate>
+						<VirtualizingStackPanel
+							IsItemsHost="True" />
+					</ItemsPanelTemplate>
+				</Setter.Value>
+			</Setter>
+		</Style>
+
+		<!-- Databases and tables alternate their own row colours; hidden rows are greyed out and selected rows are blue -->
+		<Style
+			x:Key      ="DatabaseItemStyle"
+			TargetType ="TreeViewItem"
+			BasedOn    ="{StaticResource ExplorerItemBaseStyle}">
+			<Setter
+				Property ="Background"
+				Value    ="{DynamicResource DatabaseRowBrush}" />
+
+			<Style.Triggers>
+				<DataTrigger
+					Binding ="{Binding IsAlternate}"
+					Value   ="True">
+					<Setter
+						Property ="Background"
+						Value    ="{DynamicResource DatabaseAlternateRowBrush}" />
+				</DataTrigger>
+
+				<DataTrigger
+					Binding ="{Binding IsDimmed}"
+					Value   ="True">
+					<Setter
+						Property ="Background"
+						Value    ="{DynamicResource HiddenRowBrush}" />
+					<Setter
+						Property ="Foreground"
+						Value    ="{DynamicResource HiddenTextBrush}" />
+				</DataTrigger>
+
+				<DataTrigger
+					Binding ="{Binding IsSelected}"
+					Value   ="True">
+					<Setter
+						Property ="Background"
+						Value    ="{DynamicResource SelectedRowBrush}" />
+					<Setter
+						Property ="BorderBrush"
+						Value    ="{DynamicResource SelectedRowBorderBrush}" />
+				</DataTrigger>
+
+				<Trigger
+					Property ="IsKeyboardFocused"
+					Value    ="True">
+					<Setter
+						Property ="BorderBrush"
+						Value    ="{DynamicResource AccentBrush}" />
+				</Trigger>
+
+				<DataTrigger
+					Binding ="{Binding IsVisibleInTree}"
+					Value   ="False">
+					<Setter
+						Property ="Visibility"
+						Value    ="Collapsed" />
+				</DataTrigger>
+			</Style.Triggers>
+		</Style>
+
+		<Style
+			x:Key      ="TableItemStyle"
+			TargetType ="TreeViewItem"
+			BasedOn    ="{StaticResource ExplorerItemBaseStyle}">
+			<Setter
+				Property ="Background"
+				Value    ="{DynamicResource RowBrush}" />
+
+			<Style.Triggers>
+				<DataTrigger
+					Binding ="{Binding IsAlternate}"
+					Value   ="True">
+					<Setter
+						Property ="Background"
+						Value    ="{DynamicResource AlternateRowBrush}" />
+				</DataTrigger>
+
+				<DataTrigger
+					Binding ="{Binding IsDimmed}"
+					Value   ="True">
+					<Setter
+						Property ="Background"
+						Value    ="{DynamicResource HiddenRowBrush}" />
+					<Setter
+						Property ="Foreground"
+						Value    ="{DynamicResource HiddenTextBrush}" />
+				</DataTrigger>
+
+				<DataTrigger
+					Binding ="{Binding IsSelected}"
+					Value   ="True">
+					<Setter
+						Property ="Background"
+						Value    ="{DynamicResource SelectedRowBrush}" />
+					<Setter
+						Property ="BorderBrush"
+						Value    ="{DynamicResource SelectedRowBorderBrush}" />
+				</DataTrigger>
+
+				<Trigger
+					Property ="IsKeyboardFocused"
+					Value    ="True">
+					<Setter
+						Property ="BorderBrush"
+						Value    ="{DynamicResource AccentBrush}" />
+				</Trigger>
+
+				<DataTrigger
+					Binding ="{Binding IsVisibleInTree}"
+					Value   ="False">
+					<Setter
+						Property ="Visibility"
+						Value    ="Collapsed" />
+				</DataTrigger>
+			</Style.Triggers>
+		</Style>
+
+		<!-- Eye button that hides (greys out) or shows a database or table -->
+		<Style
+			x:Key      ="TreeVisibilityButtonStyle"
+			TargetType ="Button"
+			BasedOn    ="{StaticResource IconButtonStyle}">
+			<Setter
+				Property ="Width"
+				Value    ="26" />
+			<Setter
+				Property ="Padding"
+				Value    ="2" />
+			<Setter
+				Property ="Foreground"
+				Value    ="{DynamicResource SecondaryTextBrush}" />
+			<Setter
+				Property ="Command"
+				Value    ="{Binding	DataContext.ToggleHiddenCommand,
+											RelativeSource={RelativeSource AncestorType=TreeView}}" />
+			<Setter
+				Property ="CommandParameter"
+				Value    ="{Binding}" />
+			<Setter
+				Property ="ToolTip"
+				Value    ="{Binding VisibilityToolTip}" />
+			<Setter
+				Property ="infrastructure:ButtonIcon.Glyph"
+				Value    ="&#xE890;" />
+
+			<Style.Triggers>
+				<DataTrigger
+					Binding ="{Binding IsHidden}"
+					Value   ="True">
+					<Setter
+						Property ="Foreground"
+						Value    ="{DynamicResource AccentBrush}" />
+					<Setter
+						Property ="infrastructure:ButtonIcon.Glyph"
+						Value    ="&#xED1A;" />
+				</DataTrigger>
+			</Style.Triggers>
+		</Style>
+
+		<DataTemplate
+			x:Key    ="TableNodeTemplate"
+			DataType ="{x:Type viewModels:TableNodeViewModel}">
+			<Grid
+				Margin="14,0,0,0">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition
+						Width="Auto" />
+					<ColumnDefinition
+						Width="*" />
+					<ColumnDefinition
+						Width="Auto" />
+					<ColumnDefinition
+						Width="Auto" />
+					<ColumnDefinition
+						Width="78" />
+					<ColumnDefinition
+						Width="Auto" />
+				</Grid.ColumnDefinitions>
+
+				<CheckBox
+					Grid.Column ="0"
+					Margin      ="2,0,6,0"
+					IsChecked   ="{Binding	IsIncluded,
+													Mode=TwoWay}"
+					ToolTip     ="{StaticResource TableIncludeHint}" />
+
+				<TextBlock
+					Grid.Column       ="1"
+					VerticalAlignment ="Center"
+					Text              ="{Binding DisplayName}"
+					TextTrimming      ="CharacterEllipsis"
+					ToolTip           ="{Binding ToolTipText}" />
+
+				<TextBlock
+					Grid.Column ="2"
+					Margin      ="4,0"
+					Style       ="{StaticResource WarningIconStyle}"
+					ToolTip     ="{StaticResource InvalidRowSetsHint}"
+					Visibility  ="{Binding	HasInvalidRowSets,
+													Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+				<Border
+					Grid.Column ="3"
+					Style       ="{StaticResource BadgeStyle}"
+					Background  ="{DynamicResource RowSetBadgeBrush}"
+					ToolTip     ="{StaticResource RowSetBadgeHint}"
+					Visibility  ="{Binding	HasMultipleRowSets,
+													Converter={StaticResource BooleanToVisibilityConverter}}">
+					<TextBlock
+						Style      ="{StaticResource BadgeTextStyle}"
+						Foreground ="{DynamicResource RowSetBadgeTextBrush}"
+						Text       ="{Binding RowSetSummary}" />
+				</Border>
+
+				<Grid
+					Grid.Column ="4"
+					Background  ="Transparent"
+					ToolTip     ="{Binding RowCountToolTip}">
+					<TextBox
+						Margin                     ="4,1"
+						Padding                    ="3,1"
+						HorizontalContentAlignment ="Right"
+						Text                       ="{Binding	RowCount,
+																			Mode=TwoWay,
+																			UpdateSourceTrigger=PropertyChanged}"
+						IsEnabled                  ="{Binding CanEditRowCount}"
+						infrastructure:TextInputFilter.Kind ="Integer" />
+				</Grid>
+
+				<Button
+					Grid.Column ="5"
+					Style       ="{StaticResource TreeVisibilityButtonStyle}" />
+			</Grid>
+		</DataTemplate>
+
+		<HierarchicalDataTemplate
+			x:Key              ="DatabaseNodeTemplate"
+			DataType           ="{x:Type viewModels:DatabaseNodeViewModel}"
+			ItemContainerStyle ="{StaticResource TableItemStyle}"
+			ItemsSource        ="{Binding Tables}"
+			ItemTemplate       ="{StaticResource TableNodeTemplate}">
+			<Grid
+				Background ="Transparent"
+				ToolTip    ="{StaticResource DatabaseRowHint}">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition
+						Width="Auto" />
+					<ColumnDefinition
+						Width="Auto" />
+					<ColumnDefinition
+						Width="*" />
+					<ColumnDefinition
+						Width="Auto" />
+				</Grid.ColumnDefinitions>
+
+				<CheckBox
+					Grid.Column  ="0"
+					Margin       ="2,0,6,0"
+					IsChecked    ="{Binding	IncludeState,
+													Mode=TwoWay}"
+					IsThreeState ="False"
+					ToolTip      ="{Binding IncludeToolTip}" />
+
+				<TextBlock
+					Grid.Column       ="1"
+					VerticalAlignment ="Center"
+					FontWeight        ="SemiBold"
+					Text              ="{Binding DisplayName}" />
+
+				<TextBlock
+					Grid.Column  ="2"
+					Margin       ="10,0,4,0"
+					Style        ="{StaticResource SecondaryTextStyle}"
+					Text         ="{Binding SummaryText}"
+					TextTrimming ="CharacterEllipsis" />
+
+				<Button
+					Grid.Column ="3"
+					Style       ="{StaticResource TreeVisibilityButtonStyle}" />
+			</Grid>
+		</HierarchicalDataTemplate>
+
+		<Style
+			x:Key      ="ClearFilterButtonStyle"
+			TargetType ="Button"
+			BasedOn    ="{StaticResource IconButtonStyle}">
+			<Style.Triggers>
+				<DataTrigger
+					Binding ="{Binding FilterText}"
+					Value   ="">
+					<Setter
+						Property ="Visibility"
+						Value    ="Collapsed" />
+				</DataTrigger>
+			</Style.Triggers>
+		</Style>
+
+		<Style
+			x:Key      ="FilterWatermarkStyle"
+			TargetType ="TextBlock"
+			BasedOn    ="{StaticResource SecondaryTextStyle}">
+			<Setter
+				Property ="Visibility"
+				Value    ="Collapsed" />
+
+			<Style.Triggers>
+				<DataTrigger
+					Binding ="{Binding FilterText}"
+					Value   ="">
+					<Setter
+						Property ="Visibility"
+						Value    ="Visible" />
+				</DataTrigger>
+			</Style.Triggers>
+		</Style>
+	</UserControl.Resources>
+
+	<GroupBox
+		Header ="Databases and tables"
+		Style  ="{StaticResource ExplorerSectionStyle}">
+		<Grid>
+			<Grid.RowDefinitions>
+				<RowDefinition
+					Height="Auto" />
+				<RowDefinition
+					Height="Auto" />
+				<RowDefinition
+					Height="*" />
+				<RowDefinition
+					Height="Auto" />
+			</Grid.RowDefinitions>
+
+			<!-- Search -->
+			<Grid
+				Grid.Row="0">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition
+						Width="*" />
+					<ColumnDefinition
+						Width="Auto" />
+				</Grid.ColumnDefinitions>
+
+				<TextBox
+					Grid.Column ="0"
+					Padding     ="24,3,26,3"
+					Text        ="{Binding	FilterText,
+													Mode=TwoWay,
+													UpdateSourceTrigger=PropertyChanged}"
+					ToolTip     ="{StaticResource ExplorerFilterHint}">
+					<TextBox.InputBindings>
+						<KeyBinding
+							Key     ="Escape"
+							Command ="{Binding ClearFilterCommand}" />
+					</TextBox.InputBindings>
+				</TextBox>
+
+				<TextBlock
+					Grid.Column         ="0"
+					Margin              ="11,0,0,0"
+					HorizontalAlignment ="Left"
+					Style               ="{StaticResource IconTextStyle}"
+					Foreground          ="{DynamicResource SecondaryTextBrush}"
+					IsHitTestVisible    ="False"
+					Text                ="&#xE721;" />
+
+				<TextBlock
+					Grid.Column      ="0"
+					Margin           ="32,0,30,0"
+					Style            ="{StaticResource FilterWatermarkStyle}"
+					FontStyle        ="Italic"
+					IsHitTestVisible ="False"
+					Text             ="Search databases and tables"
+					TextTrimming     ="CharacterEllipsis" />
+
+				<Button
+					Grid.Column         ="0"
+					Margin              ="0,0,7,0"
+					HorizontalAlignment ="Right"
+					Style               ="{StaticResource ClearFilterButtonStyle}"
+					Command             ="{Binding ClearFilterCommand}"
+					ToolTip             ="{StaticResource ClearFilterHint}"
+					infrastructure:ButtonIcon.Glyph ="&#xE711;" />
+
+				<CheckBox
+					Grid.Column ="1"
+					Content     ="Included only"
+					IsChecked   ="{Binding	ShowIncludedOnly,
+													Mode=TwoWay}"
+					ToolTip     ="{StaticResource IncludedOnlyHint}" />
+			</Grid>
+
+			<!-- Bulk actions on the selected databases and tables -->
+			<Border
+				Grid.Row     ="1"
+				Margin       ="4,2,4,6"
+				Padding      ="4,2"
+				Background   ="{DynamicResource HeaderStripBrush}"
+				CornerRadius ="4">
+				<StackPanel>
+					<DockPanel>
+						<Button
+							DockPanel.Dock ="Right"
+							Style          ="{StaticResource ToolbarButtonStyle}"
+							Command        ="{Binding ClearSelectionCommand}"
+							Content        ="Clear"
+							ToolTip        ="{StaticResource ClearSelectionHint}" />
+
+						<Button
+							DockPanel.Dock ="Right"
+							Style          ="{StaticResource ToolbarButtonStyle}"
+							Command        ="{Binding SelectAllCommand}"
+							Content        ="Select all"
+							ToolTip        ="{StaticResource SelectAllHint}"
+							infrastructure:ButtonIcon.Glyph ="&#xE8B3;" />
+
+						<TextBlock
+							Margin       ="4,0"
+							Style        ="{StaticResource SecondaryTextStyle}"
+							Text         ="{Binding SelectionSummary}"
+							TextTrimming ="CharacterEllipsis"
+							ToolTip      ="{Binding SelectionSummary}" />
+					</DockPanel>
+
+					<WrapPanel>
+						<StackPanel
+							Margin      ="0,0,6,0"
+							Orientation ="Horizontal">
+							<Button
+								Style   ="{StaticResource ToolbarButtonStyle}"
+								Command ="{Binding IncludeSelectedCommand}"
+								Content ="Include"
+								ToolTip ="{StaticResource IncludeSelectedHint}"
+								infrastructure:ButtonIcon.Glyph ="&#xE73E;" />
+
+							<Button
+								Style   ="{StaticResource ToolbarButtonStyle}"
+								Command ="{Binding ExcludeSelectedCommand}"
+								Content ="Exclude"
+								ToolTip ="{StaticResource ExcludeSelectedHint}"
+								infrastructure:ButtonIcon.Glyph ="&#xE711;" />
+						</StackPanel>
+
+						<StackPanel
+							Margin      ="0,0,6,0"
+							Orientation ="Horizontal">
+							<Button
+								Style   ="{StaticResource ToolbarButtonStyle}"
+								Command ="{Binding HideSelectedCommand}"
+								Content ="Hide"
+								ToolTip ="{StaticResource HideSelectedHint}"
+								infrastructure:ButtonIcon.Glyph ="&#xED1A;" />
+
+							<Button
+								Style   ="{StaticResource ToolbarButtonStyle}"
+								Command ="{Binding ShowSelectedCommand}"
+								Content ="Show"
+								ToolTip ="{StaticResource ShowSelectedHint}"
+								infrastructure:ButtonIcon.Glyph ="&#xE890;" />
+						</StackPanel>
+
+						<StackPanel
+							Margin      ="0,0,6,0"
+							Orientation ="Horizontal">
+							<Button
+								Style   ="{StaticResource ToolbarButtonStyle}"
+								Command ="{Binding ExpandSelectedCommand}"
+								Content ="Expand"
+								ToolTip ="{StaticResource ExpandSelectedHint}"
+								infrastructure:ButtonIcon.Glyph ="&#xE70D;" />
+
+							<Button
+								Style   ="{StaticResource ToolbarButtonStyle}"
+								Command ="{Binding CollapseSelectedCommand}"
+								Content ="Collapse"
+								ToolTip ="{StaticResource CollapseSelectedHint}"
+								infrastructure:ButtonIcon.Glyph ="&#xE70E;" />
+						</StackPanel>
+
+						<StackPanel
+							Orientation="Horizontal">
+							<TextBlock
+								Margin            ="2,0,2,0"
+								VerticalAlignment ="Center"
+								Text              ="Rows:" />
+
+							<Grid
+								ToolTip="{StaticResource BulkRowCountHint}">
+								<TextBox
+									Width                      ="80"
+									Margin                     ="2"
+									HorizontalContentAlignment ="Right"
+									Text                       ="{Binding	BulkRowCountText,
+																						Mode=TwoWay,
+																						UpdateSourceTrigger=PropertyChanged}"
+									infrastructure:TextInputFilter.Kind ="Integer">
+									<TextBox.InputBindings>
+										<KeyBinding
+											Key     ="Enter"
+											Command ="{Binding ApplyRowCountCommand}" />
+									</TextBox.InputBindings>
+								</TextBox>
+							</Grid>
+
+							<Button
+								Style   ="{StaticResource ToolbarButtonStyle}"
+								Command ="{Binding ApplyRowCountCommand}"
+								Content ="Set rows"
+								ToolTip ="{StaticResource ApplyRowCountHint}" />
+						</StackPanel>
+					</WrapPanel>
+				</StackPanel>
+			</Border>
+
+			<!-- Tree with a header strip that names its columns -->
+			<Grid
+				Grid.Row="2">
+				<Grid.RowDefinitions>
+					<RowDefinition
+						Height="Auto" />
+					<RowDefinition
+						Height="*" />
+				</Grid.RowDefinitions>
+
+				<Border
+					Grid.Row        ="0"
+					Padding         ="5,4,3,4"
+					Background      ="{DynamicResource HeaderStripBrush}"
+					BorderBrush     ="{DynamicResource SectionBorderBrush}"
+					BorderThickness ="1,1,1,0"
+					CornerRadius    ="4,4,0,0">
+					<Grid
+						TextElement.FontWeight ="SemiBold"
+						TextElement.Foreground ="{DynamicResource SectionHeaderTextBrush}">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition
+								Width="*" />
+							<ColumnDefinition
+								Width="78" />
+							<ColumnDefinition
+								Width="26" />
+							<ColumnDefinition
+								Width="Auto" />
+						</Grid.ColumnDefinitions>
+
+						<TextBlock
+							Grid.Column ="0"
+							Margin      ="20,0,0,0"
+							Text        ="Database / table"
+							ToolTip     ="{StaticResource ExplorerTreeHint}" />
+
+						<TextBlock
+							Grid.Column         ="1"
+							HorizontalAlignment ="Center"
+							Text                ="Rows"
+							ToolTip             ="{StaticResource ExplorerRowsHeaderHint}" />
+
+						<TextBlock
+							Grid.Column         ="2"
+							HorizontalAlignment ="Center"
+							Style               ="{StaticResource IconTextStyle}"
+							Text                ="&#xE890;"
+							ToolTip             ="{StaticResource ExplorerVisibilityHeaderHint}" />
+
+						<Border
+							Grid.Column ="3"
+							Width       ="{DynamicResource {x:Static SystemParameters.VerticalScrollBarWidthKey}}" />
+					</Grid>
+				</Border>
+
+				<TreeView
+					Grid.Row           ="1"
+					Padding            ="0"
+					BorderBrush        ="{DynamicResource SectionBorderBrush}"
+					ItemContainerStyle ="{StaticResource DatabaseItemStyle}"
+					ItemsSource        ="{Binding Databases}"
+					ItemTemplate       ="{StaticResource DatabaseNodeTemplate}"
+					ToolTip            ="{StaticResource ExplorerTreeHint}"
+					ScrollViewer.HorizontalScrollBarVisibility       ="Disabled"
+					ScrollViewer.VerticalScrollBarVisibility         ="Visible"
+					VirtualizingPanel.IsVirtualizing                 ="True"
+					VirtualizingPanel.ScrollUnit                     ="Pixel"
+					infrastructure:TreeViewMultiSelect.SelectCommand ="{Binding SelectNodeCommand}">
+					<TreeView.InputBindings>
+						<KeyBinding
+							Key       ="A"
+							Command   ="{Binding SelectAllCommand}"
+							Modifiers ="Control" />
+						<KeyBinding
+							Key     ="Escape"
+							Command ="{Binding ClearSelectionCommand}" />
+					</TreeView.InputBindings>
+
+					<TreeView.ItemsPanel>
+						<ItemsPanelTemplate>
+							<VirtualizingStackPanel
+								IsItemsHost="True" />
+						</ItemsPanelTemplate>
+					</TreeView.ItemsPanel>
+
+					<TreeView.ContextMenu>
+						<ContextMenu
+							DataContext="{Binding	PlacementTarget.DataContext,
+															RelativeSource={RelativeSource Self}}">
+							<MenuItem
+								Command ="{Binding IncludeSelectedCommand}"
+								Header  ="Include selected"
+								ToolTip ="{StaticResource IncludeSelectedHint}" />
+
+							<MenuItem
+								Command ="{Binding ExcludeSelectedCommand}"
+								Header  ="Exclude selected"
+								ToolTip ="{StaticResource ExcludeSelectedHint}" />
+
+							<Separator />
+
+							<MenuItem
+								Command ="{Binding HideSelectedCommand}"
+								Header  ="Hide selected"
+								ToolTip ="{StaticResource HideSelectedHint}" />
+
+							<MenuItem
+								Command ="{Binding ShowSelectedCommand}"
+								Header  ="Show selected"
+								ToolTip ="{StaticResource ShowSelectedHint}" />
+
+							<Separator />
+
+							<MenuItem
+								Command ="{Binding ExpandSelectedCommand}"
+								Header  ="Expand selected"
+								ToolTip ="{StaticResource ExpandSelectedHint}" />
+
+							<MenuItem
+								Command ="{Binding CollapseSelectedCommand}"
+								Header  ="Collapse selected"
+								ToolTip ="{StaticResource CollapseSelectedHint}" />
+
+							<Separator />
+
+							<MenuItem
+								Command          ="{Binding SelectAllCommand}"
+								Header           ="Select all"
+								InputGestureText ="Ctrl+A"
+								ToolTip          ="{StaticResource SelectAllHint}" />
+
+							<MenuItem
+								Command          ="{Binding ClearSelectionCommand}"
+								Header           ="Clear selection"
+								InputGestureText ="Esc"
+								ToolTip          ="{StaticResource ClearSelectionHint}" />
+
+							<Separator />
+
+							<MenuItem
+								Command ="{Binding ExpandAllCommand}"
+								Header  ="Expand all"
+								ToolTip ="{StaticResource ExpandAllHint}" />
+
+							<MenuItem
+								Command ="{Binding CollapseAllCommand}"
+								Header  ="Collapse all"
+								ToolTip ="{StaticResource CollapseAllHint}" />
+
+							<MenuItem
+								Command ="{Binding ShowAllCommand}"
+								Header  ="Show all"
+								ToolTip ="{StaticResource ShowAllHint}" />
+
+							<MenuItem
+								Command ="{Binding ExcludeAllCommand}"
+								Header  ="Exclude all"
+								ToolTip ="{StaticResource ExcludeAllHint}" />
+						</ContextMenu>
+					</TreeView.ContextMenu>
+				</TreeView>
+
+				<TextBlock
+					Grid.Row         ="1"
+					Style            ="{StaticResource PlaceholderTextStyle}"
+					IsHitTestVisible ="False"
+					Text             ="Enter the connection details above and click Load metadata to list the databases and tables."
+					Visibility       ="{Binding	HasDatabases,
+															Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+
+				<TextBlock
+					Grid.Row         ="1"
+					Style            ="{StaticResource PlaceholderTextStyle}"
+					IsHitTestVisible ="False"
+					Text             ="No databases or tables match the search."
+					Visibility       ="{Binding	HasNoVisibleNodes,
+															Converter={StaticResource BooleanToVisibilityConverter}}" />
+			</Grid>
+
+			<!-- What will be generated -->
+			<DockPanel
+				Grid.Row ="3"
+				Margin   ="0,4,0,0">
+				<Button
+					DockPanel.Dock ="Right"
+					Style          ="{StaticResource ToolbarButtonStyle}"
+					Command        ="{Binding ExcludeAllCommand}"
+					Content        ="Exclude all"
+					ToolTip        ="{StaticResource ExcludeAllHint}" />
+
+				<TextBlock
+					Margin       ="4,0"
+					Style        ="{StaticResource SecondaryTextStyle}"
+					Text         ="{Binding IncludedSummary}"
+					TextTrimming ="CharacterEllipsis"
+					ToolTip      ="{Binding IncludedSummary}" />
+			</DockPanel>
+		</Grid>
+	</GroupBox>
+</UserControl>

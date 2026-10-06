@@ -4,6 +4,8 @@ namespace DataGenerator.Models;
 
 public sealed class ColumnModel : ObservableObject
 {
+	public const string FOREIGN_TABLE_KEY_SUFFIX = "ftk";
+
 	private string _name          = string.Empty;
 	private string _sqlType       = string.Empty;
 	private int?   _maximumLength = null;
@@ -14,16 +16,18 @@ public sealed class ColumnModel : ObservableObject
 	private bool   _isComputed    = false;
 	private bool   _isPrimaryKey  = false;
 	private bool   _isForeignKey  = false;
-	private string _fixedValue    = string.Empty;
-	private long   _sequenceStart = 1;
-	private long   _sequenceStep  = 1;
-	private string _regexPattern  = string.Empty;
-	private ValueGenerationMode _generationMode = ValueGenerationMode.Random;
+	private bool   _hasDefault    = false;
 
 	public string Name
 	{
 		get => _name;
-		set => SetProperty(ref _name, value);
+		set
+		{
+			if (SetProperty(ref _name, value))
+			{
+				OnPropertyChanged(nameof(IsForeignTableKey));
+			}
+		}
 	}
 
 	public string SqlType
@@ -80,33 +84,17 @@ public sealed class ColumnModel : ObservableObject
 		set => SetProperty(ref _isForeignKey, value);
 	}
 
-	public ValueGenerationMode GenerationMode
+	public bool HasDefault
 	{
-		get => _generationMode;
-		set => SetProperty(ref _generationMode, value);
+		get => _hasDefault;
+		set => SetProperty(ref _hasDefault, value);
 	}
 
-	public string FixedValue
-	{
-		get => _fixedValue;
-		set => SetProperty(ref _fixedValue, value);
-	}
-
-	public long SequenceStart
-	{
-		get => _sequenceStart;
-		set => SetProperty(ref _sequenceStart, value);
-	}
-
-	public long SequenceStep
-	{
-		get => _sequenceStep;
-		set => SetProperty(ref _sequenceStep, value);
-	}
-
-	public string RegexPattern
-	{
-		get => _regexPattern;
-		set => SetProperty(ref _regexPattern, value);
-	}
+	/// <summary>
+	/// Columns whose name ends with "ftk" (any casing) are treated as foreign table keys by naming convention,
+	/// even when SQL Server has no foreign key constraint for them.
+	/// </summary>
+	public bool IsForeignTableKey
+		=> Name.Length > FOREIGN_TABLE_KEY_SUFFIX.Length
+			&& Name.EndsWith(FOREIGN_TABLE_KEY_SUFFIX, StringComparison.OrdinalIgnoreCase);
 }

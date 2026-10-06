@@ -1,0 +1,749 @@
+﻿<ResourceDictionary
+	xmlns     ="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x   ="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:sys ="clr-namespace:System;assembly=System.Runtime">
+
+	<!-- Connection -->
+	<sys:String
+		x:Key="ServerHint">
+		The SQL Server instance to connect to, e.g. localhost, MYPC\SQLEXPRESS or myserver.database.windows.net,1433.
+		Press Enter to load the metadata.
+	</sys:String>
+
+	<sys:String
+		x:Key="UserNameHint">
+		The SQL Server login (SQL Server authentication) used to read the metadata and, in direct insert mode, to insert
+		the data. Press Enter to load the metadata.
+	</sys:String>
+
+	<sys:String
+		x:Key="PasswordHint">
+		The password of the SQL Server login. It is only kept in memory: it is never saved or written to the generated
+		scripts. Press Enter to load the metadata.
+	</sys:String>
+
+	<sys:String
+		x:Key="LoadMetadataHint">
+		Connects to the server and loads the databases, tables and columns that the login can read into the database
+		explorer. Needs the server, user and password. Reloading clears the included tables, row sets and column rules.
+	</sys:String>
+
+	<sys:String
+		x:Key="EncryptConnectionHint">
+		Encrypts the connection to SQL Server. Recommended, and required by Azure SQL.
+	</sys:String>
+
+	<sys:String
+		x:Key="TrustServerCertificateHint">
+		Accepts the server's certificate without validating it. Ticked by default because test and development servers
+		usually have a self-signed certificate; untick it for servers with a trusted certificate.
+	</sys:String>
+
+	<!-- Database explorer -->
+	<sys:String
+		x:Key="ExplorerFilterHint">
+		Shows only the databases and tables whose names contain this text. A database whose name matches shows all of its
+		tables.
+	</sys:String>
+
+	<sys:String
+		x:Key="ClearFilterHint">
+		Clears the search text and shows every database and table again.
+	</sys:String>
+
+	<sys:String
+		x:Key="IncludedOnlyHint">
+		Shows only the tables that are included in the generation.
+	</sys:String>
+
+	<sys:String
+		x:Key="IncludeSelectedHint">
+		Includes the selected tables in the generation. A selected database includes all of its visible tables.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExcludeSelectedHint">
+		Excludes the selected tables from the generation. A selected database excludes all of its visible tables.
+	</sys:String>
+
+	<sys:String
+		x:Key="HideSelectedHint">
+		Greys out the selected databases and tables (and collapses the databases) so the tables you are working on stand
+		out. Hidden tables are still generated when they are included.
+	</sys:String>
+
+	<sys:String
+		x:Key="ShowSelectedHint">
+		Shows the selected hidden databases and tables normally again.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExpandSelectedHint">
+		Expands the selected databases to show their tables.
+	</sys:String>
+
+	<sys:String
+		x:Key="CollapseSelectedHint">
+		Collapses the selected databases.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkRowCountHint">
+		Number of rows to generate for each selected table, from 1 to 1,000,000. Press Enter or click Set rows to apply
+		it.
+	</sys:String>
+
+	<sys:String
+		x:Key="ApplyRowCountHint">
+		Sets the number of rows of the selected tables (and of the visible tables of the selected databases) and includes
+		them. Tables with several row sets get this number in every set.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExplorerTreeHint">
+		Click a table to edit its column rules. Ctrl+click adds or removes a row from the selection, Shift+click selects a
+		range, Ctrl+A selects everything and Esc clears the selection. Right-click for the bulk actions.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExplorerRowsHeaderHint">
+		Number of rows to generate for each table. A table with several row sets shows its total, which is edited per row
+		set in the column rules panel.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExplorerVisibilityHeaderHint">
+		Click the eye of a database or table to grey it out (hide it) or to show it normally again. Hiding does not
+		exclude anything from the generation.
+	</sys:String>
+
+	<sys:String
+		x:Key="DatabaseRowHint">
+		Click to select this database for the bulk actions; Ctrl+click or Shift+click to select several rows. Double-click
+		or use the arrow to expand or collapse it.
+	</sys:String>
+
+	<sys:String
+		x:Key="TableIncludeHint">
+		Includes this table in the generation.
+	</sys:String>
+
+	<sys:String
+		x:Key="RowSetBadgeHint">
+		This table has several row sets (or an update set), each with its own number of rows and column rules. Click the
+		table to edit them.
+	</sys:String>
+
+	<sys:String
+		x:Key="InvalidRowSetsHint">
+		Some column rules of this table need attention. Click the table to see them.
+	</sys:String>
+
+	<sys:String
+		x:Key="SelectAllHint">
+		Selects every visible database and table (Ctrl+A).
+	</sys:String>
+
+	<sys:String
+		x:Key="ClearSelectionHint">
+		Clears the selection (Esc).
+	</sys:String>
+
+	<sys:String
+		x:Key="ExpandAllHint">
+		Expands every database.
+	</sys:String>
+
+	<sys:String
+		x:Key="CollapseAllHint">
+		Collapses every database.
+	</sys:String>
+
+	<sys:String
+		x:Key="ShowAllHint">
+		Shows every hidden database and table normally again.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExcludeAllHint">
+		Excludes every table from the generation.
+	</sys:String>
+
+	<sys:String
+		x:Key="SplitterHint">
+		Drag to resize the database explorer and the column rules panel.
+	</sys:String>
+
+	<!-- Column rules -->
+	<sys:String
+		x:Key="IncludeActiveTableHint">
+		Includes this table in the generation. Its rules can be edited whether or not it is included.
+	</sys:String>
+
+	<sys:String
+		x:Key="AddRowSetHint">
+		Adds a row set: another batch of rows for this table with its own number of rows and column rules, e.g. 10 small
+		shirts followed by 10 large shirts.
+	</sys:String>
+
+	<sys:String
+		x:Key="AddUpdateSetHint">
+		Adds an update set: instead of inserting rows it changes rows that are already in the table, or that an earlier
+		step inserted, e.g. give 5 pants the ShirtID of a shirt generated in step 1. Only the columns you give a new mode
+		change; the others keep their current value. Update sets run in step 2 by default.
+	</sys:String>
+
+	<sys:String
+		x:Key="DuplicateRowSetHint">
+		Copies the selected row set with its number of rows and column rules, so only the differences have to be changed.
+	</sys:String>
+
+	<sys:String
+		x:Key="RemoveRowSetHint">
+		Removes the selected row set. A table always keeps at least one row set.
+	</sys:String>
+
+	<sys:String
+		x:Key="RowSetTabHint">
+		A row set of this table and its number of rows. Each row set generates its own rows with its own column rules. A
+		warning icon means some of its settings need attention.
+	</sys:String>
+
+	<sys:String
+		x:Key="RowSetNameHint">
+		Name of the row set. It labels the row set in the generated script and in error messages.
+	</sys:String>
+
+	<sys:String
+		x:Key="RowSetRowCountHint">
+		Number of rows this row set generates, from 1 to 1,000,000. For an update set: the number of existing rows it
+		changes, chosen at random among the rows that match its conditions.
+	</sys:String>
+
+	<sys:String
+		x:Key="RowSetStepHint">
+		The step in which this row set runs (1 to 99). All steps run one after another in one transaction: step 1 first,
+		then step 2, and so on. Within a step, insert sets run before update sets. A later step can use the rows of an
+		earlier step, e.g. a Value from table column or an update set. If anything fails, nothing is changed.
+	</sys:String>
+
+	<sys:String
+		x:Key="RowSetStepBadgeHint">
+		This row set runs in a later step, after the row sets of the earlier steps.
+	</sys:String>
+
+	<sys:String
+		x:Key="UpdateSetBadgeHint">
+		Update set: changes rows that are already in the table instead of inserting new ones.
+	</sys:String>
+
+	<sys:String
+		x:Key="UpdateScopeHint">
+		Which rows the update set may change: any row of the table, only rows inserted earlier in this run, or only rows
+		that were in the table before the run started. The last two need a primary key.
+	</sys:String>
+
+	<sys:String
+		x:Key="UpdateConditionHint">
+		Optional SQL condition (the part after WHERE) that a row must meet to be changed by this update set; leave it empty
+		to allow any row in the chosen scope. t stands for the target table, i.e. this table, whose rows the update set
+		changes. Write a column as t.[ColumnName]: the square brackets hold the column name. Any SQL Server condition
+		works (=, &lt;&gt;, &lt;, &gt;, LIKE, IN, IS NULL, AND, OR, NOT, functions and sub-queries on other tables).
+		Examples: t.[Size] = 'XL' AND t.[ShirtParentID] IS NULL — or — t.[Name] LIKE 'P%' OR t.[Colour] IN ('Red',
+		'Blue') — or — t.[ShirtID] IN (SELECT [ShirtID] FROM dbo.Pant WHERE [Size] = 'S').
+	</sys:String>
+
+	<sys:String
+		x:Key="RequireAllRowsHint">
+		When ticked, the run fails and changes nothing if fewer rows than requested match the conditions. When cleared, as
+		many matching rows as there are (up to the requested number) are changed.
+	</sys:String>
+
+	<sys:String
+		x:Key="ColumnRulesGridHint">
+		How each column of the row set is filled. Choose a generation mode per column; only the settings of that mode are
+		shown. Primary key rows are red, foreign key and FTK rows are orange. Right-click a column header to hide or show
+		the Keys, SQL type, Nullable and Sample values columns. Ctrl+click or Shift+click rows to select several columns
+		and change them together with the bar above the grid. While typing in a box of the grid, the arrow keys move
+		between boxes like a spreadsheet: left and right at the start or end of the text, up and down to the same column
+		of the row above or below. Alt+Down opens a drop-down.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkSelectionHint">
+		Select two or more columns in the grid (Ctrl+click, Shift+click or Ctrl+A) to change their generation mode or
+		settings value in one go. Columns that cannot take a change are skipped and listed afterwards.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkModeHint">
+		The generation mode to give every selected column. The count shows how many of the selected columns support the
+		mode; for example NULL is only offered to nullable columns, and the others are left unchanged.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkApplyModeHint">
+		Gives every selected column that supports it the chosen generation mode. Unsupported columns keep their mode.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkSettingValueHint">
+		The settings value to give every selected column, applied to the setting of each column's own mode: the fixed
+		value, the pattern, the regular expression, the column to copy, or for Sequence "start" or "start; step". Press
+		Enter to apply.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkApplySettingValueHint">
+		Applies the settings value to every selected column. A column whose mode has no setting is skipped, and a column
+		for which the value is not valid (such as letters for a numeric column) keeps its previous value.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkSelectAllHint">
+		Selects every column of this row set.
+	</sys:String>
+
+	<sys:String
+		x:Key="BulkClearSelectionHint">
+		Clears the column selection.
+	</sys:String>
+
+	<sys:String
+		x:Key="KeyColumnHint">
+		PK: primary key. FK: foreign key declared in SQL Server. FTK: name ends in FTK, linked by name to the table with
+		the matching key column (name ending in PK, TK after a lower-case letter, or _tk). ID: identity column numbered by SQL Server.
+	</sys:String>
+
+	<sys:String
+		x:Key="ColumnNameColumnHint">
+		Column name and, for key columns, the table and column whose values it takes.
+	</sys:String>
+
+	<sys:String
+		x:Key="SqlTypeColumnHint">
+		SQL Server data type of the column. Entered values are checked against it.
+	</sys:String>
+
+	<sys:String
+		x:Key="NullableColumnHint">
+		Whether the column accepts NULL.
+	</sys:String>
+
+	<sys:String
+		x:Key="ModeColumnHint">
+		How the values of the column are generated. Only the modes that suit the column's data type and keys are offered.
+	</sys:String>
+
+	<sys:String
+		x:Key="SettingsColumnHint">
+		Settings of the selected generation mode. Only the settings that the mode uses are shown. Use the arrow keys to
+		move to the box beside, above or below, so a row set can be filled in without the mouse.
+	</sys:String>
+
+	<sys:String
+		x:Key="SampleColumnHint">
+		Sample values generated with the current settings, or the problem that prevents generating them. Long samples
+		scroll sideways: use the scroll bar under them or Shift + mouse wheel.
+	</sys:String>
+
+	<sys:String
+		x:Key="SequenceStartHint">
+		First value of the sequence: the value of the first row of this row set.
+	</sys:String>
+
+	<sys:String
+		x:Key="SequenceStepHint">
+		Amount added for each following row. Use a negative number to count down.
+	</sys:String>
+
+	<sys:String
+		x:Key="RegexHint">
+		A regular expression that the values must match, e.g. [A-Z]{3}-[0-9]{4}. A random matching value is generated for
+		each row.
+	</sys:String>
+
+	<sys:String
+		x:Key="RegexPresetHint">
+		Fills in a ready-made regular expression.
+	</sys:String>
+
+	<sys:String
+		x:Key="PatternHint">
+		A pattern in plain English, e.g. P FOLLOWED BY SEQ(1-1000) FOLLOWED BY (X OR Y) FOLLOWED BY RAND_NUM(0, 99, 2).
+		Use COL(Name) for the value of another column of the same row. Click ? for the pattern language reference.
+		While you type, matching functions and keywords are suggested under the word: ↑ and ↓ choose one, and pressing Tab
+		twice inserts it.
+	</sys:String>
+
+	<sys:String
+		x:Key="TableLookupHint">
+		Takes each value from a column of a table: one already in the database or one generated earlier in this run.
+		Format: Table.Column [UNIQUE] [FROM GENERATED | EXISTING] [WHERE pattern | WHERE REGEX expression | WHERE SQL condition],
+		e.g. dbo.Shirt.ShirtID UNIQUE FROM GENERATED. UNIQUE uses each value at most once. Click ▾ to build it from lists.
+	</sys:String>
+
+	<sys:String
+		x:Key="LookupBuilderButtonHint">
+		Opens a pop-up to choose the table, column, rows and filter from lists instead of typing the setting.
+	</sys:String>
+
+	<sys:String
+		x:Key="LookupTableHint">
+		The table whose values are used. Tables of the same database are listed first.
+	</sys:String>
+
+	<sys:String
+		x:Key="LookupColumnHint">
+		The column whose values are used. Values are converted to this column's type, and text values that are too long
+		for it are skipped.
+	</sys:String>
+
+	<sys:String
+		x:Key="LookupScopeHint">
+		Which rows of the table supply values: all rows, only rows generated earlier in this run (an earlier step or an
+		earlier row set of the same step), or only rows that were there before the run.
+	</sys:String>
+
+	<sys:String
+		x:Key="LookupUniqueHint">
+		Uses each value at most once, and never a value the column already contains, so no two rows get the same value.
+		The run fails if there are not enough values.
+	</sys:String>
+
+	<sys:String
+		x:Key="LookupFilterHint">
+		Optionally only uses some values: those a pattern could produce (e.g. 'S' THEN NUM(digits=5) GREATER THAN 50),
+		those matching a regular expression (needs SQL Server 2025), or those of rows meeting a SQL condition on the
+		source table. In a SQL condition, s stands for the source table (the table the values come from) and [ ] holds a
+		column name, e.g. s.[Size] = 'XL' AND s.[IsActive] = 1.
+	</sys:String>
+
+	<sys:String
+		x:Key="LookupExpressionPreviewHint">
+		The setting your choices make. Apply puts it into the Settings cell.
+	</sys:String>
+
+	<sys:String
+		x:Key="LookupApplyHint">
+		Puts the setting into the Settings cell and closes the pop-up.
+	</sys:String>
+
+	<sys:String
+		x:Key="CopyColumnHint">
+		The column of the same row whose value is copied. The value is converted to this column's type, e.g. text copied
+		into a number column keeps only its digits (0 if there are none), and long text is cut to the column's length.
+	</sys:String>
+
+	<sys:String
+		x:Key="PatternHelpHint">
+		Opens the pattern language reference with this pattern in its try-it box.
+	</sys:String>
+
+	<sys:String
+		x:Key="PatternLanguageHint">
+		Opens the reference of the pattern language used by the Pattern generation mode, with examples that you can try
+		out.
+	</sys:String>
+
+	<sys:String
+		x:Key="KeyLegendHint">
+		Row colours of the column rules grid.
+	</sys:String>
+
+	<!-- Output -->
+	<sys:String
+		x:Key="SqlFileModeHint">
+		Writes the INSERT statements to a .sql script that you can review and run yourself.
+	</sys:String>
+
+	<sys:String
+		x:Key="DirectInsertModeHint">
+		Inserts the rows straight into the databases in a single transaction, so nothing is inserted when anything fails.
+	</sys:String>
+
+	<sys:String
+		x:Key="OutputFileHint">
+		Path of the .sql script to write. When the suggested name is kept, a new time-stamped name is suggested after each
+		generation.
+	</sys:String>
+
+	<sys:String
+		x:Key="BrowseOutputHint">
+		Chooses where to save the script.
+	</sys:String>
+
+	<sys:String
+		x:Key="OpenOutputFolderHint">
+		Opens the folder of the output script in File Explorer, with the last generated script selected.
+	</sys:String>
+
+	<sys:String
+		x:Key="ConfirmTestDatabaseHint">
+		Confirms that the databases are test databases that may be changed. Direct insert stays disabled until this is
+		ticked.
+	</sys:String>
+
+	<sys:String
+		x:Key="ClearExistingDataHint">
+		Deletes the existing rows before the new data is inserted. In SQL file mode the DELETE statements are written at
+		the start of the script, in the same transaction as the inserts.
+	</sys:String>
+
+	<sys:String
+		x:Key="ClearIncludedTablesHint">
+		Deletes only from the tables being generated.
+	</sys:String>
+
+	<sys:String
+		x:Key="ClearAllTablesHint">
+		Deletes from every table of the databases that contain the tables being generated.
+	</sys:String>
+
+	<sys:String
+		x:Key="ResetIdentitySeedsHint">
+		Restarts the identity numbering of the cleared tables, so the new rows are numbered from the identity seed again.
+	</sys:String>
+
+	<sys:String
+		x:Key="PostGenerationSqlHint">
+		Optional. Runs after all the rows are inserted, in the same transaction and before the commit, so if it fails nothing is saved. Type one stored procedure name per line (e.g. dbo.RebuildTotals or [Sales].[usp_Refresh]; EXEC is added for you), or any SQL, which runs exactly as typed. A name after SQL is only treated as a stored procedure when that SQL ends with a semicolon or a blank line. GO cannot be used.
+	</sys:String>
+
+	<sys:String
+		x:Key="PostGenerationDatabaseHint">
+		The database the post-generation SQL runs in, so names without a database (e.g. dbo.RebuildTotals) are found there. Follows the database of the included tables until you choose one.
+	</sys:String>
+
+	<sys:String
+		x:Key="GenerateHint">
+		Generates the data of the included tables: a .sql script or direct inserts, depending on the output mode.
+	</sys:String>
+
+	<sys:String
+		x:Key="CancelHint">
+		Stops the running operation. Direct inserts that were already made are rolled back.
+	</sys:String>
+
+	<!-- Errors -->
+	<sys:String
+		x:Key="CopyErrorHint">
+		Copies the error, where it happened and the full details to the clipboard.
+	</sys:String>
+
+	<sys:String
+		x:Key="DismissErrorHint">
+		Hides this error.
+	</sys:String>
+
+	<sys:String
+		x:Key="ErrorDetailsHint">
+		The full technical details of the error, including the stack trace.
+	</sys:String>
+
+	<sys:String
+		x:Key="ErrorMessageAreaHint">
+		What went wrong and where. A long message scrolls inside this area (use the mouse wheel or the scroll bar), so the
+		rest of the window keeps its size. Details below shows the technical details; Copy puts the whole error on the
+		clipboard and Dismiss hides it.
+	</sys:String>
+
+	<!-- Pattern language reference -->
+	<sys:String
+		x:Key="PatternTryHint">
+		Type a pattern to see the values it generates for the first rows. While you type, matching functions and keywords are
+		suggested: ↑ and ↓ choose one, and pressing Tab twice inserts it.
+	</sys:String>
+
+	<sys:String
+		x:Key="PatternSuggestionsHint">
+		Functions and keywords that match the word you are typing. ↑ and ↓ choose one; press Tab twice (or double-click it)
+		to insert it, or press Esc to close the suggestions. A function is inserted with its brackets, ready for its arguments.
+	</sys:String>
+
+	<sys:String
+		x:Key="UseExampleHint">
+		Loads this example into the try-it box.
+	</sys:String>
+
+	<sys:String
+		x:Key="SyntaxTableHint">
+		The building blocks of the pattern language. Keywords are not case-sensitive.
+	</sys:String>
+	<!-- Saved settings -->
+	<sys:String
+		x:Key="SaveSettingsHint">
+		Saves the generation mode and the settings of this column under a name, so they can be applied to other columns,
+		row sets and sessions, or shared with colleagues by exporting them. Only the settings of the current mode are saved.
+	</sys:String>
+
+	<sys:String
+		x:Key="ApplySavedSettingHint">
+		Click a saved setting to use its generation mode and settings for this column. Only the saved settings whose mode
+		suits the column's SQL type are listed; the ones saved for a column with the same name come first.
+	</sys:String>
+
+	<sys:String
+		x:Key="ManageSavedSettingsHint">
+		Opens the saved column settings: rename or delete them, choose which ones are applied automatically, and import or
+		export them to share them with colleagues working on the same project. Each saved column setting holds the settings
+		of one column; to save or load every column of a row set at once, use Set configuration above the grid.
+	</sys:String>
+
+	<sys:String
+		x:Key="SetConfigurationButtonHint">
+		Saves the generation mode and settings of every column of this row set as one named set configuration, or loads a
+		saved one into this row set. Loading replaces the settings of every column the configuration has; the other columns
+		keep theirs. Set configurations are kept apart from the saved settings of single columns (the star button in each
+		Settings cell), so loading one never happens by accident.
+	</sys:String>
+
+	<sys:String
+		x:Key="SaveSetConfigurationHint">
+		The name to save the settings of every column of this row set under. Press Enter or click Save. Saving under an
+		existing name asks before replacing it. The number of rows and the name of the row set are not part of it.
+	</sys:String>
+
+	<sys:String
+		x:Key="LoadSetConfigurationHint">
+		Click a set configuration to load it into this row set, after confirming. Columns are matched by name, so a
+		configuration saved from another table can be loaded too; only its columns that exist here are changed. Settings
+		that do not suit a column are left as they were and reported next to the button.
+	</sys:String>
+
+	<sys:String
+		x:Key="DeleteSetConfigurationHint">
+		Deletes this set configuration, after confirming. Row sets that already loaded it keep their settings.
+	</sys:String>
+
+	<sys:String
+		x:Key="ImportSetConfigurationsHint">
+		Adds the set configurations of a file exported from this application, e.g. by a colleague working on the same
+		project. If some of them already exist you choose whether to replace yours.
+	</sys:String>
+
+	<sys:String
+		x:Key="ExportSetConfigurationsHint">
+		Saves every set configuration to a file, so colleagues can import them and generate data that follows the same rules.
+	</sys:String>
+
+	<sys:String
+		x:Key="DismissSetConfigurationResultHint">
+		Hides this message.
+	</sys:String>
+
+	<sys:String
+		x:Key="RuleGridColumnsHint">
+		Choose which of the Keys, SQL type, Nullable and Sample values columns the column rules grid shows. The choice
+		applies to every row set and is remembered the next time the application starts.
+	</sys:String>
+
+	<sys:String
+		x:Key="ShowAllRuleGridColumnsHint">
+		Shows every column of the column rules grid again.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingNameHint">
+		The name of the saved setting, e.g. 'Shirt codes' or 'Customer e-mail'. Saving under an existing name replaces
+		that saved setting.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingValuesHint">
+		The generation mode and the settings that will be saved.
+	</sys:String>
+
+	<sys:String
+		x:Key="ApplyNeverHint">
+		The saved setting is only used when you pick it from the saved-settings menu of a column.
+	</sys:String>
+
+	<sys:String
+		x:Key="ApplyToThisColumnHint">
+		The saved setting is applied automatically to this column of this table whenever a new row set is created for it,
+		e.g. after loading the metadata again.
+	</sys:String>
+
+	<sys:String
+		x:Key="ApplyToEveryColumnWithNameHint">
+		The saved setting is applied automatically to every column with this name, in any table, whenever a new row set is
+		created. A saved setting for a column of a specific table takes precedence.
+	</sys:String>
+
+	<sys:String
+		x:Key="ConfirmSaveSettingHint">
+		Saves the setting. Saved settings are kept on this computer for future sessions.
+	</sys:String>
+
+	<sys:String
+		x:Key="CancelDialogHint">
+		Closes this window without saving.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingsGridHint">
+		The saved column settings. Click a name to rename it; tick Automatic to apply a setting automatically to
+		the columns it was saved for.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingModeColumnHint">
+		The generation mode the saved setting uses.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingSummaryColumnHint">
+		The settings that are saved for the generation mode.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingAutomaticColumnHint">
+		Ticked: the saved setting is applied automatically to the columns it was saved for whenever a new row set is
+		created. Only one automatic saved setting can exist for the same column.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingTargetColumnHint">
+		The column (and table) the saved setting is applied to automatically, when Automatic is ticked.
+	</sys:String>
+
+	<sys:String
+		x:Key="DeleteSavedSettingHint">
+		Deletes the selected saved setting. Columns that use it keep their current settings.
+	</sys:String>
+
+	<sys:String
+		x:Key="ImportSavedSettingsHint">
+		Adds the saved settings of a file exported by a colleague (or by you on another computer).
+	</sys:String>
+
+	<sys:String
+		x:Key="ExportSavedSettingsHint">
+		Writes every saved setting to a file that colleagues can import, e.g. to commit next to the project or to share by
+		e-mail.
+	</sys:String>
+
+	<sys:String
+		x:Key="ApplyAutomaticSettingsHint">
+		Applies the automatic saved settings to the columns of the row sets that are already open. New row sets get them
+		automatically.
+	</sys:String>
+
+	<sys:String
+		x:Key="SavedSettingsFileHint">
+		The file the saved settings are kept in on this computer.
+	</sys:String>
+
+	<sys:String
+		x:Key="CloseWindowHint">
+		Closes this window. Changes are already saved.
+	</sys:String>
+
+	<!-- Appearance -->
+	<sys:String
+		x:Key="ThemeToggleHint">
+		Switches between the light and dark colour themes. The choice is remembered for the next time the application starts;
+		until one is made, the application follows the Windows app theme.
+	</sys:String>
+</ResourceDictionary>

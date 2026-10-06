@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 using Microsoft.Data.SqlClient;
 
@@ -82,10 +83,10 @@ public sealed class SqlMetadataService : ISqlMetadataService
 				s.[name] AS SchemaName,
 				t.[name] AS TableName,
 				c.[name] AS ColumnName,
-				ty.[name] AS SqlType,
+				st.SqlType,
 				CASE
-					WHEN c.max_length = -1							THEN -1
-					WHEN ty.[name] IN ('nvarchar', 'nchar')	THEN c.max_length / 2
+					WHEN c.max_length = -1								THEN -1
+					WHEN st.SqlType IN ('nvarchar', 'nchar')	THEN c.max_length / 2
 					ELSE c.max_length
 				END AS MaximumLength,
 				c.[precision],
@@ -93,11 +94,21 @@ public sealed class SqlMetadataService : ISqlMetadataService
 				c.is_nullable,
 				c.is_identity,
 				c.is_computed,
-				CASE WHEN pk.column_id IS NULL THEN 0 ELSE 1 END AS IsPrimaryKey
+				CASE WHEN pk.column_id IS NULL THEN 0 ELSE 1 END AS IsPrimaryKey,
+				CASE WHEN c.default_object_id = 0 THEN 0 ELSE 1 END AS HasDefault
 			FROM sys.tables t
 			INNER JOIN sys.schemas s ON s.schema_id = t.schema_id
 			INNER JOIN sys.columns c ON c.object_id = t.object_id
 			INNER JOIN sys.types ty ON ty.user_type_id = c.user_type_id
+			LEFT JOIN sys.types bt ON bt.user_type_id = ty.system_type_id
+			CROSS APPLY
+			(
+				-- Alias types (CREATE TYPE ... FROM nvarchar(50)) are resolved to their underlying system type.
+				SELECT CASE
+					WHEN ty.is_user_defined = 1 AND ty.is_assembly_type = 0 AND bt.[name] IS NOT NULL THEN bt.[name]
+					ELSE ty.[name]
+				END AS SqlType
+			) st
 			LEFT JOIN
 			(
 				SELECT ic.object_id, ic.column_id
@@ -146,18 +157,9 @@ public sealed class SqlMetadataService : ISqlMetadataService
 				IsNullable    = reader.GetBoolean(7),
 				IsIdentity    = reader.GetBoolean(8),
 				IsComputed    = reader.GetBoolean(9),
-				IsPrimaryKey  = Convert.ToBoolean(reader.GetValue(10))
+				IsPrimaryKey  = Convert.ToBoolean(reader.GetValue(10)),
+				HasDefault    = Convert.ToBoolean(reader.GetValue(11))
 			};
-
-
-			if (column.IsIdentity || column.IsComputed)
-			{
-				column.GenerationMode = ValueGenerationMode.DatabaseGenerated;
-			}
-			else if (column.IsPrimaryKey)
-			{
-				column.GenerationMode = ValueGenerationMode.Sequence;
-			}
 
 			table.Columns.Add(column);
 		}
@@ -235,8 +237,7 @@ public sealed class SqlMetadataService : ISqlMetadataService
 
 			if (column is not null)
 			{
-				column.IsForeignKey   = true;
-				column.GenerationMode = ValueGenerationMode.ExistingForeignKey;
+				column.IsForeignKey = true;
 			}
 		}
 	}
