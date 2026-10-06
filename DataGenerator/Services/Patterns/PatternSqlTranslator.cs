@@ -9,9 +9,26 @@ namespace DataGenerator.Services.Patterns;
 /// </summary>
 public sealed class PatternSqlTranslator : IPatternSqlTranslator
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string BINARY_COLLATION = "Latin1_General_100_BIN2";
 	private const string NUMBER_TYPE      = "decimal(19, 0)";
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="PatternSqlTranslator"/>.
+	/// </summary>
+	public PatternSqlTranslator()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Converts a pattern expression into a T-SQL condition that matches every recognisable value the pattern can produce.
 	/// </summary>
@@ -67,7 +84,9 @@ public sealed class PatternSqlTranslator : IPatternSqlTranslator
 			return false;
 		}
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Builds the SQL condition for one fixed-length pattern template.
 	/// </summary>
@@ -154,4 +173,6 @@ public sealed class PatternSqlTranslator : IPatternSqlTranslator
 			};
 		}
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

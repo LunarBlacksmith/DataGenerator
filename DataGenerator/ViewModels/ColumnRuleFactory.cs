@@ -8,8 +8,14 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class ColumnRuleFactory
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly ColumnRuleServices _services;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a rule factory that uses the shared column-rule services.
 	/// </summary>
@@ -23,7 +29,11 @@ public sealed class ColumnRuleFactory
 	{
 		_services = services ?? throw new ArgumentNullException(nameof(services));
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Creates one rule for each column of a table and attaches its declared or inferred reference.
 	/// </summary>
@@ -65,7 +75,9 @@ public sealed class ColumnRuleFactory
 
 		return rules;
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	// Declared foreign keys win over relationships inferred from the FTK naming convention.
 	/// <summary>
 	///	Finds the foreign key that belongs to a column, preferring declared keys over inferred ones.
@@ -83,7 +95,15 @@ public sealed class ColumnRuleFactory
 		=>
 			table
 				.ForeignKeys
-				.Where(foreignKey => string.Equals(foreignKey.ParentColumn, column.Name, StringComparison.OrdinalIgnoreCase))
+				.Where(
+					foreignKey => string.Equals(
+						foreignKey.ParentColumn,
+						column.Name,
+						StringComparison.OrdinalIgnoreCase
+					)
+				)
 				.OrderBy(foreignKey => foreignKey.IsInferred)
 				.FirstOrDefault();
+	#endregion PRIVATE
+	#endregion METHODS
 }

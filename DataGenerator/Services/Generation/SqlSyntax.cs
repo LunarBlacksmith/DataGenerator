@@ -4,6 +4,19 @@ namespace DataGenerator.Services.Generation;
 
 internal static class SqlSyntax
 {
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Initialises the static state of <see cref="SqlSyntax"/>.
+	/// </summary>
+	static SqlSyntax()
+	{
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Quotes a SQL Server identifier with brackets and escapes closing brackets inside it.
 	/// </summary>
@@ -79,4 +92,6 @@ internal static class SqlSyntax
 
 		return builder.ToString();
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }

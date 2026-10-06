@@ -7,6 +7,19 @@ namespace DataGenerator.Services;
 
 public sealed class SqlMetadataService : ISqlMetadataService
 {
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="SqlMetadataService"/>.
+	/// </summary>
+	public SqlMetadataService()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Loads accessible user databases and their table, column and foreign-key metadata from SQL Server.
 	/// </summary>
@@ -85,7 +98,9 @@ public sealed class SqlMetadataService : ISqlMetadataService
 		progress?.Report($"Loaded {databases.Count} accessible database(s).");
 		return databases;
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Loads table, column and foreign-key metadata for one database into an existing database model.
 	/// </summary>
@@ -254,7 +269,7 @@ public sealed class SqlMetadataService : ISqlMetadataService
 				ReferencedColumn   = foreignKeyReader.GetString(6)
 			});
 
-			ColumnModel? column = 
+			ColumnModel? column =
 				table
 					.Columns
 					.FirstOrDefault(
@@ -271,4 +286,6 @@ public sealed class SqlMetadataService : ISqlMetadataService
 			}
 		}
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

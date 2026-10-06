@@ -5,10 +5,25 @@
 /// </summary>
 public sealed class PostGenerationScript
 {
+	#region PROPERTIES
+	#region PUBLIC
 	/// <summary>
 	///	The database the statements run in, so that names without a database (e.g. dbo.RebuildTotals) are found.
 	/// </summary>
 	public required string                                 DatabaseName { get; init; }
 
 	public required IReadOnlyList<PostGenerationStatement> Statements   { get; init; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="PostGenerationScript"/>.
+	/// </summary>
+	public PostGenerationScript()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

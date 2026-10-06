@@ -12,21 +12,39 @@ namespace DataGenerator.Services;
 /// </summary>
 internal static class JsonDocumentFile
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string TEMPORARY_EXTENSION  = ".tmp";
 	private const string UNREADABLE_FILE_NAME = "{0}.unreadable-{1:yyyyMMdd-HHmmss}.json";
 
-	private static readonly JsonSerializerOptions SERIALIZER_OPTIONS = new()
-	{
-		AllowTrailingCommas         = true,
-		Encoder                     = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-		IgnoreReadOnlyProperties    = true,
-		PropertyNameCaseInsensitive = true,
-		PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
-		ReadCommentHandling         = JsonCommentHandling.Skip,
-		WriteIndented               = true,
-		Converters                  = { new JsonStringEnumConverter() }
-	};
+	private static readonly JsonSerializerOptions SERIALIZER_OPTIONS;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="JsonDocumentFile"/>.
+	/// </summary>
+	static JsonDocumentFile()
+	{
+		SERIALIZER_OPTIONS = new()
+		{
+			AllowTrailingCommas         = true,
+			Encoder                     = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+			IgnoreReadOnlyProperties    = true,
+			PropertyNameCaseInsensitive = true,
+			PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+			ReadCommentHandling         = JsonCommentHandling.Skip,
+			WriteIndented               = true,
+			Converters                  = { new JsonStringEnumConverter() }
+		};
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Reads a JSON document from disk using DataGenerator serializer settings.
 	/// </summary>
@@ -118,4 +136,6 @@ internal static class JsonDocumentFile
 		File.Move(filePath, unreadablePath, true);
 		return unreadablePath;
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }

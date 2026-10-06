@@ -9,14 +9,20 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 public sealed class PatternCompletionSession : ObservableObject
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string CHOOSE_HINT = "Tab twice to insert  ·  ↑ ↓ to choose  ·  Esc to close";
 	private const string ARMED_HINT  = "Press Tab again to insert {0}";
 
 	private PatternLanguageEntry?    _selectedEntry;
 	private PatternCompletionResult? _result;
 	private bool                     _isArmed;
+	#endregion PRIVATE
+	#endregion FIELDS
 
-	public ObservableCollection<PatternLanguageEntry> Items { get; } = [];
+	#region PROPERTIES
+	#region PUBLIC
+	public ObservableCollection<PatternLanguageEntry> Items { get; }
 
 	public PatternLanguageEntry? SelectedEntry
 	{
@@ -50,7 +56,26 @@ public sealed class PatternCompletionSession : ObservableObject
 	public string KeyHintText => _isArmed && _selectedEntry is not null ? string.Format(ARMED_HINT, _selectedEntry.Name) : CHOOSE_HINT;
 
 	public PatternCompletionResult? Result => _result;
+	#endregion PUBLIC
+	#endregion PROPERTIES
 
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="PatternCompletionSession"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public PatternCompletionSession()
+	{
+		_selectedEntry = null;
+		_result        = null;
+		_isArmed       = false;
+		Items          = [];
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Shows the suggestions of <paramref name="result"/>, keeping the selected one when it still matches.
 	/// </summary>
@@ -117,4 +142,6 @@ public sealed class PatternCompletionSession : ObservableObject
 		_result = null;
 		IsArmed = false;
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }

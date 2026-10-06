@@ -8,6 +8,19 @@ namespace DataGenerator.Services;
 /// </summary>
 public static class GenerationLocation
 {
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Initialises the static state of <see cref="GenerationLocation"/>.
+	/// </summary>
+	static GenerationLocation()
+	{
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Builds a readable location for a table, optional row set, row index and column.
 	/// </summary>
@@ -52,4 +65,6 @@ public static class GenerationLocation
 
 		return location;
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }

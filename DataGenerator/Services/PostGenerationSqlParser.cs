@@ -12,22 +12,49 @@ namespace DataGenerator.Services;
 /// </summary>
 public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 {
+	#region FIELDS
+	#region PRIVATE
 	private const int    MAXIMUM_NAME_LENGTH = 60;
 	private const string COMMENT_PREFIX      = "--";
 
 	/// <summary>
 	///	Words that can stand alone on a line of SQL and must not be mistaken for a stored procedure.
 	/// </summary>
-	private static readonly HashSet<string> SQL_KEYWORDS = new(
-		[
-			"ALL", "AND", "AS", "BEGIN", "BREAK", "BY", "CASE", "CATCH", "CHECKPOINT", "COMMIT", "CONTINUE", "DECLARE",
-			"DEFAULT", "DISTINCT", "ELSE", "END", "EXCEPT", "FROM", "GO", "GROUP", "HAVING", "IF", "INTERSECT", "INTO",
-			"JOIN", "NOT", "NULL", "ON", "OR", "ORDER", "OUTPUT", "PRINT", "RECONFIGURE", "RETURN", "ROLLBACK", "SELECT",
-			"SET", "THEN", "TRAN", "TRANSACTION", "TRY", "UNION", "VALUES", "WHEN", "WHERE", "WHILE", "WITH"
-		],
-		StringComparer.OrdinalIgnoreCase
-	);
+	private static readonly HashSet<string> SQL_KEYWORDS;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="PostGenerationSqlParser"/>.
+	/// </summary>
+	static PostGenerationSqlParser()
+	{
+		SQL_KEYWORDS = new(
+			[
+				"ALL", "AND", "AS", "BEGIN", "BREAK", "BY", "CASE", "CATCH", "CHECKPOINT", "COMMIT", "CONTINUE", "DECLARE",
+				"DEFAULT", "DISTINCT", "ELSE", "END", "EXCEPT", "FROM", "GO", "GROUP", "HAVING", "IF", "INTERSECT", "INTO",
+				"JOIN", "NOT", "NULL", "ON", "OR", "ORDER", "OUTPUT", "PRINT", "RECONFIGURE", "RETURN", "ROLLBACK", "SELECT",
+				"SET", "THEN", "TRAN", "TRANSACTION", "TRY", "UNION", "VALUES", "WHEN", "WHERE", "WHILE", "WITH"
+			],
+			StringComparer.OrdinalIgnoreCase
+		);
+	}
+	#endregion STATIC
+
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="PostGenerationSqlParser"/>.
+	/// </summary>
+	public PostGenerationSqlParser()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Parses the post-generation script into SQL blocks and stored-procedure calls that can run after data generation.
 	/// </summary>
@@ -117,7 +144,9 @@ public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 
 		return true;
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Detects whether a complete line is a stored-procedure name rather than a SQL statement.
 	/// </summary>
@@ -182,7 +211,12 @@ public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 		if (hasSql)
 		{
 			string sql   = string.Join(Environment.NewLine, sqlLines).Trim('\r', '\n');
-			string first = sqlLines.Select(line => line.Trim()).First(line => line.Length > 0 && !line.StartsWith(COMMENT_PREFIX, StringComparison.Ordinal));
+			string first =
+				sqlLines
+					.Select(line => line.Trim())
+					.First(
+						line => line.Length > 0 && !line.StartsWith(COMMENT_PREFIX, StringComparison.Ordinal)
+					);
 
 			statements.Add(
 				new PostGenerationStatement
@@ -226,4 +260,6 @@ public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 	/// </returns>
 	[GeneratedRegex(@";\s*(?:--.*)?$", RegexOptions.CultureInvariant)]
 	private static partial Regex StatementEndRegex();
+	#endregion PRIVATE
+	#endregion METHODS
 }

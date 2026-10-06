@@ -9,14 +9,50 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 public abstract class ValidatableObservableObject : ObservableObject, INotifyDataErrorInfo
 {
-	private static readonly string[] NO_ERRORS = [];
+	#region FIELDS
+	#region PRIVATE
+	private static readonly string[] NO_ERRORS;
 
-	private readonly Dictionary<string, string> _errors = new(StringComparer.Ordinal);
+	private readonly Dictionary<string, string> _errors;
+	#endregion PRIVATE
+	#endregion FIELDS
 
-	public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
-
+	#region PROPERTIES
+	#region PUBLIC
 	public bool HasErrors => _errors.Count > 0;
+	#endregion PUBLIC
+	#endregion PROPERTIES
 
+	#region EVENTS
+	#region PUBLIC
+	public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
+	#endregion PUBLIC
+	#endregion EVENTS
+
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="ValidatableObservableObject"/>.
+	/// </summary>
+	static ValidatableObservableObject()
+	{
+		NO_ERRORS = [];
+	}
+	#endregion STATIC
+
+	#region PROTECTED
+	/// <summary>
+	///	Creates a new <see cref="ValidatableObservableObject"/> and sets the default values of its fields and properties.
+	/// </summary>
+	protected ValidatableObservableObject()
+	{
+		_errors = new(StringComparer.Ordinal);
+	}
+	#endregion PROTECTED
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Gets the validation messages for one property.
 	/// </summary>
@@ -31,7 +67,9 @@ public abstract class ValidatableObservableObject : ObservableObject, INotifyDat
 			!string.IsNullOrEmpty(propertyName) && _errors.TryGetValue(propertyName, out string? error)
 				? new string[] { error }
 				: NO_ERRORS;
+	#endregion PUBLIC
 
+	#region PROTECTED
 	/// <summary>
 	///	Gets the validation message currently stored for one property.
 	/// </summary>
@@ -104,4 +142,6 @@ public abstract class ValidatableObservableObject : ObservableObject, INotifyDat
 	protected virtual void OnErrorsChanged()
 	{
 	}
+	#endregion PROTECTED
+	#endregion METHODS
 }

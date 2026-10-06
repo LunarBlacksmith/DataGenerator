@@ -15,6 +15,8 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 internal sealed class PatternCompletionController
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string POPUP_TEMPLATE_KEY = "PatternCompletionPopupTemplate";
 
 	private readonly TextBox                    _textBox;
@@ -25,7 +27,20 @@ internal sealed class PatternCompletionController
 	private ListBox? _list;
 	private Window?  _window;
 	private bool     _isEditing;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
+	/// <summary>
+	///	Whether the suggestions are shown, in which case ↑ and ↓ choose a suggestion.
+	/// </summary>
+	public bool IsOpen => _popup?.IsOpen == true;
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a controller for one text box and starts listening for text, selection and keyboard changes.
 	/// </summary>
@@ -40,6 +55,11 @@ internal sealed class PatternCompletionController
 	/// </exception>
 	public PatternCompletionController(TextBox textBox, IPatternCompletionProvider provider)
 	{
+		_popup     = null;
+		_list      = null;
+		_window    = null;
+		_isEditing = false;
+
 		_textBox  = textBox ?? throw new ArgumentNullException(nameof(textBox));
 		_provider = provider ?? throw new ArgumentNullException(nameof(provider));
 		_session  = new PatternCompletionSession();
@@ -50,12 +70,11 @@ internal sealed class PatternCompletionController
 		_textBox.LostKeyboardFocus += OnLostKeyboardFocus;
 		_textBox.Unloaded          += OnUnloaded;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	/// <summary>
-	///	Whether the suggestions are shown, in which case ↑ and ↓ choose a suggestion.
-	/// </summary>
-	public bool IsOpen => _popup?.IsOpen == true;
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Stops listening to the text box and closes any open suggestion pop-up.
 	/// </summary>
@@ -68,6 +87,44 @@ internal sealed class PatternCompletionController
 		_textBox.Unloaded          -= OnUnloaded;
 
 		Close();
+	}
+	#endregion PUBLIC
+
+	#region PRIVATE
+	/// <summary>
+	///	Finds the first visual descendant of the requested type below a root.
+	/// </summary>
+	/// <typeparam name="T">
+	///	The descendant type to find.
+	/// </typeparam>
+	/// <param name="root">
+	///	The visual root to search.
+	/// </param>
+	/// <returns>
+	///	The first matching descendant, or <see langword="null"/> when none is found.
+	/// </returns>
+	private static T? FindDescendant<T>(DependencyObject root) where T : DependencyObject
+	{
+		int childCount = VisualTreeHelper.GetChildrenCount(root);
+
+		for (int index = 0; index < childCount; ++index)
+		{
+			DependencyObject child = VisualTreeHelper.GetChild(root, index);
+
+			if (child is T match)
+			{
+				return match;
+			}
+
+			T? descendant = FindDescendant<T>(child);
+
+			if (descendant is not null)
+			{
+				return descendant;
+			}
+		}
+
+		return null;
 	}
 
 	/// <summary>
@@ -492,40 +549,6 @@ internal sealed class PatternCompletionController
 
 		return false;
 	}
-
-	/// <summary>
-	///	Finds the first visual descendant of the requested type below a root.
-	/// </summary>
-	/// <typeparam name="T">
-	///	The descendant type to find.
-	/// </typeparam>
-	/// <param name="root">
-	///	The visual root to search.
-	/// </param>
-	/// <returns>
-	///	The first matching descendant, or <see langword="null"/> when none is found.
-	/// </returns>
-	private static T? FindDescendant<T>(DependencyObject root) where T : DependencyObject
-	{
-		int childCount = VisualTreeHelper.GetChildrenCount(root);
-
-		for (int index = 0; index < childCount; ++index)
-		{
-			DependencyObject child = VisualTreeHelper.GetChild(root, index);
-
-			if (child is T match)
-			{
-				return match;
-			}
-
-			T? descendant = FindDescendant<T>(child);
-
-			if (descendant is not null)
-			{
-				return descendant;
-			}
-		}
-
-		return null;
-	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

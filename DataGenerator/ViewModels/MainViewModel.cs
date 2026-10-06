@@ -12,6 +12,8 @@ namespace DataGenerator.ViewModels;
 
 public sealed class MainViewModel : ObservableObject
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string READY_STATUS            = "Ready.";
 	private const string FAILED_STATUS           = "Operation failed. See the error panel for what happened and where.";
 	private const string CANCELLED_STATUS        = "Generation cancelled.";
@@ -48,6 +50,8 @@ public sealed class MainViewModel : ObservableObject
 	private bool                     _isBusy;
 	private string                   _statusMessage;
 	private ErrorReport?             _error;
+	#endregion PRIVATE
+	#endregion FIELDS
 
 	#region PROPERTIES
 	#region PUBLIC
@@ -241,6 +245,8 @@ public sealed class MainViewModel : ObservableObject
 	#endregion PUBLIC
 	#endregion PROPERTIES
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the main application view model and initialises defaults, commands and child view-model subscriptions.
 	/// </summary>
@@ -346,7 +352,11 @@ public sealed class MainViewModel : ObservableObject
 		Explorer.GenerationSettingsChanged += OnGenerationSettingsChanged;
 		PostGeneration.Changed             += OnPostGenerationChanged;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Shows an exception in the error panel with what happened, where it happened and the full details.
 	/// </summary>
@@ -362,6 +372,86 @@ public sealed class MainViewModel : ObservableObject
 
 		ShowError(_exceptionFormatter.Format(exception));
 	}
+	#endregion PUBLIC
+
+	#region PRIVATE
+	/// <summary>
+	///	Switches missing generated foreign keys to existing-key mode for tables that are already included.
+	/// </summary>
+	/// <param name="missingReferences">
+	///	The generated-key references whose target tables are not included.
+	/// </param>
+	/// <param name="includedTables">
+	///	The tables that will still be generated.
+	/// </param>
+	private static void UseExistingKeys(IReadOnlyList<MissingReference> missingReferences, IReadOnlyList<TableNodeViewModel> includedTables)
+	{
+		HashSet<TableNodeViewModel> included = [.. includedTables];
+
+		foreach (MissingReference reference in
+			missingReferences
+				.Where(reference => included.Contains(reference.ReferencingTable))
+		)
+		{
+			reference.Rule.GenerationMode = ValueGenerationMode.ExistingForeignKey;
+		}
+	}
+
+	/// <summary>
+	///	Builds the confirmation message that explains generated-key references to tables that are not included.
+	/// </summary>
+	/// <param name="missingReferences">
+	///	The missing generated-key references to summarise.
+	/// </param>
+	/// <returns>
+	///	The message shown in the yes, no or cancel dialog.
+	/// </returns>
+	private static string BuildMissingReferenceMessage(IReadOnlyList<MissingReference> missingReferences)
+	{
+		StringBuilder builder = new("Some columns take their values from rows generated for tables that are not included:");
+		List<IGrouping<TableNodeViewModel, MissingReference>> groups = [.. missingReferences.GroupBy(reference => reference.ReferencedTable)];
+
+		_ = builder.AppendLine();
+
+		foreach (IGrouping<TableNodeViewModel, MissingReference> group in groups.Take(MAXIMUM_LISTED_ITEMS))
+		{
+			string columns = string.Join(
+				", ",
+				group
+					.Select(
+						reference => $"{reference.ReferencingTable.Model.Name}.{reference.Rule.Name}{(reference.Rule.Reference!.IsInferred ? " (FTK)" : string.Empty)}"
+					)
+					.Distinct(StringComparer.OrdinalIgnoreCase)
+			);
+
+			_ = builder.AppendLine()
+				.Append($"•  [{group.Key.Database.DisplayName}] {group.Key.DisplayName}  ←  {columns}");
+		}
+
+		if (groups.Count > MAXIMUM_LISTED_ITEMS)
+		{
+			_ = builder.AppendLine().Append($"…and {groups.Count - MAXIMUM_LISTED_ITEMS:N0} more table(s).");
+		}
+
+		_ = builder.AppendLine()
+			.AppendLine()
+			.AppendLine("(FTK) marks columns linked by their name ending in FTK rather than by a SQL Server foreign key.")
+			.AppendLine()
+			.AppendLine("Yes:  also generate data for these tables (their row counts can be changed in the explorer).")
+			.AppendLine("No:  use keys that already exist in these tables instead.")
+			.Append("Cancel:  do not generate yet.");
+
+		return builder.ToString();
+	}
+
+	/// <summary>
+	///	Creates a default SQL output path in the generated-data directory.
+	/// </summary>
+	/// <returns>
+	///	The full default path for a new generated SQL file.
+	/// </returns>
+	private static string CreateDefaultOutputFilePath()
+		=> Path.Combine(SecurePathService.GetGeneratedDataDirectory(), SecurePathService.CreateDefaultSqlFileName());
 
 	/// <summary>
 	///	Checks whether metadata can be loaded with the current connection details.
@@ -411,9 +501,15 @@ public sealed class MainViewModel : ObservableObject
 				int inferredKeyCount = _foreignTableKeyResolver.ResolveInferredKeys(databases);
 
 				// Filled before the explorer creates the column rules, so "Value from table" settings can be resolved.
-				_tableCatalog.SetTables(databases.SelectMany(database => database.Tables));
+				_tableCatalog.SetTables(
+					databases
+						.SelectMany(database => database.Tables)
+				);
 				Explorer.Load(databases);
-				PostGeneration.SetDatabases(databases.Select(database => database.Name));
+				PostGeneration.SetDatabases(
+					databases
+						.Select(database => database.Name)
+				);
 
 				StatusMessage = $"Loaded {Explorer.TotalTableCount:N0} table(s) from {databases.Count:N0} database(s)"
 					+ (
@@ -510,7 +606,10 @@ public sealed class MainViewModel : ObservableObject
 			{
 				GenerationRequest request  = CreateRequest(includedTables);
 				Progress<string>  progress = new(message => StatusMessage = message);
-				long              rowCount = request.Plans.Sum(plan => (long)plan.TotalRowCount);
+				long              rowCount =
+					request
+						.Plans
+						.Sum(plan => (long)plan.TotalRowCount);
 
 				await _generationService.GenerateAsync(
 					request,
@@ -565,7 +664,11 @@ public sealed class MainViewModel : ObservableObject
 			{
 				case DialogChoice.Yes:
 				{
-					Explorer.IncludeTables(missingReferences.Select(reference => reference.ReferencedTable).Distinct());
+					Explorer.IncludeTables(
+						missingReferences
+							.Select(reference => reference.ReferencedTable)
+							.Distinct()
+					);
 					includedTables = Explorer.GetIncludedTables();
 					break;
 				}
@@ -602,69 +705,6 @@ public sealed class MainViewModel : ObservableObject
 	}
 
 	/// <summary>
-	///	Switches missing generated foreign keys to existing-key mode for tables that are already included.
-	/// </summary>
-	/// <param name="missingReferences">
-	///	The generated-key references whose target tables are not included.
-	/// </param>
-	/// <param name="includedTables">
-	///	The tables that will still be generated.
-	/// </param>
-	private static void UseExistingKeys(IReadOnlyList<MissingReference> missingReferences, IReadOnlyList<TableNodeViewModel> includedTables)
-	{
-		HashSet<TableNodeViewModel> included = [.. includedTables];
-
-		foreach (MissingReference reference in missingReferences.Where(reference => included.Contains(reference.ReferencingTable)))
-		{
-			reference.Rule.GenerationMode = ValueGenerationMode.ExistingForeignKey;
-		}
-	}
-
-	/// <summary>
-	///	Builds the confirmation message that explains generated-key references to tables that are not included.
-	/// </summary>
-	/// <param name="missingReferences">
-	///	The missing generated-key references to summarise.
-	/// </param>
-	/// <returns>
-	///	The message shown in the yes, no or cancel dialog.
-	/// </returns>
-	private static string BuildMissingReferenceMessage(IReadOnlyList<MissingReference> missingReferences)
-	{
-		StringBuilder builder = new("Some columns take their values from rows generated for tables that are not included:");
-		List<IGrouping<TableNodeViewModel, MissingReference>> groups = [.. missingReferences.GroupBy(reference => reference.ReferencedTable)];
-
-		_ = builder.AppendLine();
-
-		foreach (IGrouping<TableNodeViewModel, MissingReference> group in groups.Take(MAXIMUM_LISTED_ITEMS))
-		{
-			string columns = string.Join(
-				", ",
-				group.Select(reference => $"{reference.ReferencingTable.Model.Name}.{reference.Rule.Name}{(reference.Rule.Reference!.IsInferred ? " (FTK)" : string.Empty)}")
-					.Distinct(StringComparer.OrdinalIgnoreCase)
-			);
-
-			_ = builder.AppendLine()
-				.Append($"•  [{group.Key.Database.DisplayName}] {group.Key.DisplayName}  ←  {columns}");
-		}
-
-		if (groups.Count > MAXIMUM_LISTED_ITEMS)
-		{
-			_ = builder.AppendLine().Append($"…and {groups.Count - MAXIMUM_LISTED_ITEMS:N0} more table(s).");
-		}
-
-		_ = builder.AppendLine()
-			.AppendLine()
-			.AppendLine("(FTK) marks columns linked by their name ending in FTK rather than by a SQL Server foreign key.")
-			.AppendLine()
-			.AppendLine("Yes:  also generate data for these tables (their row counts can be changed in the explorer).")
-			.AppendLine("No:  use keys that already exist in these tables instead.")
-			.Append("Cancel:  do not generate yet.");
-
-		return builder.ToString();
-	}
-
-	/// <summary>
 	///	Shows validation problems that block generation and reveals the first problem in the explorer.
 	/// </summary>
 	/// <param name="problems">
@@ -689,7 +729,11 @@ public sealed class MainViewModel : ObservableObject
 			{
 				Summary  = summary.ToString(),
 				Location = problems[0].Location,
-				Details  = string.Join(Environment.NewLine, problems.Select(problem => $"{problem.Location}: {problem.Message}"))
+				Details  = string.Join(
+					Environment.NewLine,
+					problems
+						.Select(problem => $"{problem.Location}: {problem.Message}")
+				)
 			}
 		);
 
@@ -711,7 +755,9 @@ public sealed class MainViewModel : ObservableObject
 		IReadOnlyList<TableModel> tablesToClear = GetTablesToClear(includedTables);
 		string                    databases     = string.Join(
 			", ",
-			tablesToClear.Select(table => table.DatabaseName).Distinct(StringComparer.OrdinalIgnoreCase)
+			tablesToClear
+				.Select(table => table.DatabaseName)
+				.Distinct(StringComparer.OrdinalIgnoreCase)
 		);
 
 		return _dialogService.Confirm(
@@ -734,7 +780,10 @@ public sealed class MainViewModel : ObservableObject
 	private GenerationRequest CreateRequest(IReadOnlyList<TableNodeViewModel> includedTables)
 		=> new GenerationRequest
 		{
-			Plans              = [.. includedTables.Select(table => table.CreatePlan())],
+			Plans              = [..
+				includedTables
+					.Select(table => table.CreatePlan())
+			],
 			Mode               = _generationMode,
 			OutputFilePath     = IsSqlFileMode ? _outputFilePath.Trim() : null,
 			ConnectionString   = IsDirectInsertMode ? BuildConnectionString(MASTER_DATABASE) : null,
@@ -762,7 +811,10 @@ public sealed class MainViewModel : ObservableObject
 						.SelectMany(database => database.Tables)
 						.Select(table => table.Model)
 				]
-				: [.. includedTables.Select(table => table.Model)];
+				: [..
+					includedTables
+						.Select(table => table.Model)
+				];
 
 	/// <summary>
 	///	Checks whether all required SQL Server sign-in fields contain text.
@@ -843,15 +895,6 @@ public sealed class MainViewModel : ObservableObject
 		_usesDefaultOutputPath = true;
 		OnPropertyChanged(nameof(OutputFilePath));
 	}
-
-	/// <summary>
-	///	Creates a default SQL output path in the generated-data directory.
-	/// </summary>
-	/// <returns>
-	///	The full default path for a new generated SQL file.
-	/// </returns>
-	private static string CreateDefaultOutputFilePath()
-		=> Path.Combine(SecurePathService.GetGeneratedDataDirectory(), SecurePathService.CreateDefaultSqlFileName());
 
 	/// <summary>
 	///	Requests cancellation of the current busy operation and updates the status message.
@@ -980,7 +1023,10 @@ public sealed class MainViewModel : ObservableObject
 	/// </param>
 	private void OnGenerationSettingsChanged(object? sender, EventArgs e)
 	{
-		TableNodeViewModel? firstIncludedTable = Explorer.AllTables.FirstOrDefault(table => table.IsIncluded);
+		TableNodeViewModel? firstIncludedTable =
+			Explorer
+				.AllTables
+				.FirstOrDefault(table => table.IsIncluded);
 
 		PostGeneration.SuggestDatabase(firstIncludedTable?.Database.Model.Name);
 		OnPropertyChanged(nameof(GenerationSummary));
@@ -1008,4 +1054,6 @@ public sealed class MainViewModel : ObservableObject
 		GenerateCommand.NotifyCanExecuteChanged();
 		CancelCommand.NotifyCanExecuteChanged();
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

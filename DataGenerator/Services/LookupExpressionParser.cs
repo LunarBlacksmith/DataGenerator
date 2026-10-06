@@ -7,6 +7,8 @@ namespace DataGenerator.Services;
 
 public sealed class LookupExpressionParser : ILookupExpressionParser
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string KEYWORD_UNIQUE    = "UNIQUE";
 	private const string KEYWORD_FROM      = "FROM";
 	private const string KEYWORD_WHERE     = "WHERE";
@@ -15,11 +17,25 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 	private const string DEFAULT_SCHEMA    = "dbo";
 	private const string EXAMPLE           = "dbo.Shirt.ShirtID UNIQUE";
 
-	private static readonly TimeSpan REGEX_CHECK_TIMEOUT = TimeSpan.FromSeconds(1);
+	private static readonly TimeSpan REGEX_CHECK_TIMEOUT;
 
 	private readonly ITableCatalog         _catalog;
 	private readonly IPatternSqlTranslator _patternTranslator;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="LookupExpressionParser"/>.
+	/// </summary>
+	static LookupExpressionParser()
+	{
+		REGEX_CHECK_TIMEOUT = TimeSpan.FromSeconds(1);
+	}
+	#endregion STATIC
+
+	#region PUBLIC
 	/// <summary>
 	///	Creates a parser that resolves lookup expressions against the loaded table catalog and validates pattern filters.
 	/// </summary>
@@ -37,7 +53,11 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 		_catalog           = catalog ?? throw new ArgumentNullException(nameof(catalog));
 		_patternTranslator = patternTranslator ?? throw new ArgumentNullException(nameof(patternTranslator));
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Parses a lookup expression into the source table, source column, uniqueness, row scope and optional filter used
 	///	when a column copies values from another table.
@@ -161,7 +181,9 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 
 		return builder.Append(filterText).ToString();
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Reads database, schema, table and column name parts, where each part may be bracketed and escaped with doubled
 	///	closing brackets.
@@ -255,141 +277,6 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 	}
 
 	/// <summary>
-	///	Resolves the parsed name parts to a source table and column in the loaded catalog.
-	/// </summary>
-	/// <param name="parts">
-	///	The parsed name parts, ending with table and column names and optionally starting with database and schema names.
-	/// </param>
-	/// <param name="targetTable">
-	///	The table that owns the lookup, used to prefer its database when the expression omits a database name.
-	/// </param>
-	/// <param name="sourceTable">
-	///	The resolved source table when successful; otherwise <see langword="null"/>.
-	/// </param>
-	/// <param name="sourceColumn">
-	///	The resolved source column when successful; otherwise <see langword="null"/>.
-	/// </param>
-	/// <param name="errorMessage">
-	///	An empty string when resolution succeeds; otherwise the user-facing reason the table or column cannot be found.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when the table and column were found; otherwise <see langword="false"/>.
-	/// </returns>
-	private bool TryResolveColumn(
-		List<string>     parts,
-		TableModel       targetTable,
-		out TableModel?  sourceTable,
-		out ColumnModel? sourceColumn,
-		out string       errorMessage
-	)
-	{
-		string  columnName   = parts[^1];
-		string  tableName    = parts[^2];
-		string? schemaName   = parts.Count >= 3 ? parts[^3] : null;
-		string? databaseName = parts.Count == 4 ? parts[0] : null;
-
-		sourceColumn = null;
-		sourceTable  = FindTable(databaseName, schemaName, tableName, targetTable, out errorMessage);
-
-		if (sourceTable is null)
-		{
-			return false;
-		}
-
-		sourceColumn = sourceTable.Columns.FirstOrDefault(column => string.Equals(column.Name, columnName, StringComparison.OrdinalIgnoreCase));
-
-		if (sourceColumn is null)
-		{
-			errorMessage = $"{sourceTable.DisplayName} has no column named [{columnName}].";
-			return false;
-		}
-
-		errorMessage = string.Empty;
-		return true;
-	}
-
-	/// <summary>
-	///	Finds the table named by a lookup expression and reports ambiguity or missing metadata in user-facing text.
-	/// </summary>
-	/// <param name="databaseName">
-	///	The optional database name supplied in the expression, or <see langword="null"/> to infer one.
-	/// </param>
-	/// <param name="schemaName">
-	///	The optional schema name supplied in the expression, or <see langword="null"/> to infer one.
-	/// </param>
-	/// <param name="tableName">
-	///	The table name supplied in the expression.
-	/// </param>
-	/// <param name="targetTable">
-	///	The table that owns the lookup, included in the search even if it has not yet been added to the catalog.
-	/// </param>
-	/// <param name="errorMessage">
-	///	An empty string when exactly one table is found; otherwise the user-facing reason no table is returned.
-	/// </param>
-	/// <returns>
-	///	The matching table when exactly one can be chosen; otherwise <see langword="null"/>.
-	/// </returns>
-	/// <remarks>
-	///	Without a database name the database of the target table is searched first; without a schema name, dbo wins when
-	///	several schemas have a table with the name.
-	/// </remarks>
-	private TableModel? FindTable(string? databaseName, string? schemaName, string tableName, TableModel targetTable, out string errorMessage)
-	{
-		IEnumerable<TableModel> tables     = _catalog.Tables.Contains(targetTable) ? _catalog.Tables : _catalog.Tables.Append(targetTable);
-		List<TableModel>        candidates = [..
-			tables.Where(
-				table => string.Equals(table.Name, tableName, StringComparison.OrdinalIgnoreCase)
-					&& (schemaName is null || string.Equals(table.SchemaName, schemaName, StringComparison.OrdinalIgnoreCase))
-					&& (databaseName is null || string.Equals(table.DatabaseName, databaseName, StringComparison.OrdinalIgnoreCase))
-			)
-		];
-
-		if (databaseName is null && candidates.Count > 1)
-		{
-			List<TableModel> sameDatabase = [.. candidates.Where(table => string.Equals(table.DatabaseName, targetTable.DatabaseName, StringComparison.OrdinalIgnoreCase))];
-
-			if (sameDatabase.Count > 0)
-			{
-				candidates = sameDatabase;
-			}
-		}
-
-		if (schemaName is null && candidates.Count > 1)
-		{
-			List<TableModel> defaultSchema = [.. candidates.Where(table => string.Equals(table.SchemaName, DEFAULT_SCHEMA, StringComparison.OrdinalIgnoreCase))];
-
-			if (defaultSchema.Count == 1)
-			{
-				candidates = defaultSchema;
-			}
-		}
-
-		switch (candidates.Count)
-		{
-			case 0:
-			{
-				string name = string.Join(".", new[] { databaseName, schemaName, tableName }.Where(part => part is not null));
-
-				errorMessage = $"No loaded table is named {name}. Check the spelling, or load the metadata of its database.";
-				return null;
-			}
-
-			case 1:
-			{
-				errorMessage = string.Empty;
-				return candidates[0];
-			}
-
-			default:
-			{
-				errorMessage = $"Several tables are named {tableName} ({string.Join(", ", candidates.Select(table => $"{table.DatabaseName}.{table.DisplayName}"))}). "
-					+ "Add the schema, or the database and schema, e.g. dbo.Shirt.ShirtID.";
-				return null;
-			}
-		}
-	}
-
-	/// <summary>
 	///	Reads the optional UNIQUE, FROM and WHERE clauses that follow the source column name.
 	/// </summary>
 	/// <param name="text">
@@ -459,7 +346,8 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 
 				if (	!Enum.TryParse(scopeName, true, out scope)
 						|| !Enum.IsDefined(scope)
-						|| scopeName.Any(char.IsDigit)
+						|| scopeName
+							.Any(char.IsDigit)
 				)
 				{
 					errorMessage = "FROM must be followed by ANY (every row), GENERATED (rows generated by this run) or EXISTING (rows that were already there).";
@@ -534,56 +422,6 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 	}
 
 	/// <summary>
-	///	Validates pattern and regular-expression filters before the lookup is accepted.
-	/// </summary>
-	/// <param name="filterKind">
-	///	The kind of filter to validate.
-	/// </param>
-	/// <param name="filterText">
-	///	The filter text supplied by the user.
-	/// </param>
-	/// <param name="errorMessage">
-	///	An empty string when the filter is valid; otherwise the user-facing validation problem.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when the filter is valid or does not need validation; otherwise <see langword="false"/>.
-	/// </returns>
-	private bool TryValidateFilter(LookupFilterKind filterKind, string filterText, out string errorMessage)
-	{
-		switch (filterKind)
-		{
-			case LookupFilterKind.Pattern:
-			{
-				if (!_patternTranslator.TryValidate(filterText, out string patternError))
-				{
-					errorMessage = $"WHERE pattern: {patternError}";
-					return false;
-				}
-
-				break;
-			}
-
-			case LookupFilterKind.Regex:
-			{
-				try
-				{
-					_ = new Regex(filterText, RegexOptions.None, REGEX_CHECK_TIMEOUT);
-				}
-				catch (ArgumentException exception)
-				{
-					errorMessage = $"WHERE REGEX: the regular expression is not valid. {exception.Message}";
-					return false;
-				}
-
-				break;
-			}
-		}
-
-		errorMessage = string.Empty;
-		return true;
-	}
-
-	/// <summary>
 	///	Moves the parsing position past any whitespace characters.
 	/// </summary>
 	/// <param name="text">
@@ -637,8 +475,230 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 	{
 		bool isPlain = name.Length > 0
 			&& !char.IsDigit(name[0])
-			&& name.All(character => char.IsLetterOrDigit(character) || character == '_');
+			&& name
+				.All(character => char.IsLetterOrDigit(character) || character == '_');
 
 		return isPlain ? name : $"[{name.Replace("]", "]]")}]";
 	}
+
+	/// <summary>
+	///	Resolves the parsed name parts to a source table and column in the loaded catalog.
+	/// </summary>
+	/// <param name="parts">
+	///	The parsed name parts, ending with table and column names and optionally starting with database and schema names.
+	/// </param>
+	/// <param name="targetTable">
+	///	The table that owns the lookup, used to prefer its database when the expression omits a database name.
+	/// </param>
+	/// <param name="sourceTable">
+	///	The resolved source table when successful; otherwise <see langword="null"/>.
+	/// </param>
+	/// <param name="sourceColumn">
+	///	The resolved source column when successful; otherwise <see langword="null"/>.
+	/// </param>
+	/// <param name="errorMessage">
+	///	An empty string when resolution succeeds; otherwise the user-facing reason the table or column cannot be found.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the table and column were found; otherwise <see langword="false"/>.
+	/// </returns>
+	private bool TryResolveColumn(
+		List<string>     parts,
+		TableModel       targetTable,
+		out TableModel?  sourceTable,
+		out ColumnModel? sourceColumn,
+		out string       errorMessage
+	)
+	{
+		string  columnName   = parts[^1];
+		string  tableName    = parts[^2];
+		string? schemaName   = parts.Count >= 3 ? parts[^3] : null;
+		string? databaseName = parts.Count == 4 ? parts[0] : null;
+
+		sourceColumn = null;
+		sourceTable  = FindTable(databaseName, schemaName, tableName, targetTable, out errorMessage);
+
+		if (sourceTable is null)
+		{
+			return false;
+		}
+
+		sourceColumn =
+			sourceTable
+				.Columns
+				.FirstOrDefault(
+					column => string.Equals(column.Name, columnName, StringComparison.OrdinalIgnoreCase)
+				);
+
+		if (sourceColumn is null)
+		{
+			errorMessage = $"{sourceTable.DisplayName} has no column named [{columnName}].";
+			return false;
+		}
+
+		errorMessage = string.Empty;
+		return true;
+	}
+
+	/// <summary>
+	///	Finds the table named by a lookup expression and reports ambiguity or missing metadata in user-facing text.
+	/// </summary>
+	/// <param name="databaseName">
+	///	The optional database name supplied in the expression, or <see langword="null"/> to infer one.
+	/// </param>
+	/// <param name="schemaName">
+	///	The optional schema name supplied in the expression, or <see langword="null"/> to infer one.
+	/// </param>
+	/// <param name="tableName">
+	///	The table name supplied in the expression.
+	/// </param>
+	/// <param name="targetTable">
+	///	The table that owns the lookup, included in the search even if it has not yet been added to the catalog.
+	/// </param>
+	/// <param name="errorMessage">
+	///	An empty string when exactly one table is found; otherwise the user-facing reason no table is returned.
+	/// </param>
+	/// <returns>
+	///	The matching table when exactly one can be chosen; otherwise <see langword="null"/>.
+	/// </returns>
+	/// <remarks>
+	///	Without a database name the database of the target table is searched first; without a schema name, dbo wins when
+	///	several schemas have a table with the name.
+	/// </remarks>
+	private TableModel? FindTable(string? databaseName, string? schemaName, string tableName, TableModel targetTable, out string errorMessage)
+	{
+		IReadOnlyList<TableModel> catalogTables = _catalog.Tables;
+		IEnumerable<TableModel>   tables        =
+			catalogTables.Contains(targetTable)
+				? catalogTables
+				: catalogTables.Append(targetTable);
+		List<TableModel>          candidates    = [..
+			tables
+				.Where(
+					table => string.Equals(table.Name, tableName, StringComparison.OrdinalIgnoreCase)
+						&& (schemaName is null || string.Equals(table.SchemaName, schemaName, StringComparison.OrdinalIgnoreCase))
+						&& (databaseName is null || string.Equals(table.DatabaseName, databaseName, StringComparison.OrdinalIgnoreCase))
+				)
+		];
+
+		if (databaseName is null && candidates.Count > 1)
+		{
+			List<TableModel> sameDatabase = [..
+				candidates
+					.Where(
+						table => string.Equals(
+							table.DatabaseName,
+							targetTable.DatabaseName,
+							StringComparison.OrdinalIgnoreCase
+						)
+					)
+			];
+
+			if (sameDatabase.Count > 0)
+			{
+				candidates = sameDatabase;
+			}
+		}
+
+		if (schemaName is null && candidates.Count > 1)
+		{
+			List<TableModel> defaultSchema = [..
+				candidates
+					.Where(
+						table => string.Equals(
+							table.SchemaName,
+							DEFAULT_SCHEMA,
+							StringComparison.OrdinalIgnoreCase
+						)
+					)
+			];
+
+			if (defaultSchema.Count == 1)
+			{
+				candidates = defaultSchema;
+			}
+		}
+
+		switch (candidates.Count)
+		{
+			case 0:
+			{
+				string name = string.Join(".", new[] { databaseName, schemaName, tableName }.Where(part => part is not null));
+
+				errorMessage = $"No loaded table is named {name}. Check the spelling, or load the metadata of its database.";
+				return null;
+			}
+
+			case 1:
+			{
+				errorMessage = string.Empty;
+				return candidates[0];
+			}
+
+			default:
+			{
+				string tableList = string.Join(
+					", ",
+					candidates
+						.Select(table => $"{table.DatabaseName}.{table.DisplayName}")
+				);
+
+				errorMessage = $"Several tables are named {tableName} ({tableList}). "
+					+ "Add the schema, or the database and schema, e.g. dbo.Shirt.ShirtID.";
+				return null;
+			}
+		}
+	}
+
+	/// <summary>
+	///	Validates pattern and regular-expression filters before the lookup is accepted.
+	/// </summary>
+	/// <param name="filterKind">
+	///	The kind of filter to validate.
+	/// </param>
+	/// <param name="filterText">
+	///	The filter text supplied by the user.
+	/// </param>
+	/// <param name="errorMessage">
+	///	An empty string when the filter is valid; otherwise the user-facing validation problem.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the filter is valid or does not need validation; otherwise <see langword="false"/>.
+	/// </returns>
+	private bool TryValidateFilter(LookupFilterKind filterKind, string filterText, out string errorMessage)
+	{
+		switch (filterKind)
+		{
+			case LookupFilterKind.Pattern:
+			{
+				if (!_patternTranslator.TryValidate(filterText, out string patternError))
+				{
+					errorMessage = $"WHERE pattern: {patternError}";
+					return false;
+				}
+
+				break;
+			}
+
+			case LookupFilterKind.Regex:
+			{
+				try
+				{
+					_ = new Regex(filterText, RegexOptions.None, REGEX_CHECK_TIMEOUT);
+				}
+				catch (ArgumentException exception)
+				{
+					errorMessage = $"WHERE REGEX: the regular expression is not valid. {exception.Message}";
+					return false;
+				}
+
+				break;
+			}
+		}
+
+		errorMessage = string.Empty;
+		return true;
+	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

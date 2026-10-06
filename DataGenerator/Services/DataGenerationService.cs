@@ -10,11 +10,17 @@ namespace DataGenerator.Services;
 /// </summary>
 public sealed class DataGenerationService : IDataGenerationService
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly ISqlValueConverter    _converter;
 	private readonly IColumnValueGenerator _columnValueGenerator;
 	private readonly IPatternSqlTranslator _patternTranslator;
 	private readonly RowValueBuilder       _rowValueBuilder;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the service that builds generation plans and writes or inserts generated rows.
 	/// </summary>
@@ -41,7 +47,11 @@ public sealed class DataGenerationService : IDataGenerationService
 		_patternTranslator    = patternTranslator    ?? throw new ArgumentNullException(nameof(patternTranslator));
 		_rowValueBuilder      = new RowValueBuilder(columnValueGenerator);
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Generates the requested data either into a SQL script file or directly into SQL Server.
 	/// </summary>
@@ -102,7 +112,9 @@ public sealed class DataGenerationService : IDataGenerationService
 
 		generationProgress.Report($"Inserted {blueprint.TotalRowCount:N0} row(s){changedRows} and committed the transaction.");
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Checks that a generation request has enough information for its selected mode.
 	/// </summary>
@@ -139,4 +151,6 @@ public sealed class DataGenerationService : IDataGenerationService
 			throw new InvalidOperationException("A SQL Server connection is required for direct insertion.");
 		}
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

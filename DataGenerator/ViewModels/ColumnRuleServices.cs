@@ -9,6 +9,21 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class ColumnRuleServices
 {
+	#region PROPERTIES
+	#region PUBLIC
+	public ISqlValueConverter          Converter            { get; }
+	public IColumnValueGenerator       ValueGenerator       { get; }
+	public IPatternValueGenerator      PatternGenerator     { get; }
+	public IReadOnlyList<RegexProfile> RegexProfiles        { get; }
+	public SavedSettingsLibrary        SavedSettings        { get; }
+	public ISavedSettingsWindowService SavedSettingsWindows { get; }
+	public ITableCatalog               TableCatalog         { get; }
+	public ILookupExpressionParser     LookupParser         { get; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Groups the services and shared settings needed by column rule view models.
 	/// </summary>
@@ -59,13 +74,6 @@ public sealed class ColumnRuleServices
 		TableCatalog         = tableCatalog ?? throw new ArgumentNullException(nameof(tableCatalog));
 		LookupParser         = lookupParser ?? throw new ArgumentNullException(nameof(lookupParser));
 	}
-
-	public ISqlValueConverter          Converter            { get; }
-	public IColumnValueGenerator       ValueGenerator       { get; }
-	public IPatternValueGenerator      PatternGenerator     { get; }
-	public IReadOnlyList<RegexProfile> RegexProfiles        { get; }
-	public SavedSettingsLibrary        SavedSettings        { get; }
-	public ISavedSettingsWindowService SavedSettingsWindows { get; }
-	public ITableCatalog               TableCatalog         { get; }
-	public ILookupExpressionParser     LookupParser         { get; }
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

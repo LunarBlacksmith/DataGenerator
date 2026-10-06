@@ -7,39 +7,14 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class DatabaseNodeViewModel : TreeNodeViewModel
 {
+	#region FIELDS
+	#region PRIVATE
 	private bool _wasExpandedBeforeHiding;
+	#endregion PRIVATE
+	#endregion FIELDS
 
-	/// <summary>
-	///	Creates the database node and its table child nodes.
-	/// </summary>
-	/// <param name="model">
-	///	The database metadata represented by the node.
-	/// </param>
-	/// <param name="ruleFactory">
-	///	The factory used by child tables when they create row-set rules.
-	/// </param>
-	/// <exception cref="ArgumentNullException">
-	///	Thrown when <paramref name="model"/> or <paramref name="ruleFactory"/> is <see langword="null"/>.
-	/// </exception>
-	public DatabaseNodeViewModel(DatabaseModel model, ColumnRuleFactory ruleFactory)
-	{
-		ArgumentNullException.ThrowIfNull(ruleFactory);
-
-		Model  = model ?? throw new ArgumentNullException(nameof(model));
-		Tables = [..
-			model
-				.Tables
-				.OrderBy(table => table.SchemaName, StringComparer.OrdinalIgnoreCase)
-				.ThenBy(table => table.Name, StringComparer.OrdinalIgnoreCase)
-				.Select(table => new TableNodeViewModel(table, this, ruleFactory))
-		];
-
-		foreach (TableNodeViewModel table in Tables)
-		{
-			table.GenerationSettingsChanged += OnTableSettingsChanged;
-		}
-	}
-
+	#region PROPERTIES
+	#region PUBLIC
 	public DatabaseModel                     Model  { get; }
 	public IReadOnlyList<TableNodeViewModel> Tables { get; }
 
@@ -74,7 +49,11 @@ public sealed class DatabaseNodeViewModel : TreeNodeViewModel
 	}
 
 	public int  IncludedTableCount => Tables.Count(table => table.IsIncluded);
-	public long IncludedRowCount   => Tables.Where(table => table.IsIncluded).Sum(table => (long)table.TotalRowCount);
+	public long IncludedRowCount
+		=>
+			Tables
+				.Where(table => table.IsIncluded)
+				.Sum(table => (long)table.TotalRowCount);
 
 	public string SummaryText
 	{
@@ -91,7 +70,48 @@ public sealed class DatabaseNodeViewModel : TreeNodeViewModel
 
 	public string IncludeToolTip
 		=> $"Include or exclude all {Tables.Count:N0} tables of {Model.Name}. A partly filled box means only some tables are included.";
+	#endregion PUBLIC
+	#endregion PROPERTIES
 
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates the database node and its table child nodes.
+	/// </summary>
+	/// <param name="model">
+	///	The database metadata represented by the node.
+	/// </param>
+	/// <param name="ruleFactory">
+	///	The factory used by child tables when they create row-set rules.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="model"/> or <paramref name="ruleFactory"/> is <see langword="null"/>.
+	/// </exception>
+	public DatabaseNodeViewModel(DatabaseModel model, ColumnRuleFactory ruleFactory)
+	{
+		_wasExpandedBeforeHiding = false;
+
+		ArgumentNullException.ThrowIfNull(ruleFactory);
+
+		Model  = model ?? throw new ArgumentNullException(nameof(model));
+		Tables = [..
+			model
+				.Tables
+				.OrderBy(table => table.SchemaName, StringComparer.OrdinalIgnoreCase)
+				.ThenBy(table => table.Name, StringComparer.OrdinalIgnoreCase)
+				.Select(table => new TableNodeViewModel(table, this, ruleFactory))
+		];
+
+		foreach (TableNodeViewModel table in Tables)
+		{
+			table.GenerationSettingsChanged += OnTableSettingsChanged;
+		}
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PROTECTED
 	/// <summary>
 	///	Collapses the database while hidden, restores its previous expansion when shown, and refreshes table dimming.
 	/// </summary>
@@ -112,7 +132,9 @@ public sealed class DatabaseNodeViewModel : TreeNodeViewModel
 			table.RaiseDatabaseHiddenChanged();
 		}
 	}
+	#endregion PROTECTED
 
+	#region PRIVATE
 	/// <summary>
 	///	Refreshes aggregate inclusion and row-count text after one of the database's tables changes.
 	/// </summary>
@@ -129,4 +151,6 @@ public sealed class DatabaseNodeViewModel : TreeNodeViewModel
 		OnPropertyChanged(nameof(IncludedRowCount));
 		OnPropertyChanged(nameof(SummaryText));
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

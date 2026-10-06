@@ -7,6 +7,32 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class BulkModeOption
 {
+	#region PROPERTIES
+	#region PUBLIC
+	public GenerationModeOption Option         { get; }
+	public int                  SupportedCount { get; }
+	public int                  SelectedCount  { get; }
+
+	public ValueGenerationMode Mode => Option.Mode;
+
+	public bool IsSupportedByAll => SupportedCount == SelectedCount;
+
+	public string DisplayName
+		=>
+			IsSupportedByAll
+				? Option.DisplayName
+				: $"{Option.DisplayName} ({SupportedCount:N0} of {SelectedCount:N0})";
+
+	public string Description
+		=>
+			IsSupportedByAll
+				? Option.Description
+				: $"{Option.Description} Only {SupportedCount:N0} of the {SelectedCount:N0} selected columns can use it; the others keep their mode.";
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a bulk mode choice and records how many selected columns can use it.
 	/// </summary>
@@ -28,27 +54,11 @@ public sealed class BulkModeOption
 		SupportedCount = supportedCount;
 		SelectedCount  = selectedCount;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public GenerationModeOption Option         { get; }
-	public int                  SupportedCount { get; }
-	public int                  SelectedCount  { get; }
-
-	public ValueGenerationMode Mode => Option.Mode;
-
-	public bool IsSupportedByAll => SupportedCount == SelectedCount;
-
-	public string DisplayName
-		=>
-			IsSupportedByAll
-				? Option.DisplayName
-				: $"{Option.DisplayName} ({SupportedCount:N0} of {SelectedCount:N0})";
-
-	public string Description
-		=>
-			IsSupportedByAll
-				? Option.Description
-				: $"{Option.Description} Only {SupportedCount:N0} of the {SelectedCount:N0} selected columns can use it; the others keep their mode.";
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Returns the text shown for this bulk mode choice.
 	/// </summary>
@@ -56,4 +66,6 @@ public sealed class BulkModeOption
 	///	The display name, including the supported count when not every selected column can use the mode.
 	/// </returns>
 	public override string ToString() => DisplayName;
+	#endregion PUBLIC
+	#endregion METHODS
 }

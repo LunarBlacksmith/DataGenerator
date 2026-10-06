@@ -11,22 +11,45 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 public static class PatternAutoComplete
 {
-	public static readonly DependencyProperty PROVIDER_PROPERTY =
-		DependencyProperty.RegisterAttached(
-			"Provider",
-			typeof(IPatternCompletionProvider),
-			typeof(PatternAutoComplete),
-			new FrameworkPropertyMetadata(null, OnProviderChanged)
-		);
+	#region FIELDS
+	#region PUBLIC
+	public static readonly DependencyProperty PROVIDER_PROPERTY;
+	#endregion PUBLIC
 
-	private static readonly DependencyProperty CONTROLLER_PROPERTY =
-		DependencyProperty.RegisterAttached(
-			"Controller",
-			typeof(PatternCompletionController),
-			typeof(PatternAutoComplete),
-			new FrameworkPropertyMetadata(null)
-		);
+	#region PRIVATE
+	private static readonly DependencyProperty CONTROLLER_PROPERTY;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="PatternAutoComplete"/>.
+	/// </summary>
+	static PatternAutoComplete()
+	{
+		PROVIDER_PROPERTY =
+			DependencyProperty.RegisterAttached(
+				"Provider",
+				typeof(IPatternCompletionProvider),
+				typeof(PatternAutoComplete),
+				new FrameworkPropertyMetadata(null, OnProviderChanged)
+			);
+
+
+		CONTROLLER_PROPERTY =
+			DependencyProperty.RegisterAttached(
+				"Controller",
+				typeof(PatternCompletionController),
+				typeof(PatternAutoComplete),
+				new FrameworkPropertyMetadata(null)
+			);
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Gets the completion provider attached to a text box.
 	/// </summary>
@@ -62,7 +85,9 @@ public static class PatternAutoComplete
 	/// </returns>
 	public static bool IsSuggesting(DependencyObject element)
 		=> element.GetValue(CONTROLLER_PROPERTY) is PatternCompletionController { IsOpen: true };
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Creates, replaces or removes the controller when a text box's provider changes.
 	/// </summary>
@@ -90,4 +115,6 @@ public static class PatternAutoComplete
 			textBox.SetValue(CONTROLLER_PROPERTY, new PatternCompletionController(textBox, provider));
 		}
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

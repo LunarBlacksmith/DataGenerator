@@ -7,6 +7,19 @@ namespace DataGenerator.Services.Generation;
 /// </summary>
 internal static class TableDependencySorter
 {
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Initialises the static state of <see cref="TableDependencySorter"/>.
+	/// </summary>
+	static TableDependencySorter()
+	{
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	"Generated key" references are hard dependencies (a cycle is an error); "Existing key" references between
 	///	generated tables are preferences that are dropped when they would form a cycle.
@@ -34,7 +47,11 @@ internal static class TableDependencySorter
 		{
 			List<Dependency> tableDependencies = [];
 
-			foreach (ColumnRule rule in plan.RowSets.SelectMany(rowSet => rowSet.Rules))
+			foreach (ColumnRule rule in
+				plan
+					.RowSets
+					.SelectMany(rowSet => rowSet.Rules)
+			)
 			{
 				if (rule.Reference is null || !plansByKey.ContainsKey(rule.Reference.ReferencedTableKey))
 				{
@@ -54,7 +71,12 @@ internal static class TableDependencySorter
 			dependencies[plan.Table.Key] = tableDependencies;
 		}
 
-		List<string> orderedKeys = Sort(plans.Select(plan => plan.Table.Key), dependencies, plansByKey);
+		List<string> orderedKeys = Sort(
+			plans
+				.Select(plan => plan.Table.Key),
+			dependencies,
+			plansByKey
+		);
 
 		return [.. orderedKeys.Select(key => plansByKey[key])];
 	}
@@ -83,8 +105,16 @@ internal static class TableDependencySorter
 			dependencies[table.Key] = [..
 				table
 					.ForeignKeys
-					.Where(foreignKey => !foreignKey.IsInferred && tablesByKey.ContainsKey(foreignKey.ReferencedTableKey))
-					.Select(foreignKey => new Dependency(foreignKey.ReferencedTableKey, false, foreignKey.ParentColumn))
+					.Where(
+						foreignKey => !foreignKey.IsInferred && tablesByKey.ContainsKey(foreignKey.ReferencedTableKey)
+					)
+					.Select(
+						foreignKey => new Dependency(
+							foreignKey.ReferencedTableKey,
+							false,
+							foreignKey.ParentColumn
+						)
+					)
 			];
 		}
 
@@ -94,7 +124,9 @@ internal static class TableDependencySorter
 
 		return [.. parentsFirst.Select(key => tablesByKey[key])];
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Topologically sorts keys using the supplied dependency graph.
 	/// </summary>
@@ -238,6 +270,44 @@ internal static class TableDependencySorter
 		return $"The 'Generated key' rules form a cycle: {string.Join(" → ", cycle)} (column [{dependency.ColumnName}] of {current}). "
 			+ "Change at least one of these columns to 'Existing key', 'NULL' or another mode.";
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 
-	private sealed record Dependency(string TargetKey, bool IsRequired, string ColumnName);
+	#region TYPES
+	#region PRIVATE
+	private sealed record Dependency
+	{
+		#region PROPERTIES
+		#region PUBLIC
+		public string TargetKey  { get; init; }
+		public bool   IsRequired { get; init; }
+		public string ColumnName { get; init; }
+		#endregion PUBLIC
+		#endregion PROPERTIES
+
+		#region CONSTRUCTORS
+		#region PUBLIC
+		/// <summary>
+		///	Creates a new <see cref="Dependency"/> from the supplied values.
+		/// </summary>
+		/// <param name="targetKey">
+		///	The value of <see cref="TargetKey"/>.
+		/// </param>
+		/// <param name="isRequired">
+		///	The value of <see cref="IsRequired"/>.
+		/// </param>
+		/// <param name="columnName">
+		///	The value of <see cref="ColumnName"/>.
+		/// </param>
+		public Dependency(string targetKey, bool isRequired, string columnName)
+		{
+			TargetKey  = targetKey;
+			IsRequired = isRequired;
+			ColumnName = columnName;
+		}
+		#endregion PUBLIC
+		#endregion CONSTRUCTORS
+	}
+	#endregion PRIVATE
+	#endregion TYPES
 }

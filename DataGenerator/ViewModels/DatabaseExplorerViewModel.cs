@@ -12,7 +12,9 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 {
-	private static readonly CultureInfo INVARIANT = CultureInfo.InvariantCulture;
+	#region FIELDS
+	#region PRIVATE
+	private static readonly CultureInfo INVARIANT;
 
 	private readonly ColumnRuleFactory                        _ruleFactory;
 	private readonly SavedSettingsLibrary                     _savedSettings;
@@ -29,103 +31,12 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	private string              _bulkRowCountText;
 	private int                 _bulkUpdateDepth;
 	private bool                _hasPendingSettingsChange;
-
-	/// <summary>
-	///	Creates the database explorer view model and initialises commands, selections and saved-setting subscriptions.
-	/// </summary>
-	/// <param name="ruleFactory">
-	///	The factory used by table nodes to create column rules.
-	/// </param>
-	/// <param name="savedSettings">
-	///	The saved-settings library whose changes refresh column-rule state.
-	/// </param>
-	/// <param name="savedSettingsWindows">
-	///	The window service used to open saved-settings management.
-	/// </param>
-	/// <param name="ruleGridColumns">
-	///	The view model that controls optional rule-grid columns.
-	/// </param>
-	/// <param name="setConfigurations">
-	///	The view model that saves and loads row-set configurations.
-	/// </param>
-	/// <param name="dialogService">
-	///	The dialog service used for destructive-action confirmations.
-	/// </param>
-	/// <exception cref="ArgumentNullException">
-	///	Thrown when any required service or child view model is <see langword="null"/>.
-	/// </exception>
-	public DatabaseExplorerViewModel(
-		ColumnRuleFactory             ruleFactory,
-		SavedSettingsLibrary          savedSettings,
-		ISavedSettingsWindowService   savedSettingsWindows,
-		RuleGridColumnsViewModel      ruleGridColumns,
-		RowSetConfigurationsViewModel setConfigurations,
-		IDialogService                dialogService
-	)
-	{
-		_ruleFactory              = ruleFactory ?? throw new ArgumentNullException(nameof(ruleFactory));
-		_savedSettings            = savedSettings ?? throw new ArgumentNullException(nameof(savedSettings));
-		_savedSettingsWindows     = savedSettingsWindows ?? throw new ArgumentNullException(nameof(savedSettingsWindows));
-		_dialogService            = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
-		RuleGridColumns           = ruleGridColumns ?? throw new ArgumentNullException(nameof(ruleGridColumns));
-		SetConfigurations         = setConfigurations ?? throw new ArgumentNullException(nameof(setConfigurations));
-		_selectedNodes            = [];
-		_tablesByKey              = new Dictionary<string, TableNodeViewModel>(StringComparer.OrdinalIgnoreCase);
-		_selectionAnchor          = null;
-		_activeTable              = null;
-		_filterText               = string.Empty;
-		_showIncludedOnly         = false;
-		_bulkRowCountText         = TableNodeViewModel.DEFAULT_ROW_COUNT.ToString(INVARIANT);
-		_bulkUpdateDepth          = 0;
-		_hasPendingSettingsChange = false;
-
-		SelectNodeCommand       = new RelayCommand(SelectNode);
-		SelectAllCommand        = new RelayCommand(_ => SelectAllVisible(), _ => HasDatabases);
-		ClearSelectionCommand   = new RelayCommand(_ => ClearSelection(), _ => HasSelection);
-		ExpandSelectedCommand   = new RelayCommand(_ => SetSelectedExpanded(true), _ => HasSelection);
-		CollapseSelectedCommand = new RelayCommand(_ => SetSelectedExpanded(false), _ => HasSelection);
-		ExpandAllCommand        = new RelayCommand(_ => SetAllExpanded(true), _ => HasDatabases);
-		CollapseAllCommand      = new RelayCommand(_ => SetAllExpanded(false), _ => HasDatabases);
-		HideSelectedCommand     = new RelayCommand(_ => SetHidden(_selectedNodes, true), _ => HasSelection);
-		ShowSelectedCommand     = new RelayCommand(_ => SetHidden(_selectedNodes, false), _ => HasSelection);
-		ShowAllCommand          = new RelayCommand(_ => SetHidden(GetAllNodes(), false), _ => HasDatabases);
-		ToggleHiddenCommand     = new RelayCommand(ToggleHidden);
-		IncludeSelectedCommand  = new RelayCommand(_ => SetSelectedIncluded(true), _ => HasSelection);
-		ExcludeSelectedCommand  = new RelayCommand(_ => SetSelectedIncluded(false), _ => HasSelection);
-		ExcludeAllCommand       = new RelayCommand(_ => ExcludeAll(), _ => IncludedTableCount > 0);
-		ApplyRowCountCommand    = new RelayCommand(_ => ApplyRowCountToSelection(), _ => HasSelection && TryGetBulkRowCount(out int _));
-		ClearFilterCommand      = new RelayCommand(_ => FilterText = string.Empty, _ => _filterText.Length > 0);
-		AddRowSetCommand        = new RelayCommand(_ => AddRowSet(), _ => _activeTable is not null);
-		AddUpdateSetCommand     = new RelayCommand(_ => AddUpdateSet(), _ => _activeTable is not null);
-		DuplicateRowSetCommand  = new RelayCommand(_ => DuplicateRowSet(), _ => _activeTable?.SelectedRowSet is not null);
-		RemoveRowSetCommand     = new RelayCommand(_ => RemoveRowSet(), _ => _activeTable?.CanRemoveRowSet == true);
-
-		ManageSavedSettingsCommand = new RelayCommand(_ => _savedSettingsWindows.ShowManager());
-
-		_selectionCommands =
-		[
-			ClearSelectionCommand,
-			ExpandSelectedCommand,
-			CollapseSelectedCommand,
-			HideSelectedCommand,
-			ShowSelectedCommand,
-			IncludeSelectedCommand,
-			ExcludeSelectedCommand,
-			ApplyRowCountCommand
-		];
-
-		_savedSettings.Changed                         += OnSavedSettingsChanged;
-		_savedSettings.ApplyAutomaticSettingsRequested += OnApplyAutomaticSettingsRequested;
-	}
-
-	/// <summary>
-	///	Raised when tables are included or excluded, or when row counts or rule validity change.
-	/// </summary>
-	public event EventHandler? GenerationSettingsChanged;
+	#endregion PRIVATE
+	#endregion FIELDS
 
 	#region PROPERTIES
 	#region PUBLIC
-	public ObservableCollection<DatabaseNodeViewModel> Databases { get; } = [];
+	public ObservableCollection<DatabaseNodeViewModel> Databases { get; }
 
 	public IEnumerable<TableNodeViewModel> AllTables => Databases.SelectMany(database => database.Tables);
 
@@ -271,6 +182,121 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	#endregion PUBLIC
 	#endregion PROPERTIES
 
+	#region EVENTS
+	#region PUBLIC
+	/// <summary>
+	///	Raised when tables are included or excluded, or when row counts or rule validity change.
+	/// </summary>
+	public event EventHandler? GenerationSettingsChanged;
+	#endregion PUBLIC
+	#endregion EVENTS
+
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="DatabaseExplorerViewModel"/>.
+	/// </summary>
+	static DatabaseExplorerViewModel()
+	{
+		INVARIANT = CultureInfo.InvariantCulture;
+	}
+	#endregion STATIC
+
+	#region PUBLIC
+	/// <summary>
+	///	Creates the database explorer view model and initialises commands, selections and saved-setting subscriptions.
+	/// </summary>
+	/// <param name="ruleFactory">
+	///	The factory used by table nodes to create column rules.
+	/// </param>
+	/// <param name="savedSettings">
+	///	The saved-settings library whose changes refresh column-rule state.
+	/// </param>
+	/// <param name="savedSettingsWindows">
+	///	The window service used to open saved-settings management.
+	/// </param>
+	/// <param name="ruleGridColumns">
+	///	The view model that controls optional rule-grid columns.
+	/// </param>
+	/// <param name="setConfigurations">
+	///	The view model that saves and loads row-set configurations.
+	/// </param>
+	/// <param name="dialogService">
+	///	The dialog service used for destructive-action confirmations.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any required service or child view model is <see langword="null"/>.
+	/// </exception>
+	public DatabaseExplorerViewModel(
+		ColumnRuleFactory             ruleFactory,
+		SavedSettingsLibrary          savedSettings,
+		ISavedSettingsWindowService   savedSettingsWindows,
+		RuleGridColumnsViewModel      ruleGridColumns,
+		RowSetConfigurationsViewModel setConfigurations,
+		IDialogService                dialogService
+	)
+	{
+		Databases = [];
+
+		_ruleFactory              = ruleFactory ?? throw new ArgumentNullException(nameof(ruleFactory));
+		_savedSettings            = savedSettings ?? throw new ArgumentNullException(nameof(savedSettings));
+		_savedSettingsWindows     = savedSettingsWindows ?? throw new ArgumentNullException(nameof(savedSettingsWindows));
+		_dialogService            = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+		RuleGridColumns           = ruleGridColumns ?? throw new ArgumentNullException(nameof(ruleGridColumns));
+		SetConfigurations         = setConfigurations ?? throw new ArgumentNullException(nameof(setConfigurations));
+		_selectedNodes            = [];
+		_tablesByKey              = new Dictionary<string, TableNodeViewModel>(StringComparer.OrdinalIgnoreCase);
+		_selectionAnchor          = null;
+		_activeTable              = null;
+		_filterText               = string.Empty;
+		_showIncludedOnly         = false;
+		_bulkRowCountText         = TableNodeViewModel.DEFAULT_ROW_COUNT.ToString(INVARIANT);
+		_bulkUpdateDepth          = 0;
+		_hasPendingSettingsChange = false;
+
+		SelectNodeCommand       = new RelayCommand(SelectNode);
+		SelectAllCommand        = new RelayCommand(_ => SelectAllVisible(), _ => HasDatabases);
+		ClearSelectionCommand   = new RelayCommand(_ => ClearSelection(), _ => HasSelection);
+		ExpandSelectedCommand   = new RelayCommand(_ => SetSelectedExpanded(true), _ => HasSelection);
+		CollapseSelectedCommand = new RelayCommand(_ => SetSelectedExpanded(false), _ => HasSelection);
+		ExpandAllCommand        = new RelayCommand(_ => SetAllExpanded(true), _ => HasDatabases);
+		CollapseAllCommand      = new RelayCommand(_ => SetAllExpanded(false), _ => HasDatabases);
+		HideSelectedCommand     = new RelayCommand(_ => SetHidden(_selectedNodes, true), _ => HasSelection);
+		ShowSelectedCommand     = new RelayCommand(_ => SetHidden(_selectedNodes, false), _ => HasSelection);
+		ShowAllCommand          = new RelayCommand(_ => SetHidden(GetAllNodes(), false), _ => HasDatabases);
+		ToggleHiddenCommand     = new RelayCommand(ToggleHidden);
+		IncludeSelectedCommand  = new RelayCommand(_ => SetSelectedIncluded(true), _ => HasSelection);
+		ExcludeSelectedCommand  = new RelayCommand(_ => SetSelectedIncluded(false), _ => HasSelection);
+		ExcludeAllCommand       = new RelayCommand(_ => ExcludeAll(), _ => IncludedTableCount > 0);
+		ApplyRowCountCommand    = new RelayCommand(_ => ApplyRowCountToSelection(), _ => HasSelection && TryGetBulkRowCount(out int _));
+		ClearFilterCommand      = new RelayCommand(_ => FilterText = string.Empty, _ => _filterText.Length > 0);
+		AddRowSetCommand        = new RelayCommand(_ => AddRowSet(), _ => _activeTable is not null);
+		AddUpdateSetCommand     = new RelayCommand(_ => AddUpdateSet(), _ => _activeTable is not null);
+		DuplicateRowSetCommand  = new RelayCommand(_ => DuplicateRowSet(), _ => _activeTable?.SelectedRowSet is not null);
+		RemoveRowSetCommand     = new RelayCommand(_ => RemoveRowSet(), _ => _activeTable?.CanRemoveRowSet == true);
+
+		ManageSavedSettingsCommand = new RelayCommand(_ => _savedSettingsWindows.ShowManager());
+
+		_selectionCommands =
+		[
+			ClearSelectionCommand,
+			ExpandSelectedCommand,
+			CollapseSelectedCommand,
+			HideSelectedCommand,
+			ShowSelectedCommand,
+			IncludeSelectedCommand,
+			ExcludeSelectedCommand,
+			ApplyRowCountCommand
+		];
+
+		_savedSettings.Changed                         += OnSavedSettingsChanged;
+		_savedSettings.ApplyAutomaticSettingsRequested += OnApplyAutomaticSettingsRequested;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Replaces the explorer contents with the supplied database metadata and resets selection and active table state.
 	/// </summary>
@@ -294,7 +320,10 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		Databases.Clear();
 		_tablesByKey.Clear();
 
-		foreach (DatabaseModel model in databases.OrderBy(database => database.Name, StringComparer.OrdinalIgnoreCase))
+		foreach (DatabaseModel model in
+			databases
+				.OrderBy(database => database.Name, StringComparer.OrdinalIgnoreCase)
+		)
 		{
 			DatabaseNodeViewModel database = new(model, _ruleFactory);
 
@@ -401,6 +430,40 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 			table.SelectedRowSet = rowSet;
 		}
 	}
+	#endregion PUBLIC
+
+	#region PRIVATE
+	/// <summary>
+	///	Sets the hidden state for a snapshot of tree nodes.
+	/// </summary>
+	/// <param name="nodes">
+	///	The nodes to update.
+	/// </param>
+	/// <param name="isHidden">
+	///	Whether the nodes should be hidden.
+	/// </param>
+	private static void SetHidden(IEnumerable<TreeNodeViewModel> nodes, bool isHidden)
+	{
+		foreach (TreeNodeViewModel node in nodes.ToList())
+		{
+			node.IsHidden = isHidden;
+		}
+	}
+
+	/// <summary>
+	///	Checks whether text contains the current filter using ordinal case-insensitive comparison.
+	/// </summary>
+	/// <param name="text">
+	///	The text to search.
+	/// </param>
+	/// <param name="filter">
+	///	The filter text to find.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when <paramref name="filter"/> appears in <paramref name="text"/>; otherwise
+	///	<see langword="false"/>.
+	/// </returns>
+	private static bool Matches(string text, string filter) => text.Contains(filter, StringComparison.OrdinalIgnoreCase);
 
 	/// <summary>
 	///	Handles a tree selection command, including toggle, range and context-click selection modes.
@@ -575,7 +638,11 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 
 			if (database.IsExpanded)
 			{
-				nodes.AddRange(database.Tables.Where(table => table.IsVisibleInTree));
+				nodes.AddRange(
+					database
+						.Tables
+						.Where(table => table.IsVisibleInTree)
+				);
 			}
 		}
 
@@ -619,7 +686,11 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 			}
 			else if (node is DatabaseNodeViewModel database)
 			{
-				tables.UnionWith(database.Tables.Where(databaseTable => databaseTable.IsVisibleInTree));
+				tables.UnionWith(
+					database
+						.Tables
+						.Where(databaseTable => databaseTable.IsVisibleInTree)
+				);
 			}
 		}
 
@@ -681,23 +752,6 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 			SetHidden(_selectedNodes, isHidden);
 		}
 		else
-		{
-			node.IsHidden = isHidden;
-		}
-	}
-
-	/// <summary>
-	///	Sets the hidden state for a snapshot of tree nodes.
-	/// </summary>
-	/// <param name="nodes">
-	///	The nodes to update.
-	/// </param>
-	/// <param name="isHidden">
-	///	Whether the nodes should be hidden.
-	/// </param>
-	private static void SetHidden(IEnumerable<TreeNodeViewModel> nodes, bool isHidden)
-	{
-		foreach (TreeNodeViewModel node in nodes.ToList())
 		{
 			node.IsHidden = isHidden;
 		}
@@ -919,7 +973,11 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 
 			int tableIndex = 0;
 
-			foreach (TableNodeViewModel table in database.Tables.Where(table => table.IsVisibleInTree))
+			foreach (TableNodeViewModel table in
+				database
+					.Tables
+					.Where(table => table.IsVisibleInTree)
+			)
 			{
 				table.IsAlternate = tableIndex % 2 == 1;
 				++tableIndex;
@@ -960,7 +1018,10 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	///	All loaded column rule view models.
 	/// </returns>
 	private IEnumerable<ColumnRuleViewModel> GetAllColumnRules()
-		=> AllTables.SelectMany(table => table.RowSets).SelectMany(rowSet => rowSet.ColumnRules);
+		=>
+			AllTables
+				.SelectMany(table => table.RowSets)
+				.SelectMany(rowSet => rowSet.ColumnRules);
 
 	/// <summary>
 	///	Refreshes applied saved-setting names after saved settings are renamed, changed or deleted.
@@ -1044,19 +1105,6 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		ExcludeAllCommand.NotifyCanExecuteChanged();
 		GenerationSettingsChanged?.Invoke(this, EventArgs.Empty);
 	}
-
-	/// <summary>
-	///	Checks whether text contains the current filter using ordinal case-insensitive comparison.
-	/// </summary>
-	/// <param name="text">
-	///	The text to search.
-	/// </param>
-	/// <param name="filter">
-	///	The filter text to find.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when <paramref name="filter"/> appears in <paramref name="text"/>; otherwise
-	///	<see langword="false"/>.
-	/// </returns>
-	private static bool Matches(string text, string filter) => text.Contains(filter, StringComparison.OrdinalIgnoreCase);
+	#endregion PRIVATE
+	#endregion METHODS
 }

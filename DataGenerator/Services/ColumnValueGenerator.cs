@@ -6,6 +6,8 @@ namespace DataGenerator.Services;
 
 public sealed class ColumnValueGenerator : IColumnValueGenerator
 {
+	#region FIELDS
+	#region PRIVATE
 	private const int    RANDOM_TEXT_LENGTH       = 20;
 	private const int    RANDOM_BINARY_LENGTH     = 16;
 	private const int    UNLIMITED_TEXT_LENGTH    = 4000;
@@ -14,14 +16,29 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 	private const int    SECONDS_PER_DAY          = 86_400;
 	private const string RANDOM_TEXT_CHARACTERS   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-	private static readonly DateTime RANDOM_DATE_MINIMUM = new(2000, 1, 1);
-	private static readonly DateTime RANDOM_DATE_MAXIMUM = new(2030, 12, 31, 23, 59, 59);
+	private static readonly DateTime RANDOM_DATE_MINIMUM;
+	private static readonly DateTime RANDOM_DATE_MAXIMUM;
 
 	private readonly ISqlValueConverter     _converter;
 	private readonly IRegexValueGenerator   _regexGenerator;
 	private readonly IPatternValueGenerator _patternGenerator;
 	private readonly IColumnValueCaster     _caster;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="ColumnValueGenerator"/>.
+	/// </summary>
+	static ColumnValueGenerator()
+	{
+		RANDOM_DATE_MINIMUM = new(2000, 1, 1);
+		RANDOM_DATE_MAXIMUM = new(2030, 12, 31, 23, 59, 59);
+	}
+	#endregion STATIC
+
+	#region PUBLIC
 	/// <summary>
 	///	Creates a generator for fixed, sequence, random, regex, pattern and copied column values.
 	/// </summary>
@@ -52,7 +69,11 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 		_patternGenerator = patternGenerator ?? throw new ArgumentNullException(nameof(patternGenerator));
 		_caster           = caster ?? throw new ArgumentNullException(nameof(caster));
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Checks whether this service can generate a value immediately for the supplied mode.
 	/// </summary>
@@ -181,47 +202,9 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 			_                           => $"Random values are not supported for {_converter.GetDisplayType(column)}"
 		};
 	}
+	#endregion PUBLIC
 
-	/// <summary>
-	///	Generates a pattern value and converts it to the target column type.
-	/// </summary>
-	/// <param name="rule">
-	///	The pattern rule to evaluate.
-	/// </param>
-	/// <param name="rowIndex">
-	///	The zero-based row index passed to the pattern engine.
-	/// </param>
-	/// <param name="rowCount">
-	///	The total row count passed to the pattern engine.
-	/// </param>
-	/// <param name="rowValues">
-	///	The current row values used to resolve column references, or <see langword="null"/> for independent patterns.
-	/// </param>
-	/// <returns>
-	///	The generated and converted pattern value.
-	/// </returns>
-	/// <remarks>
-	///	Patterns that use other columns are converted leniently, because the other column's value may not suit this column's
-	///	type (e.g. text copied into an int column keeps only its digits). Other patterns must produce a valid value.
-	/// </remarks>
-	private object? GeneratePatternValue(ColumnRule rule, long rowIndex, long rowCount, IRowValueLookup? rowValues)
-	{
-		if (_patternGenerator.GetColumnReferences(rule.PatternExpression).Count == 0)
-		{
-			return _converter.ConvertGeneratedText(rule.Column, _patternGenerator.Generate(rule.PatternExpression, rowIndex, rowCount, null));
-		}
-
-		IRowValueLookup lookup = GetRowValues(rule, rowValues);
-		string          text   = _patternGenerator.Generate(
-			rule.PatternExpression,
-			rowIndex,
-			rowCount,
-			columnName => _caster.ToText(lookup.GetValue(columnName))
-		);
-
-		return _caster.Cast(rule.Column, text);
-	}
-
+	#region PRIVATE
 	/// <summary>
 	///	Gets the current row lookup required by rules that reference another column.
 	/// </summary>
@@ -241,84 +224,6 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 		=> rowValues ?? throw new InvalidOperationException(
 			$"Column [{rule.Column.Name}] uses the value of another column, which is only available while rows are generated."
 		);
-
-	/// <summary>
-	///	Generates one random value for a supported SQL column type.
-	/// </summary>
-	/// <param name="column">
-	///	The column whose type controls the generated value.
-	/// </param>
-	/// <returns>
-	///	A random CLR value suitable for the column.
-	/// </returns>
-	/// <exception cref="InvalidOperationException">
-	///	Thrown when the column is a rowversion column, because SQL Server generates those values.
-	/// </exception>
-	/// <exception cref="NotSupportedException">
-	///	Thrown when random values are not supported for the column type.
-	/// </exception>
-	private object GenerateRandomValue(ColumnModel column)
-	{
-		Random random  = Random.Shared;
-		string sqlType = NormalizeType(column);
-
-		switch (_converter.GetCategory(column))
-		{
-			case SqlTypeCategory.Integer:
-			{
-				return GenerateRandomInteger(sqlType, random);
-			}
-
-			case SqlTypeCategory.Decimal:
-			{
-				return GenerateRandomDecimal(column, sqlType, random);
-			}
-
-			case SqlTypeCategory.Boolean:
-			{
-				return random.Next(2) == 1;
-			}
-
-			case SqlTypeCategory.Text:
-			{
-				return GenerateRandomText(GetRandomTextLength(column), random);
-			}
-
-			case SqlTypeCategory.DateTime:
-			{
-				return GenerateRandomDateTime(sqlType, random);
-			}
-
-			case SqlTypeCategory.Time:
-			{
-				return TimeSpan.FromSeconds(random.Next(0, SECONDS_PER_DAY));
-			}
-
-			case SqlTypeCategory.Guid:
-			{
-				return Guid.NewGuid();
-			}
-
-			case SqlTypeCategory.Binary:
-			{
-				byte[] bytes = new byte[GetRandomBinaryLength(column)];
-				random.NextBytes(bytes);
-				return bytes;
-			}
-
-			case SqlTypeCategory.RowVersion:
-			{
-				throw new InvalidOperationException("rowversion values are always generated by SQL Server.");
-			}
-
-			default:
-			{
-				throw new NotSupportedException(
-					$"Random values are not supported for {_converter.GetDisplayType(column)} columns. Use Fixed value, Pattern or NULL instead."
-				);
-			}
-		}
-	}
 
 	/// <summary>
 	///	Generates a random whole number for an integer SQL type, keeping narrow types as narrow CLR values.
@@ -549,18 +454,6 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 	}
 
 	/// <summary>
-	///	Chooses the length used for random text in a column.
-	/// </summary>
-	/// <param name="column">
-	///	The text column whose maximum length is inspected.
-	/// </param>
-	/// <returns>
-	///	The lesser of the column maximum length and the default random text length.
-	/// </returns>
-	private int GetRandomTextLength(ColumnModel column)
-		=> Math.Min(_converter.GetMaximumTextLength(column) ?? RANDOM_TEXT_LENGTH, RANDOM_TEXT_LENGTH);
-
-	/// <summary>
 	///	Chooses the byte count used for random binary values in a column.
 	/// </summary>
 	/// <param name="column">
@@ -603,4 +496,136 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 	///	The trimmed SQL type in lower-case invariant form.
 	/// </returns>
 	private static string NormalizeType(ColumnModel column) => column.SqlType.Trim().ToLowerInvariant();
+
+	/// <summary>
+	///	Generates a pattern value and converts it to the target column type.
+	/// </summary>
+	/// <param name="rule">
+	///	The pattern rule to evaluate.
+	/// </param>
+	/// <param name="rowIndex">
+	///	The zero-based row index passed to the pattern engine.
+	/// </param>
+	/// <param name="rowCount">
+	///	The total row count passed to the pattern engine.
+	/// </param>
+	/// <param name="rowValues">
+	///	The current row values used to resolve column references, or <see langword="null"/> for independent patterns.
+	/// </param>
+	/// <returns>
+	///	The generated and converted pattern value.
+	/// </returns>
+	/// <remarks>
+	///	Patterns that use other columns are converted leniently, because the other column's value may not suit this column's
+	///	type (e.g. text copied into an int column keeps only its digits). Other patterns must produce a valid value.
+	/// </remarks>
+	private object? GeneratePatternValue(ColumnRule rule, long rowIndex, long rowCount, IRowValueLookup? rowValues)
+	{
+		if (_patternGenerator.GetColumnReferences(rule.PatternExpression).Count == 0)
+		{
+			return _converter.ConvertGeneratedText(rule.Column, _patternGenerator.Generate(rule.PatternExpression, rowIndex, rowCount, null));
+		}
+
+		IRowValueLookup lookup = GetRowValues(rule, rowValues);
+		string          text   = _patternGenerator.Generate(
+			rule.PatternExpression,
+			rowIndex,
+			rowCount,
+			columnName => _caster.ToText(lookup.GetValue(columnName))
+		);
+
+		return _caster.Cast(rule.Column, text);
+	}
+
+	/// <summary>
+	///	Generates one random value for a supported SQL column type.
+	/// </summary>
+	/// <param name="column">
+	///	The column whose type controls the generated value.
+	/// </param>
+	/// <returns>
+	///	A random CLR value suitable for the column.
+	/// </returns>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when the column is a rowversion column, because SQL Server generates those values.
+	/// </exception>
+	/// <exception cref="NotSupportedException">
+	///	Thrown when random values are not supported for the column type.
+	/// </exception>
+	private object GenerateRandomValue(ColumnModel column)
+	{
+		Random random  = Random.Shared;
+		string sqlType = NormalizeType(column);
+
+		switch (_converter.GetCategory(column))
+		{
+			case SqlTypeCategory.Integer:
+			{
+				return GenerateRandomInteger(sqlType, random);
+			}
+
+			case SqlTypeCategory.Decimal:
+			{
+				return GenerateRandomDecimal(column, sqlType, random);
+			}
+
+			case SqlTypeCategory.Boolean:
+			{
+				return random.Next(2) == 1;
+			}
+
+			case SqlTypeCategory.Text:
+			{
+				return GenerateRandomText(GetRandomTextLength(column), random);
+			}
+
+			case SqlTypeCategory.DateTime:
+			{
+				return GenerateRandomDateTime(sqlType, random);
+			}
+
+			case SqlTypeCategory.Time:
+			{
+				return TimeSpan.FromSeconds(random.Next(0, SECONDS_PER_DAY));
+			}
+
+			case SqlTypeCategory.Guid:
+			{
+				return Guid.NewGuid();
+			}
+
+			case SqlTypeCategory.Binary:
+			{
+				byte[] bytes = new byte[GetRandomBinaryLength(column)];
+				random.NextBytes(bytes);
+				return bytes;
+			}
+
+			case SqlTypeCategory.RowVersion:
+			{
+				throw new InvalidOperationException("rowversion values are always generated by SQL Server.");
+			}
+
+			default:
+			{
+				throw new NotSupportedException(
+					$"Random values are not supported for {_converter.GetDisplayType(column)} columns. Use Fixed value, Pattern or NULL instead."
+				);
+			}
+		}
+	}
+
+	/// <summary>
+	///	Chooses the length used for random text in a column.
+	/// </summary>
+	/// <param name="column">
+	///	The text column whose maximum length is inspected.
+	/// </param>
+	/// <returns>
+	///	The lesser of the column maximum length and the default random text length.
+	/// </returns>
+	private int GetRandomTextLength(ColumnModel column)
+		=> Math.Min(_converter.GetMaximumTextLength(column) ?? RANDOM_TEXT_LENGTH, RANDOM_TEXT_LENGTH);
+	#endregion PRIVATE
+	#endregion METHODS
 }

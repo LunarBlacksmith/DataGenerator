@@ -7,9 +7,30 @@ namespace DataGenerator.Services.Generation;
 /// </summary>
 internal sealed class GeneratedKeyTable
 {
-	private readonly List<object?[]> _rows = [];
+	#region FIELDS
+	#region PRIVATE
+	private readonly List<object?[]> _rows;
 	private int                      _outputRowCount;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
+	public TableModel                 Table   { get; }
+	public IReadOnlyList<ColumnModel> Columns { get; }
+
+	/// <summary>
+	///	Script mode only: the table variable that SQL Server fills through an OUTPUT clause. When set, values are
+	///	referenced by row number instead of being known up front (for example identity values).
+	/// </summary>
+	public string? OutputVariableName { get; }
+
+	public int RowCount => OutputVariableName is null ? _rows.Count : _outputRowCount;
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a table that stores generated key values for later row sets.
 	/// </summary>
@@ -24,22 +45,18 @@ internal sealed class GeneratedKeyTable
 	/// </param>
 	public GeneratedKeyTable(TableModel table, IReadOnlyList<ColumnModel> columns, string? outputVariableName)
 	{
+		_rows           = [];
+		_outputRowCount = 0;
+
 		Table              = table;
 		Columns            = columns;
 		OutputVariableName = outputVariableName;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public TableModel                 Table   { get; }
-	public IReadOnlyList<ColumnModel> Columns { get; }
-
-	/// <summary>
-	///	Script mode only: the table variable that SQL Server fills through an OUTPUT clause. When set, values are
-	///	referenced by row number instead of being known up front (for example identity values).
-	/// </summary>
-	public string? OutputVariableName { get; }
-
-	public int RowCount => OutputVariableName is null ? _rows.Count : _outputRowCount;
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Gets the generated value-column name for a captured key column.
 	/// </summary>
@@ -120,4 +137,6 @@ internal sealed class GeneratedKeyTable
 
 		return new SqlFragment($"(SELECT {valueColumn} FROM {OutputVariableName} WHERE [RowNumber] = {rowIndex + 1})");
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }

@@ -7,6 +7,8 @@ namespace DataGenerator.Views;
 /// </summary>
 public partial class ColumnRulesPanel : UserControl
 {
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the panel and loads its XAML-defined row-set and rule controls.
 	/// </summary>
@@ -14,4 +16,6 @@ public partial class ColumnRulesPanel : UserControl
 	{
 		InitializeComponent();
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

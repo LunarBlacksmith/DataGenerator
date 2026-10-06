@@ -6,11 +6,17 @@ namespace DataGenerator.Services.Patterns;
 
 public sealed class PatternValueGenerator : IPatternValueGenerator
 {
+	#region FIELDS
+	#region PRIVATE
 	private const int MAXIMUM_CACHE_SIZE = 256;
 
-	private readonly ConcurrentDictionary<string, ParsedPattern> _cache = new(StringComparer.Ordinal);
+	private readonly ConcurrentDictionary<string, ParsedPattern> _cache;
 	private readonly TimeProvider                                _timeProvider;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a pattern value generator that uses the system clock for TODAY.
 	/// </summary>
@@ -30,9 +36,15 @@ public sealed class PatternValueGenerator : IPatternValueGenerator
 	/// </exception>
 	public PatternValueGenerator(TimeProvider timeProvider)
 	{
+		_cache = new(StringComparer.Ordinal);
+
 		_timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Generates one pattern value for a row when row count and other-column values are not available.
 	/// </summary>
@@ -142,7 +154,9 @@ public sealed class PatternValueGenerator : IPatternValueGenerator
 			return false;
 		}
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Gets a parsed pattern from the cache, or parses it and records its column references.
 	/// </summary>
@@ -182,6 +196,39 @@ public sealed class PatternValueGenerator : IPatternValueGenerator
 		_cache[expression] = pattern;
 		return pattern;
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 
-	private sealed record ParsedPattern(PatternNode Node, IReadOnlyList<string> ColumnReferences);
+	#region TYPES
+	#region PRIVATE
+	private sealed record ParsedPattern
+	{
+		#region PROPERTIES
+		#region PUBLIC
+		public PatternNode           Node             { get; init; }
+		public IReadOnlyList<string> ColumnReferences { get; init; }
+		#endregion PUBLIC
+		#endregion PROPERTIES
+
+		#region CONSTRUCTORS
+		#region PUBLIC
+		/// <summary>
+		///	Creates a new <see cref="ParsedPattern"/> from the supplied values.
+		/// </summary>
+		/// <param name="node">
+		///	The value of <see cref="Node"/>.
+		/// </param>
+		/// <param name="columnReferences">
+		///	The value of <see cref="ColumnReferences"/>.
+		/// </param>
+		public ParsedPattern(PatternNode node, IReadOnlyList<string> columnReferences)
+		{
+			Node             = node;
+			ColumnReferences = columnReferences;
+		}
+		#endregion PUBLIC
+		#endregion CONSTRUCTORS
+	}
+	#endregion PRIVATE
+	#endregion TYPES
 }

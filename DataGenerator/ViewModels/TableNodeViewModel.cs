@@ -10,8 +10,12 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class TableNodeViewModel : TreeNodeViewModel
 {
+	#region FIELDS
+	#region PUBLIC
 	public const int DEFAULT_ROW_COUNT = 10;
+	#endregion PUBLIC
 
+	#region PRIVATE
 	private const string ROW_SET_NAME_PREFIX    = "Set ";
 	private const string UPDATE_SET_NAME_PREFIX = "Update ";
 	private const string COPY_SUFFIX            = " (copy)";
@@ -20,41 +24,15 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 
 	private RowSetViewModel? _selectedRowSet;
 	private bool             _isIncluded;
-	private int              _pendingRowCount = DEFAULT_ROW_COUNT;
+	private int              _pendingRowCount;
+	#endregion PRIVATE
+	#endregion FIELDS
 
-	/// <summary>
-	///	Creates a table node and stores the factory used when row sets are first needed.
-	/// </summary>
-	/// <param name="model">
-	///	The table metadata represented by the node.
-	/// </param>
-	/// <param name="database">
-	///	The database node that owns this table.
-	/// </param>
-	/// <param name="ruleFactory">
-	///	The factory used to create column rules for new row sets.
-	/// </param>
-	/// <exception cref="ArgumentNullException">
-	///	Thrown when any argument is <see langword="null"/>.
-	/// </exception>
-	public TableNodeViewModel(TableModel model, DatabaseNodeViewModel database, ColumnRuleFactory ruleFactory)
-	{
-		Model        = model ?? throw new ArgumentNullException(nameof(model));
-		Database     = database ?? throw new ArgumentNullException(nameof(database));
-		_ruleFactory = ruleFactory ?? throw new ArgumentNullException(nameof(ruleFactory));
-		ToolTipText  = BuildToolTipText();
-
-		RowSets.CollectionChanged += (_, _) => OnRowSetsChanged();
-	}
-
-	/// <summary>
-	///	Raised when inclusion, row counts or the validity of the rules change.
-	/// </summary>
-	public event EventHandler? GenerationSettingsChanged;
-
+	#region PROPERTIES
+	#region PUBLIC
 	public TableModel                            Model       { get; }
 	public DatabaseNodeViewModel                 Database    { get; }
-	public ObservableCollection<RowSetViewModel> RowSets     { get; } = [];
+	public ObservableCollection<RowSetViewModel> RowSets     { get; }
 	public string                                ToolTipText { get; }
 
 	public override string DisplayName => Model.DisplayName;
@@ -122,7 +100,9 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		=>
 			RowSets.Count == 0
 				? _pendingRowCount
-				: RowSets.Where(rowSet => !rowSet.IsUpdate).Sum(rowSet => rowSet.RowCount);
+				: RowSets
+					.Where(rowSet => !rowSet.IsUpdate)
+					.Sum(rowSet => rowSet.RowCount);
 
 	public int  UpdateSetCount     => RowSets.Count(rowSet => rowSet.IsUpdate);
 	public bool HasUpdateSets      => RowSets.Any(rowSet => rowSet.IsUpdate);
@@ -150,12 +130,62 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	public int InvalidRowSetCount => RowSets.Count(rowSet => !rowSet.IsValid);
 
 	public bool HasInvalidRowSets => RowSets.Any(rowSet => !rowSet.IsValid);
+	#endregion PUBLIC
 
+	#region INTERNAL
 	/// <summary>
 	///	Lets the explorer refresh the add/duplicate/remove commands when the selected row set changes.
 	/// </summary>
 	internal Action? RefreshRowSetCommands { get; set; }
+	#endregion INTERNAL
+	#endregion PROPERTIES
 
+	#region EVENTS
+	#region PUBLIC
+	/// <summary>
+	///	Raised when inclusion, row counts or the validity of the rules change.
+	/// </summary>
+	public event EventHandler? GenerationSettingsChanged;
+	#endregion PUBLIC
+	#endregion EVENTS
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a table node and stores the factory used when row sets are first needed.
+	/// </summary>
+	/// <param name="model">
+	///	The table metadata represented by the node.
+	/// </param>
+	/// <param name="database">
+	///	The database node that owns this table.
+	/// </param>
+	/// <param name="ruleFactory">
+	///	The factory used to create column rules for new row sets.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any argument is <see langword="null"/>.
+	/// </exception>
+	public TableNodeViewModel(TableModel model, DatabaseNodeViewModel database, ColumnRuleFactory ruleFactory)
+	{
+		_selectedRowSet       = null;
+		_isIncluded           = false;
+		_pendingRowCount      = DEFAULT_ROW_COUNT;
+		RowSets               = [];
+		RefreshRowSetCommands = null;
+
+		Model        = model ?? throw new ArgumentNullException(nameof(model));
+		Database     = database ?? throw new ArgumentNullException(nameof(database));
+		_ruleFactory = ruleFactory ?? throw new ArgumentNullException(nameof(ruleFactory));
+		ToolTipText  = BuildToolTipText();
+
+		RowSets.CollectionChanged += (_, _) => OnRowSetsChanged();
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the first insert row set when the table has not yet been expanded or edited.
 	/// </summary>
@@ -312,12 +342,16 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 			RowSets = [.. RowSets.Select(rowSet => rowSet.CreatePlan())]
 		};
 	}
+	#endregion PUBLIC
 
+	#region INTERNAL
 	/// <summary>
 	///	Refreshes dimming after the parent database is hidden or shown.
 	/// </summary>
 	internal void RaiseDatabaseHiddenChanged() => RaiseDimmedChanged();
+	#endregion INTERNAL
 
+	#region PRIVATE
 	/// <summary>
 	///	Adds a row set to the collection, hooks its settings changes and selects it.
 	/// </summary>
@@ -387,9 +421,21 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	/// </returns>
 	private string GetNextRowSetName(string prefix = ROW_SET_NAME_PREFIX)
 	{
-		int number = RowSets.Count(rowSet => rowSet.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) + 1;
+		int number =
+			RowSets
+				.Count(rowSet => rowSet.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+			+ 1;
 
-		while (RowSets.Any(rowSet => string.Equals(rowSet.Name.Trim(), prefix + number, StringComparison.OrdinalIgnoreCase)))
+		while (
+			RowSets
+				.Any(
+					rowSet => string.Equals(
+						rowSet.Name.Trim(),
+						prefix + number,
+						StringComparison.OrdinalIgnoreCase
+					)
+				)
+		)
 		{
 			++number;
 		}
@@ -411,7 +457,12 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		string name   = baseName;
 		int    number = 2;
 
-		while (RowSets.Any(rowSet => string.Equals(rowSet.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)))
+		while (
+			RowSets
+				.Any(
+					rowSet => string.Equals(rowSet.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)
+				)
+		)
 		{
 			name = $"{baseName} {number}";
 			++number;
@@ -429,9 +480,18 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	private string BuildToolTipText()
 	{
 		StringBuilder builder          = new();
-		int           primaryKeyCount  = Model.Columns.Count(column => column.IsPrimaryKey);
-		int           declaredKeyCount = Model.ForeignKeys.Count(foreignKey => !foreignKey.IsInferred);
-		int           inferredKeyCount = Model.ForeignKeys.Count(foreignKey => foreignKey.IsInferred);
+		int           primaryKeyCount  =
+			Model
+				.Columns
+				.Count(column => column.IsPrimaryKey);
+		int           declaredKeyCount =
+			Model
+				.ForeignKeys
+				.Count(foreignKey => !foreignKey.IsInferred);
+		int           inferredKeyCount =
+			Model
+				.ForeignKeys
+				.Count(foreignKey => foreignKey.IsInferred);
 
 		_ = builder.Append(Model.FullyQualifiedName)
 			.AppendLine()
@@ -470,11 +530,13 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	/// </returns>
 	private string DescribeReferences(bool inferred)
 		=> string.Join(
-				", ",
-				Model
-					.ForeignKeys
-					.Where(foreignKey => foreignKey.IsInferred == inferred)
-					.Select(foreignKey => $"{foreignKey.ReferencedSchema}.{foreignKey.ReferencedTable}")
-					.Distinct(StringComparer.OrdinalIgnoreCase)
-			);
+			", ",
+			Model
+				.ForeignKeys
+				.Where(foreignKey => foreignKey.IsInferred == inferred)
+				.Select(foreignKey => $"{foreignKey.ReferencedSchema}.{foreignKey.ReferencedTable}")
+				.Distinct(StringComparer.OrdinalIgnoreCase)
+		);
+	#endregion PRIVATE
+	#endregion METHODS
 }

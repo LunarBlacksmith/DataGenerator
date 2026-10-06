@@ -8,6 +8,8 @@ namespace DataGenerator.Services;
 
 public sealed class ColumnValueCaster : IColumnValueCaster
 {
+	#region FIELDS
+	#region PRIVATE
 	private const decimal MONEY_MAXIMUM       = 922337203685477.5807m;
 	private const decimal SMALL_MONEY_MAXIMUM = 214748.3647m;
 	private const int     MONEY_SCALE         = 4;
@@ -17,14 +19,32 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 	private const string  DATE_FORMAT         = "yyyy-MM-dd";
 	private const string  DATE_TIME_FORMAT    = "yyyy-MM-dd HH:mm:ss";
 
-	private static readonly CultureInfo INVARIANT              = CultureInfo.InvariantCulture;
-	private static readonly DateTime    DEFAULT_DATE           = new(1900, 1, 1);
-	private static readonly DateTime    DATETIME_MINIMUM       = new(1753, 1, 1);
-	private static readonly DateTime    SMALL_DATETIME_MAXIMUM = new(2079, 6, 6, 23, 59, 0);
-	private static readonly string[]    TRUE_WORDS             = ["true", "yes", "y", "on"];
+	private static readonly CultureInfo INVARIANT;
+	private static readonly DateTime    DEFAULT_DATE;
+	private static readonly DateTime    DATETIME_MINIMUM;
+	private static readonly DateTime    SMALL_DATETIME_MAXIMUM;
+	private static readonly string[]    TRUE_WORDS;
 
 	private readonly ISqlValueConverter _converter;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="ColumnValueCaster"/>.
+	/// </summary>
+	static ColumnValueCaster()
+	{
+		INVARIANT              = CultureInfo.InvariantCulture;
+		DEFAULT_DATE           = new(1900, 1, 1);
+		DATETIME_MINIMUM       = new(1753, 1, 1);
+		SMALL_DATETIME_MAXIMUM = new(2079, 6, 6, 23, 59, 0);
+		TRUE_WORDS             = ["true", "yes", "y", "on"];
+	}
+	#endregion STATIC
+
+	#region PUBLIC
 	/// <summary>
 	///	Creates a caster that uses the shared SQL value converter for column metadata and SQL type conversions.
 	/// </summary>
@@ -38,7 +58,11 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 	{
 		_converter = converter ?? throw new ArgumentNullException(nameof(converter));
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Converts a copied value so it fits the target column, applying SQL Server-like leniency for copied pattern values.
 	/// </summary>
@@ -129,6 +153,146 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		IFormattable formattableValue => formattableValue.ToString(null, INVARIANT),
 		_                             => value.ToString() ?? string.Empty
 	};
+	#endregion PUBLIC
+
+	#region PRIVATE
+	/// <summary>
+	///	Attempts to read a value as a finite decimal number.
+	/// </summary>
+	/// <param name="value">
+	///	The value to inspect.
+	/// </param>
+	/// <param name="number">
+	///	The numeric value when conversion succeeds, or zero when conversion fails.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when a number was read; otherwise <see langword="false"/>.
+	/// </returns>
+	private static bool TryGetNumber(object? value, out decimal number)
+	{
+		switch (value)
+		{
+			case byte or sbyte or short or ushort or int or uint or long or ulong or decimal:
+			{
+				number = Convert.ToDecimal(value, INVARIANT);
+				return true;
+			}
+
+			case double doubleValue when double.IsFinite(doubleValue):
+			{
+				number = (decimal)Math.Clamp(doubleValue, (double)decimal.MinValue, (double)decimal.MaxValue);
+				return true;
+			}
+
+			case float singleValue when float.IsFinite(singleValue):
+			{
+				number = (decimal)Math.Clamp(singleValue, (double)decimal.MinValue, (double)decimal.MaxValue);
+				return true;
+			}
+
+			case bool booleanValue:
+			{
+				number = booleanValue ? 1 : 0;
+				return true;
+			}
+
+			case string text when decimal.TryParse(text.Trim(), NumberStyles.Number | NumberStyles.AllowExponent, INVARIANT, out decimal parsed):
+			{
+				number = parsed;
+				return true;
+			}
+
+			default:
+			{
+				number = 0;
+				return false;
+			}
+		}
+	}
+
+	/// <summary>
+	///	Keeps only the digits of <paramref name="text"/> and the first decimal point when allowed.
+	///	Text without digits gives 0; numbers too large for a decimal give the largest decimal.
+	/// </summary>
+	/// <param name="text">
+	///	The text whose digits are read. A leading minus sign makes the result negative.
+	/// </param>
+	/// <param name="allowDecimalPoint">
+	///	Whether the first decimal point after a digit is kept.
+	/// </param>
+	/// <returns>
+	///	The decimal represented by the digits, zero when there are no digits, or decimal maximum when too large.
+	/// </returns>
+	private static decimal ParseDigits(string text, bool allowDecimalPoint)
+	{
+		StringBuilder builder         = new();
+		bool          hasDecimalPoint = false;
+
+		foreach (char character in text)
+		{
+			if (char.IsAsciiDigit(character))
+			{
+				_ = builder.Append(character);
+			}
+			else if (character == '.' && allowDecimalPoint && !hasDecimalPoint && builder.Length > 0)
+			{
+				hasDecimalPoint = true;
+				_               = builder.Append(character);
+			}
+		}
+
+		string digits = builder.ToString().TrimEnd('.');
+
+		if (digits.Length == 0)
+		{
+			return 0;
+		}
+
+		decimal number =
+			decimal.TryParse(digits, NumberStyles.AllowDecimalPoint, INVARIANT, out decimal parsed)
+				? parsed
+				: decimal.MaxValue;
+
+		return text.TrimStart().StartsWith('-') ? -number : number;
+	}
+
+	/// <summary>
+	///	Adds a day count to the default SQL Server date while staying inside the CLR date range.
+	/// </summary>
+	/// <param name="days">
+	///	The number of days after 1900-01-01.
+	/// </param>
+	/// <returns>
+	///	The resulting date and time, clamped so it can be represented by <see cref="DateTime"/>.
+	/// </returns>
+	private static DateTime AddDays(decimal days)
+	{
+		double minimumDays = (DateTime.MinValue - DEFAULT_DATE).TotalDays;
+		double maximumDays = (DateTime.MaxValue - DEFAULT_DATE).TotalDays - 1;
+
+		return DEFAULT_DATE.AddDays(Math.Clamp((double)days, minimumDays, maximumDays));
+	}
+
+	/// <summary>
+	///	Calculates a power of ten using decimal arithmetic.
+	/// </summary>
+	/// <param name="exponent">
+	///	The non-negative exponent.
+	/// </param>
+	/// <returns>
+	///	Ten raised to <paramref name="exponent"/>.
+	/// </returns>
+	private static decimal Pow10(int exponent)
+	{
+		decimal value = 1;
+
+		for (int index = 0; index < exponent; ++index)
+		{
+			value *= 10;
+		}
+
+		return value;
+	}
 
 	/// <summary>
 	///	Converts a value to an integer SQL type, truncating decimals and clamping it to the type range.
@@ -467,142 +631,6 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 				? bytes[..target.MaximumLength.Value]
 				: bytes;
 	}
-
-	/// <summary>
-	///	Attempts to read a value as a finite decimal number.
-	/// </summary>
-	/// <param name="value">
-	///	The value to inspect.
-	/// </param>
-	/// <param name="number">
-	///	The numeric value when conversion succeeds, or zero when conversion fails.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when a number was read; otherwise <see langword="false"/>.
-	/// </returns>
-	private static bool TryGetNumber(object? value, out decimal number)
-	{
-		switch (value)
-		{
-			case byte or sbyte or short or ushort or int or uint or long or ulong or decimal:
-			{
-				number = Convert.ToDecimal(value, INVARIANT);
-				return true;
-			}
-
-			case double doubleValue when double.IsFinite(doubleValue):
-			{
-				number = (decimal)Math.Clamp(doubleValue, (double)decimal.MinValue, (double)decimal.MaxValue);
-				return true;
-			}
-
-			case float singleValue when float.IsFinite(singleValue):
-			{
-				number = (decimal)Math.Clamp(singleValue, (double)decimal.MinValue, (double)decimal.MaxValue);
-				return true;
-			}
-
-			case bool booleanValue:
-			{
-				number = booleanValue ? 1 : 0;
-				return true;
-			}
-
-			case string text when decimal.TryParse(text.Trim(), NumberStyles.Number | NumberStyles.AllowExponent, INVARIANT, out decimal parsed):
-			{
-				number = parsed;
-				return true;
-			}
-
-			default:
-			{
-				number = 0;
-				return false;
-			}
-		}
-	}
-
-	/// <summary>
-	///	Keeps only the digits of <paramref name="text"/> and the first decimal point when allowed.
-	///	Text without digits gives 0; numbers too large for a decimal give the largest decimal.
-	/// </summary>
-	/// <param name="text">
-	///	The text whose digits are read. A leading minus sign makes the result negative.
-	/// </param>
-	/// <param name="allowDecimalPoint">
-	///	Whether the first decimal point after a digit is kept.
-	/// </param>
-	/// <returns>
-	///	The decimal represented by the digits, zero when there are no digits, or decimal maximum when too large.
-	/// </returns>
-	private static decimal ParseDigits(string text, bool allowDecimalPoint)
-	{
-		StringBuilder builder         = new();
-		bool          hasDecimalPoint = false;
-
-		foreach (char character in text)
-		{
-			if (char.IsAsciiDigit(character))
-			{
-				_ = builder.Append(character);
-			}
-			else if (character == '.' && allowDecimalPoint && !hasDecimalPoint && builder.Length > 0)
-			{
-				hasDecimalPoint = true;
-				_               = builder.Append(character);
-			}
-		}
-
-		string digits = builder.ToString().TrimEnd('.');
-
-		if (digits.Length == 0)
-		{
-			return 0;
-		}
-
-		decimal number =
-			decimal.TryParse(digits, NumberStyles.AllowDecimalPoint, INVARIANT, out decimal parsed)
-				? parsed
-				: decimal.MaxValue;
-
-		return text.TrimStart().StartsWith('-') ? -number : number;
-	}
-
-	/// <summary>
-	///	Adds a day count to the default SQL Server date while staying inside the CLR date range.
-	/// </summary>
-	/// <param name="days">
-	///	The number of days after 1900-01-01.
-	/// </param>
-	/// <returns>
-	///	The resulting date and time, clamped so it can be represented by <see cref="DateTime"/>.
-	/// </returns>
-	private static DateTime AddDays(decimal days)
-	{
-		double minimumDays = (DateTime.MinValue - DEFAULT_DATE).TotalDays;
-		double maximumDays = (DateTime.MaxValue - DEFAULT_DATE).TotalDays - 1;
-
-		return DEFAULT_DATE.AddDays(Math.Clamp((double)days, minimumDays, maximumDays));
-	}
-
-	/// <summary>
-	///	Calculates a power of ten using decimal arithmetic.
-	/// </summary>
-	/// <param name="exponent">
-	///	The non-negative exponent.
-	/// </param>
-	/// <returns>
-	///	Ten raised to <paramref name="exponent"/>.
-	/// </returns>
-	private static decimal Pow10(int exponent)
-	{
-		decimal value = 1;
-
-		for (int index = 0; index < exponent; ++index)
-		{
-			value *= 10;
-		}
-
-		return value;
-	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

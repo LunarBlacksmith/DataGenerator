@@ -11,20 +11,36 @@ namespace DataGenerator.Services;
 /// </summary>
 public sealed class JsonUserPreferencesStore : IUserPreferencesStore
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string TEMPORARY_EXTENSION = ".tmp";
 
-	private static readonly JsonSerializerOptions SERIALIZER_OPTIONS = new()
-	{
-		AllowTrailingCommas         = true,
-		PropertyNameCaseInsensitive = true,
-		PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
-		ReadCommentHandling         = JsonCommentHandling.Skip,
-		WriteIndented               = true,
-		Converters                  = { new JsonStringEnumConverter() }
-	};
+	private static readonly JsonSerializerOptions SERIALIZER_OPTIONS;
 
 	private readonly string _filePath;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="JsonUserPreferencesStore"/>.
+	/// </summary>
+	static JsonUserPreferencesStore()
+	{
+		SERIALIZER_OPTIONS = new()
+		{
+			AllowTrailingCommas         = true,
+			PropertyNameCaseInsensitive = true,
+			PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+			ReadCommentHandling         = JsonCommentHandling.Skip,
+			WriteIndented               = true,
+			Converters                  = { new JsonStringEnumConverter() }
+		};
+	}
+	#endregion STATIC
+
+	#region PUBLIC
 	/// <summary>
 	///	Creates a store for the user preferences file.
 	/// </summary>
@@ -42,7 +58,11 @@ public sealed class JsonUserPreferencesStore : IUserPreferencesStore
 		ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 		_filePath = filePath;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Loads user preferences, using defaults when the file is missing or unreadable.
 	/// </summary>
@@ -100,7 +120,9 @@ public sealed class JsonUserPreferencesStore : IUserPreferencesStore
 
 		File.Move(temporaryPath, fullPath, true);
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Normalises loaded preferences by discarding unknown themes and cleaning hidden column keys.
 	/// </summary>
@@ -126,4 +148,6 @@ public sealed class JsonUserPreferencesStore : IUserPreferencesStore
 
 		return preferences;
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

@@ -7,6 +7,8 @@ namespace DataGenerator.Views;
 /// </summary>
 public partial class SavedSettingsManagerWindow : Window
 {
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the window and loads its XAML-defined saved-setting management controls.
 	/// </summary>
@@ -14,4 +16,6 @@ public partial class SavedSettingsManagerWindow : Window
 	{
 		InitializeComponent();
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

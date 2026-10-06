@@ -7,6 +7,8 @@ namespace DataGenerator;
 /// </summary>
 public partial class MainWindow : Window
 {
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the application shell and loads its XAML-defined controls.
 	/// </summary>
@@ -14,4 +16,6 @@ public partial class MainWindow : Window
 	{
 		InitializeComponent();
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

@@ -9,38 +9,17 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class SavedSettingRowViewModel : ValidatableObservableObject
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly Func<SavedSettingRowViewModel, string, string?> _rename;
 	private readonly Action<SavedSettingRowViewModel, bool>          _setApplyAutomatically;
 
 	private string _name;
+	#endregion PRIVATE
+	#endregion FIELDS
 
-	/// <summary>
-	///	Creates a row for one saved setting and the callbacks that persist edits.
-	/// </summary>
-	/// <param name="setting">
-	///	The saved setting represented by the row.
-	/// </param>
-	/// <param name="rename">
-	///	The callback that saves a valid new name and returns an error message when it cannot be saved.
-	/// </param>
-	/// <param name="setApplyAutomatically">
-	///	The callback that saves whether the setting is applied automatically.
-	/// </param>
-	/// <exception cref="ArgumentNullException">
-	///	Thrown when any argument is <see langword="null"/>.
-	/// </exception>
-	public SavedSettingRowViewModel(
-		SavedColumnSetting                              setting,
-		Func<SavedSettingRowViewModel, string, string?> rename,
-		Action<SavedSettingRowViewModel, bool>          setApplyAutomatically
-	)
-	{
-		Setting                = setting ?? throw new ArgumentNullException(nameof(setting));
-		_rename                = rename ?? throw new ArgumentNullException(nameof(rename));
-		_setApplyAutomatically = setApplyAutomatically ?? throw new ArgumentNullException(nameof(setApplyAutomatically));
-		_name                  = setting.Name;
-	}
-
+	#region PROPERTIES
+	#region PUBLIC
 	public SavedColumnSetting Setting { get; }
 
 	public string ModeName   => GenerationModeOption.Get(Setting.GenerationMode).DisplayName;
@@ -84,7 +63,42 @@ public sealed class SavedSettingRowViewModel : ValidatableObservableObject
 			}
 		}
 	}
+	#endregion PUBLIC
+	#endregion PROPERTIES
 
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a row for one saved setting and the callbacks that persist edits.
+	/// </summary>
+	/// <param name="setting">
+	///	The saved setting represented by the row.
+	/// </param>
+	/// <param name="rename">
+	///	The callback that saves a valid new name and returns an error message when it cannot be saved.
+	/// </param>
+	/// <param name="setApplyAutomatically">
+	///	The callback that saves whether the setting is applied automatically.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any argument is <see langword="null"/>.
+	/// </exception>
+	public SavedSettingRowViewModel(
+		SavedColumnSetting                              setting,
+		Func<SavedSettingRowViewModel, string, string?> rename,
+		Action<SavedSettingRowViewModel, bool>          setApplyAutomatically
+	)
+	{
+		Setting                = setting ?? throw new ArgumentNullException(nameof(setting));
+		_rename                = rename ?? throw new ArgumentNullException(nameof(rename));
+		_setApplyAutomatically = setApplyAutomatically ?? throw new ArgumentNullException(nameof(setApplyAutomatically));
+		_name                  = setting.Name;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Shows the saved values again after the library changed.
 	/// </summary>
@@ -94,4 +108,6 @@ public sealed class SavedSettingRowViewModel : ValidatableObservableObject
 		ClearErrors(nameof(Name));
 		OnPropertyChanged(string.Empty);
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }

@@ -16,6 +16,8 @@ namespace DataGenerator.Services;
 /// </summary>
 public sealed class ThemeService : IThemeService
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string BRUSHES_SOURCE_MARKER   = "Themes/Brushes.";
 	private const string BRUSHES_URI_FORMAT      = "pack://application:,,,/DataGenerator;component/Themes/Brushes.{0}.xaml";
 	private const string PERSONALIZE_KEY_PATH    = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
@@ -23,7 +25,17 @@ public sealed class ThemeService : IThemeService
 	private const int    WINDOWS_DARK_THEME_FLAG = 0;
 
 	private readonly Application _application;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
+	public AppTheme CurrentTheme { get; private set; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the theme service and registers a handler that applies title-bar colours to windows as they load.
 	/// </summary>
@@ -35,13 +47,17 @@ public sealed class ThemeService : IThemeService
 	/// </exception>
 	public ThemeService(Application application)
 	{
+		CurrentTheme = AppTheme.Light;
+
 		_application = application ?? throw new ArgumentNullException(nameof(application));
 
 		EventManager.RegisterClassHandler(typeof(Window), FrameworkElement.LoadedEvent, new RoutedEventHandler(OnWindowLoaded));
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public AppTheme CurrentTheme { get; private set; } = AppTheme.Light;
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Reads the user's Windows application theme preference.
 	/// </summary>
@@ -106,7 +122,9 @@ public sealed class ThemeService : IThemeService
 			WindowTitleBar.Apply(window, theme == AppTheme.Dark);
 		}
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Checks whether a merged resource dictionary is one of the theme brush dictionaries.
 	/// </summary>
@@ -136,4 +154,6 @@ public sealed class ThemeService : IThemeService
 			WindowTitleBar.Apply(window, CurrentTheme == AppTheme.Dark);
 		}
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

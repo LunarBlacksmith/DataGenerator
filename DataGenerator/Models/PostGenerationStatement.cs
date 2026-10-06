@@ -6,6 +6,8 @@
 /// </summary>
 public sealed class PostGenerationStatement
 {
+	#region PROPERTIES
+	#region PUBLIC
 	public required PostGenerationStatementKind Kind      { get; init; }
 
 	/// <summary>
@@ -36,4 +38,17 @@ public sealed class PostGenerationStatement
 					: $"{lines}: SQL";
 		}
 	}
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="PostGenerationStatement"/>.
+	/// </summary>
+	public PostGenerationStatement()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

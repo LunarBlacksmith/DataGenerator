@@ -11,8 +11,12 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class BulkColumnEditViewModel : ObservableObject
 {
+	#region FIELDS
+	#region PUBLIC
 	public const int MINIMUM_SELECTION_COUNT = 2;
+	#endregion PUBLIC
 
+	#region PRIVATE
 	private const int MAXIMUM_NAMED_SKIPS = 3;
 
 	private readonly IReadOnlyList<ColumnRuleViewModel> _allRules;
@@ -23,38 +27,15 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 	private string?                       _resultText;
 	private string?                       _resultDetails;
 	private bool                          _resultHasSkips;
+	#endregion PRIVATE
+	#endregion FIELDS
 
-	/// <summary>
-	///	Creates the bulk editor for all rules in the active row set and tracks the grid selection.
-	/// </summary>
-	/// <param name="allRules">
-	///	All column rules that can be selected for bulk changes.
-	/// </param>
-	/// <exception cref="ArgumentNullException">
-	///	Thrown when <paramref name="allRules"/> is <see langword="null"/>.
-	/// </exception>
-	public BulkColumnEditViewModel(IReadOnlyList<ColumnRuleViewModel> allRules)
-	{
-		_allRules           = allRules ?? throw new ArgumentNullException(nameof(allRules));
-		_modeOptions        = [];
-		_selectedModeOption = null;
-		_settingValue       = string.Empty;
-		_resultText         = null;
-		_resultDetails      = null;
-		_resultHasSkips     = false;
-
-		ApplyModeCommand         = new RelayCommand(_ => ApplyMode(), _ => IsActive && _selectedModeOption is not null);
-		ApplySettingValueCommand = new RelayCommand(_ => ApplySettingValue(), _ => IsActive);
-		SelectAllCommand         = new RelayCommand(_ => SelectAll(), _ => SelectedRules.Count < _allRules.Count);
-		ClearSelectionCommand    = new RelayCommand(_ => SelectedRules.Clear(), _ => SelectedRules.Count > 0);
-
-		SelectedRules.CollectionChanged += OnSelectedRulesChanged;
-	}
-
+	#region PROPERTIES
+	#region PUBLIC
 	/// <summary>
 	///	The columns selected in the grid, kept in step with the grid's selection.
 	/// </summary>
-	public ObservableCollection<ColumnRuleViewModel> SelectedRules { get; } = [];
+	public ObservableCollection<ColumnRuleViewModel> SelectedRules { get; }
 
 	public RelayCommand ApplyModeCommand         { get; }
 	public RelayCommand ApplySettingValueCommand { get; }
@@ -129,7 +110,44 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 		get         => _resultHasSkips;
 		private set => SetProperty(ref _resultHasSkips, value);
 	}
+	#endregion PUBLIC
+	#endregion PROPERTIES
 
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates the bulk editor for all rules in the active row set and tracks the grid selection.
+	/// </summary>
+	/// <param name="allRules">
+	///	All column rules that can be selected for bulk changes.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="allRules"/> is <see langword="null"/>.
+	/// </exception>
+	public BulkColumnEditViewModel(IReadOnlyList<ColumnRuleViewModel> allRules)
+	{
+		SelectedRules = [];
+
+		_allRules           = allRules ?? throw new ArgumentNullException(nameof(allRules));
+		_modeOptions        = [];
+		_selectedModeOption = null;
+		_settingValue       = string.Empty;
+		_resultText         = null;
+		_resultDetails      = null;
+		_resultHasSkips     = false;
+
+		ApplyModeCommand         = new RelayCommand(_ => ApplyMode(), _ => IsActive && _selectedModeOption is not null);
+		ApplySettingValueCommand = new RelayCommand(_ => ApplySettingValue(), _ => IsActive);
+		SelectAllCommand         = new RelayCommand(_ => SelectAll(), _ => SelectedRules.Count < _allRules.Count);
+		ClearSelectionCommand    = new RelayCommand(_ => SelectedRules.Clear(), _ => SelectedRules.Count > 0);
+
+		SelectedRules.CollectionChanged += OnSelectedRulesChanged;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PRIVATE
 	/// <summary>
 	///	Refreshes the bulk action state after the grid selection changes.
 	/// </summary>
@@ -161,7 +179,9 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 
 		foreach (GenerationModeOption option in GenerationModeOption.ALL_OPTIONS)
 		{
-			int supportedCount = SelectedRules.Count(rule => rule.IsModeAvailable(option.Mode));
+			int supportedCount =
+				SelectedRules
+					.Count(rule => rule.IsModeAvailable(option.Mode));
 
 			if (supportedCount > 0)
 			{
@@ -260,7 +280,11 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 		ResultHasSkips = skipped.Count > 0;
 		ResultDetails  =
 			skipped.Count > 0
-				? string.Join(Environment.NewLine, skipped.Select(skip => $"{skip.ColumnName}: {skip.Problem}"))
+				? string.Join(
+					Environment.NewLine,
+					skipped
+						.Select(skip => $"{skip.ColumnName}: {skip.Problem}")
+				)
 				: null;
 
 		if (skipped.Count == 0)
@@ -269,7 +293,12 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 			return;
 		}
 
-		string nameList   = string.Join(", ", skipped.Take(MAXIMUM_NAMED_SKIPS).Select(skip => skip.ColumnName));
+		string nameList   = string.Join(
+			", ",
+			skipped
+				.Take(MAXIMUM_NAMED_SKIPS)
+				.Select(skip => skip.ColumnName)
+		);
 		int    otherCount = skipped.Count - MAXIMUM_NAMED_SKIPS;
 
 		ResultText = $"{summary} Kept as they were: {nameList}"
@@ -286,4 +315,6 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 		ResultDetails  = null;
 		ResultHasSkips = false;
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

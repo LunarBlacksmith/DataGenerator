@@ -14,15 +14,35 @@ namespace DataGenerator;
 /// </summary>
 public partial class App : Application
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string UNEXPECTED_ERROR_TITLE         = "Unexpected error";
 	private const string SAVED_SETTINGS_ERROR_TITLE     = "Saved column settings";
 	private const string SET_CONFIGURATIONS_ERROR_TITLE = "Set configurations";
 
-	private readonly IExceptionFormatter _exceptionFormatter = new ExceptionFormatter();
-	private readonly IDialogService      _dialogService      = new DialogService();
+	private readonly IExceptionFormatter _exceptionFormatter;
+	private readonly IDialogService      _dialogService;
 
 	private MainViewModel? _mainViewModel;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="App"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public App()
+	{
+		_exceptionFormatter = new ExceptionFormatter();
+		_dialogService      = new DialogService();
+		_mainViewModel      = null;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PROTECTED
 	/// <summary>
 	///	Composes the application: creates the services and view models, loads the saved settings, set configurations and
 	///	preferences, applies the saved theme and shows the main window.
@@ -120,7 +140,9 @@ public partial class App : Application
 			_dialogService.ShowError(SET_CONFIGURATIONS_ERROR_TITLE, setConfigWarning);
 		}
 	}
+	#endregion PROTECTED
 
+	#region PRIVATE
 	/// <summary>
 	///	Shows errors that nothing else handled in the error panel, or in a message box before the main window exists, and
 	///	keeps the application running.
@@ -149,4 +171,6 @@ public partial class App : Application
 
 		e.Handled = true;
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

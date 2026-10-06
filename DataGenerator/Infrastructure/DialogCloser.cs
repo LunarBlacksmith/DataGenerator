@@ -8,14 +8,32 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 public static class DialogCloser
 {
-	public static readonly DependencyProperty DIALOG_RESULT_PROPERTY =
-		DependencyProperty.RegisterAttached(
-			"DialogResult",
-			typeof(bool?),
-			typeof(DialogCloser),
-			new PropertyMetadata(null, OnDialogResultChanged)
-		);
+	#region FIELDS
+	#region PUBLIC
+	public static readonly DependencyProperty DIALOG_RESULT_PROPERTY;
+	#endregion PUBLIC
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="DialogCloser"/>.
+	/// </summary>
+	static DialogCloser()
+	{
+		DIALOG_RESULT_PROPERTY =
+			DependencyProperty.RegisterAttached(
+				"DialogResult",
+				typeof(bool?),
+				typeof(DialogCloser),
+				new PropertyMetadata(null, OnDialogResultChanged)
+			);
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Gets the dialog result attached to an element.
 	/// </summary>
@@ -51,7 +69,9 @@ public static class DialogCloser
 		ArgumentNullException.ThrowIfNull(element);
 		element.SetValue(DIALOG_RESULT_PROPERTY, value);
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Copies a non-null attached value to the visible window's dialog result.
 	/// </summary>
@@ -68,4 +88,6 @@ public static class DialogCloser
 			window.DialogResult = result;
 		}
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

@@ -10,11 +10,39 @@ namespace DataGenerator.Services;
 /// </summary>
 public sealed class RowSetConfigurationLibrary
 {
+	#region FIELDS
+	#region PUBLIC
 	public const int MAXIMUM_NAME_LENGTH = 100;
+	#endregion PUBLIC
 
+	#region PRIVATE
 	private readonly IRowSetConfigurationStore      _store;
 	private readonly List<SavedRowSetConfiguration> _configurations;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
+	/// <summary>
+	///	The saved configurations, sorted by name. Change them only through the methods of this class.
+	/// </summary>
+	public IReadOnlyList<SavedRowSetConfiguration> Configurations => _configurations;
+
+	public string FilePath => _store.LibraryFilePath;
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region EVENTS
+	#region PUBLIC
+	/// <summary>
+	///	Raised after configurations are added, replaced, removed or loaded.
+	/// </summary>
+	public event EventHandler? Changed;
+	#endregion PUBLIC
+	#endregion EVENTS
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the library around the store that loads, saves, imports and exports row-set configurations.
 	/// </summary>
@@ -29,18 +57,27 @@ public sealed class RowSetConfigurationLibrary
 		_store          = store ?? throw new ArgumentNullException(nameof(store));
 		_configurations = [];
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
-	///	Raised after configurations are added, replaced, removed or loaded.
+	///	Returns the problem with a configuration name, or <see langword="null"/> when it can be used.
 	/// </summary>
-	public event EventHandler? Changed;
-
-	/// <summary>
-	///	The saved configurations, sorted by name. Change them only through the methods of this class.
-	/// </summary>
-	public IReadOnlyList<SavedRowSetConfiguration> Configurations => _configurations;
-
-	public string FilePath => _store.LibraryFilePath;
+	/// <param name="name">
+	///	The proposed configuration name.
+	/// </param>
+	/// <returns>
+	///	The validation message when the name is empty or too long; otherwise <see langword="null"/>.
+	/// </returns>
+	public static string? ValidateName(string? name)
+		=>
+			string.IsNullOrWhiteSpace(name)
+				? "Enter a name, e.g. Shirts for the demo."
+				: name.Trim().Length > MAXIMUM_NAME_LENGTH
+					? $"Use at most {MAXIMUM_NAME_LENGTH} characters."
+					: null;
 
 	/// <summary>
 	///	Reads the saved configurations. Returns a message for the user when the file could not be read; the unreadable
@@ -78,23 +115,6 @@ public sealed class RowSetConfigurationLibrary
 	}
 
 	/// <summary>
-	///	Returns the problem with a configuration name, or <see langword="null"/> when it can be used.
-	/// </summary>
-	/// <param name="name">
-	///	The proposed configuration name.
-	/// </param>
-	/// <returns>
-	///	The validation message when the name is empty or too long; otherwise <see langword="null"/>.
-	/// </returns>
-	public static string? ValidateName(string? name)
-		=>
-			string.IsNullOrWhiteSpace(name)
-				? "Enter a name, e.g. Shirts for the demo."
-				: name.Trim().Length > MAXIMUM_NAME_LENGTH
-					? $"Use at most {MAXIMUM_NAME_LENGTH} characters."
-					: null;
-
-	/// <summary>
 	///	Finds a saved row-set configuration by name, ignoring case and surrounding whitespace.
 	/// </summary>
 	/// <param name="name">
@@ -107,9 +127,14 @@ public sealed class RowSetConfigurationLibrary
 		=>
 			string.IsNullOrWhiteSpace(name)
 				? null
-				: _configurations.FirstOrDefault(
-					configuration => string.Equals(configuration.Name, name.Trim(), StringComparison.OrdinalIgnoreCase)
-				);
+				: _configurations
+					.FirstOrDefault(
+						configuration => string.Equals(
+							configuration.Name,
+							name.Trim(),
+							StringComparison.OrdinalIgnoreCase
+						)
+					);
 
 	/// <summary>
 	///	Adds the configuration, or replaces the saved configuration with the same name.
@@ -216,6 +241,39 @@ public sealed class RowSetConfigurationLibrary
 	///	The configurations to export.
 	/// </param>
 	public void Export(string filePath, IReadOnlyList<SavedRowSetConfiguration> configurations) => _store.Export(filePath, configurations);
+	#endregion PUBLIC
+
+	#region PRIVATE
+	/// <summary>
+	///	Throws when a row-set configuration name cannot be saved.
+	/// </summary>
+	/// <param name="name">
+	///	The name to validate.
+	/// </param>
+	/// <exception cref="ArgumentException">
+	///	Thrown when <paramref name="name"/> is empty or too long.
+	/// </exception>
+	private static void EnsureValidName(string? name)
+	{
+		string? error = ValidateName(name);
+
+		if (error is not null)
+		{
+			throw new ArgumentException(error, nameof(name));
+		}
+	}
+
+	/// <summary>
+	///	Checks whether an exception represents a recoverable library-file problem.
+	/// </summary>
+	/// <param name="exception">
+	///	The exception raised while reading, writing or moving the library file.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the exception is an expected file problem; otherwise <see langword="false"/>.
+	/// </returns>
+	private static bool IsFileProblem(Exception exception)
+		=> exception is IOException or UnauthorizedAccessException or InvalidDataException;
 
 	/// <summary>
 	///	Adds a configuration to the in-memory list, replacing any existing configuration with the same name.
@@ -296,35 +354,6 @@ public sealed class RowSetConfigurationLibrary
 	///	Raises the change notification after the in-memory list may have changed.
 	/// </summary>
 	private void OnChanged() => Changed?.Invoke(this, EventArgs.Empty);
-
-	/// <summary>
-	///	Throws when a row-set configuration name cannot be saved.
-	/// </summary>
-	/// <param name="name">
-	///	The name to validate.
-	/// </param>
-	/// <exception cref="ArgumentException">
-	///	Thrown when <paramref name="name"/> is empty or too long.
-	/// </exception>
-	private static void EnsureValidName(string? name)
-	{
-		string? error = ValidateName(name);
-
-		if (error is not null)
-		{
-			throw new ArgumentException(error, nameof(name));
-		}
-	}
-
-	/// <summary>
-	///	Checks whether an exception represents a recoverable library-file problem.
-	/// </summary>
-	/// <param name="exception">
-	///	The exception raised while reading, writing or moving the library file.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when the exception is an expected file problem; otherwise <see langword="false"/>.
-	/// </returns>
-	private static bool IsFileProblem(Exception exception)
-		=> exception is IOException or UnauthorizedAccessException or InvalidDataException;
+	#endregion PRIVATE
+	#endregion METHODS
 }

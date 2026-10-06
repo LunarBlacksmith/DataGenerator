@@ -8,8 +8,14 @@ namespace DataGenerator.Services.Generation;
 /// </summary>
 internal sealed class RowValueBuilder
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly IColumnValueGenerator _valueGenerator;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the service that produces row values from row-set blueprints.
 	/// </summary>
@@ -22,6 +28,36 @@ internal sealed class RowValueBuilder
 	public RowValueBuilder(IColumnValueGenerator valueGenerator)
 	{
 		_valueGenerator = valueGenerator ?? throw new ArgumentNullException(nameof(valueGenerator));
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
+	/// <summary>
+	///	Returns the captured key values of a row (null entries are produced by SQL Server).
+	/// </summary>
+	/// <param name="rowSet">
+	///	The row set whose key-source indexes identify captured values.
+	/// </param>
+	/// <param name="values">
+	///	The generated values for the row.
+	/// </param>
+	/// <returns>
+	///	The key values in generated-key table column order.
+	/// </returns>
+	public static object?[] GetKeyValues(RowSetBlueprint rowSet, object?[] values)
+	{
+		object?[] keyValues = new object?[rowSet.KeySourceIndexes.Count];
+
+		for (int index = 0; index < keyValues.Length; ++index)
+		{
+			int sourceIndex = rowSet.KeySourceIndexes[index];
+
+			keyValues[index] = sourceIndex < 0 ? null : values[sourceIndex];
+		}
+
+		return keyValues;
 	}
 
 	/// <summary>
@@ -77,33 +113,9 @@ internal sealed class RowValueBuilder
 
 		return values;
 	}
+	#endregion PUBLIC
 
-	/// <summary>
-	///	Returns the captured key values of a row (null entries are produced by SQL Server).
-	/// </summary>
-	/// <param name="rowSet">
-	///	The row set whose key-source indexes identify captured values.
-	/// </param>
-	/// <param name="values">
-	///	The generated values for the row.
-	/// </param>
-	/// <returns>
-	///	The key values in generated-key table column order.
-	/// </returns>
-	public static object?[] GetKeyValues(RowSetBlueprint rowSet, object?[] values)
-	{
-		object?[] keyValues = new object?[rowSet.KeySourceIndexes.Count];
-
-		for (int index = 0; index < keyValues.Length; ++index)
-		{
-			int sourceIndex = rowSet.KeySourceIndexes[index];
-
-			keyValues[index] = sourceIndex < 0 ? null : values[sourceIndex];
-		}
-
-		return keyValues;
-	}
-
+	#region PRIVATE
 	/// <summary>
 	///	Creates a choice array initialised to show that no shared group has chosen a row yet.
 	/// </summary>
@@ -155,14 +167,48 @@ internal sealed class RowValueBuilder
 	}
 
 	/// <summary>
+	///	Gets a value from an existing-key pool, choosing one referenced row per shared group.
+	/// </summary>
+	/// <param name="source">
+	///	The existing-key value source.
+	/// </param>
+	/// <param name="choices">
+	///	The chosen sampled row indexes for existing-key groups.
+	/// </param>
+	/// <returns>
+	///	The existing key value for the source column.
+	/// </returns>
+	private static object? GetExistingKey(ValueSource source, int[] choices)
+	{
+		ExistingKeyPool pool = source.Pool!;
+
+		if (choices[source.GroupIndex] < 0)
+		{
+			choices[source.GroupIndex] = pool.Choose(Random.Shared);
+		}
+
+		return pool.GetValue(choices[source.GroupIndex], source.ColumnIndex);
+	}
+	#endregion PRIVATE
+	#endregion METHODS
+
+	#region TYPES
+	#region PRIVATE
+	/// <summary>
 	///	The values generated so far for the row, for rules that use the value of another column.
 	/// </summary>
 	private sealed class RowValueLookup : IRowValueLookup
 	{
+		#region FIELDS
+		#region PRIVATE
 		private readonly RowSetBlueprint _rowSet;
 		private readonly object?[]       _values;
 		private readonly bool[]          _isGenerated;
+		#endregion PRIVATE
+		#endregion FIELDS
 
+		#region CONSTRUCTORS
+		#region PUBLIC
 		/// <summary>
 		///	Creates a lookup over values generated so far for one row.
 		/// </summary>
@@ -178,7 +224,11 @@ internal sealed class RowValueBuilder
 			_values      = values;
 			_isGenerated = new bool[values.Length];
 		}
+		#endregion PUBLIC
+		#endregion CONSTRUCTORS
 
+		#region METHODS
+		#region PUBLIC
 		/// <summary>
 		///	Marks a source value as available to later column rules.
 		/// </summary>
@@ -206,29 +256,9 @@ internal sealed class RowValueBuilder
 					: _isGenerated[index]
 						? _values[index]
 						: throw new InvalidOperationException($"The value of column [{columnName}] has not been generated yet.");
+		#endregion PUBLIC
+		#endregion METHODS
 	}
-
-	/// <summary>
-	///	Gets a value from an existing-key pool, choosing one referenced row per shared group.
-	/// </summary>
-	/// <param name="source">
-	///	The existing-key value source.
-	/// </param>
-	/// <param name="choices">
-	///	The chosen sampled row indexes for existing-key groups.
-	/// </param>
-	/// <returns>
-	///	The existing key value for the source column.
-	/// </returns>
-	private static object? GetExistingKey(ValueSource source, int[] choices)
-	{
-		ExistingKeyPool pool = source.Pool!;
-
-		if (choices[source.GroupIndex] < 0)
-		{
-			choices[source.GroupIndex] = pool.Choose(Random.Shared);
-		}
-
-		return pool.GetValue(choices[source.GroupIndex], source.ColumnIndex);
-	}
+	#endregion PRIVATE
+	#endregion TYPES
 }

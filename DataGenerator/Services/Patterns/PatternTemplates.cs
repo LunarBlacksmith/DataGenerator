@@ -28,13 +28,69 @@ internal enum PatternSegmentKind
 /// <param name="Maximum">
 ///	The largest value of a number segment; unused by the other kinds.
 /// </param>
-internal sealed record PatternSegment(PatternSegmentKind Kind, string Text, int Length, decimal Minimum = 0, decimal Maximum = 0);
+internal sealed record PatternSegment
+{
+	#region PROPERTIES
+	#region PUBLIC
+	public PatternSegmentKind Kind    { get; init; }
+	public string             Text    { get; init; }
+	public int                Length  { get; init; }
+	public decimal            Minimum { get; init; }
+	public decimal            Maximum { get; init; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="PatternSegment"/> from the supplied values.
+	/// </summary>
+	/// <param name="kind">
+	///	The value of <see cref="Kind"/>.
+	/// </param>
+	/// <param name="text">
+	///	The value of <see cref="Text"/>.
+	/// </param>
+	/// <param name="length">
+	///	The value of <see cref="Length"/>.
+	/// </param>
+	/// <param name="minimum">
+	///	The value of <see cref="Minimum"/>.
+	/// </param>
+	/// <param name="maximum">
+	///	The value of <see cref="Maximum"/>.
+	/// </param>
+	public PatternSegment(
+		PatternSegmentKind kind,
+		string             text,
+		int                length,
+		decimal            minimum = 0,
+		decimal            maximum = 0
+	)
+	{
+		Kind    = kind;
+		Text    = text;
+		Length  = length;
+		Minimum = minimum;
+		Maximum = maximum;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+}
 
 /// <summary>
 ///	One fixed-length shape of the values a pattern produces, e.g. 'S', then 5 digits from 51 to 99999, then 1 or 2.
 /// </summary>
 internal sealed class PatternTemplate
 {
+	#region PROPERTIES
+	#region PUBLIC
+	public IReadOnlyList<PatternSegment> Segments { get; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates one fixed-length output shape from ordered literal, character-class and number segments.
 	/// </summary>
@@ -45,9 +101,11 @@ internal sealed class PatternTemplate
 	{
 		Segments = segments;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public IReadOnlyList<PatternSegment> Segments { get; }
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Concatenates another template after this one, merging adjacent literal segments.
 	/// </summary>
@@ -79,6 +137,8 @@ internal sealed class PatternTemplate
 
 		return new PatternTemplate(segments);
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }
 
 /// <summary>
@@ -87,12 +147,36 @@ internal sealed class PatternTemplate
 /// </summary>
 internal sealed class PatternTemplateSet
 {
+	#region FIELDS
+	#region PUBLIC
 	public const int MAXIMUM_TEMPLATES = 256;
 
-	public static readonly PatternTemplateSet EMPTY_TEXT = new([new PatternTemplate([])]);
+	public static readonly PatternTemplateSet EMPTY_TEXT;
+	#endregion PUBLIC
 
+	#region PRIVATE
 	private const string DIGIT_CLASS = "[0-9]";
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
+	public IReadOnlyList<PatternTemplate> Templates { get; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="PatternTemplateSet"/>.
+	/// </summary>
+	static PatternTemplateSet()
+	{
+		EMPTY_TEXT = new([new PatternTemplate([])]);
+	}
+	#endregion STATIC
+
+	#region PRIVATE
 	/// <summary>
 	///	Creates a set of possible output templates, enforcing the SQL translation shape limit.
 	/// </summary>
@@ -111,9 +195,11 @@ internal sealed class PatternTemplateSet
 
 		Templates = templates;
 	}
+	#endregion PRIVATE
+	#endregion CONSTRUCTORS
 
-	public IReadOnlyList<PatternTemplate> Templates { get; }
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a template set for one literal value.
 	/// </summary>
@@ -232,28 +318,6 @@ internal sealed class PatternTemplateSet
 	}
 
 	/// <summary>
-	///	Concatenates each template in this set with each template in another set.
-	/// </summary>
-	/// <param name="other">
-	///	The template set to append.
-	/// </param>
-	/// <returns>
-	///	A template set containing every pairwise concatenation.
-	/// </returns>
-	/// <exception cref="PatternSyntaxException">
-	///	Thrown when the pairwise product would create too many templates.
-	/// </exception>
-	public PatternTemplateSet Then(PatternTemplateSet other)
-	{
-		if ((long)Templates.Count * other.Templates.Count > MAXIMUM_TEMPLATES)
-		{
-			throw CreateTooManyShapesException();
-		}
-
-		return new PatternTemplateSet([.. Templates.SelectMany(first => other.Templates.Select(first.Then))]);
-	}
-
-	/// <summary>
 	///	Calculates 10 raised to a non-negative exponent using decimal arithmetic.
 	/// </summary>
 	/// <param name="exponent">
@@ -286,6 +350,40 @@ internal sealed class PatternTemplateSet
 	public static string FormatNumber(decimal value) => value.ToString("0", CultureInfo.InvariantCulture);
 
 	/// <summary>
+	///	Concatenates each template in this set with each template in another set.
+	/// </summary>
+	/// <param name="other">
+	///	The template set to append.
+	/// </param>
+	/// <returns>
+	///	A template set containing every pairwise concatenation.
+	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the pairwise product would create too many templates.
+	/// </exception>
+	public PatternTemplateSet Then(PatternTemplateSet other)
+	{
+		if ((long)Templates.Count * other.Templates.Count > MAXIMUM_TEMPLATES)
+		{
+			throw CreateTooManyShapesException();
+		}
+
+		return new PatternTemplateSet(
+			[..
+				Templates
+					.SelectMany(
+						first =>
+							other
+								.Templates
+								.Select(first.Then)
+					)
+			]
+		);
+	}
+	#endregion PUBLIC
+
+	#region PRIVATE
+	/// <summary>
 	///	Builds the common error used when a pattern would require too many SQL matching shapes.
 	/// </summary>
 	/// <returns>
@@ -297,4 +395,6 @@ internal sealed class PatternTemplateSet
 			+ "Use fewer OR choices, or narrower REPEATED counts and lengths.",
 			1
 		);
+	#endregion PRIVATE
+	#endregion METHODS
 }

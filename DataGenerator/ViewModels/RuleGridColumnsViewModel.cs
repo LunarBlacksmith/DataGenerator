@@ -11,18 +11,62 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class RuleGridColumnsViewModel : ObservableObject
 {
+	#region FIELDS
+	#region PUBLIC
 	public const string KEYS_COLUMN          = "Keys";
 	public const string SQL_TYPE_COLUMN      = "SqlType";
 	public const string NULLABLE_COLUMN      = "Nullable";
 	public const string SAMPLE_VALUES_COLUMN = "SampleValues";
+	#endregion PUBLIC
 
+	#region PRIVATE
 	private const string PREFERENCES_ERROR_TITLE = "Grid columns";
 
 	private readonly IUserPreferencesStore _preferencesStore;
 	private readonly IDialogService        _dialogService;
 
 	private bool _isMenuOpen;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
+	public RuleGridColumnOption                 Keys           { get; }
+	public RuleGridColumnOption                 SqlType        { get; }
+	public RuleGridColumnOption                 Nullable       { get; }
+	public RuleGridColumnOption                 SampleValues   { get; }
+	public IReadOnlyList<RuleGridColumnOption>  Options        { get; }
+	public RelayCommand                         ShowAllCommand { get; }
+
+	public bool HasHiddenColumns => Options.Any(option => !option.IsVisible);
+
+	public string HiddenColumnsText
+	{
+		get
+		{
+			int hiddenCount = Options.Count(option => !option.IsVisible);
+
+			return hiddenCount switch
+			{
+				0 => "Columns",
+				_ => $"Columns ({hiddenCount} hidden)"
+			};
+		}
+	}
+
+	/// <summary>
+	///	Whether the drop-down list of the columns is open.
+	/// </summary>
+	public bool IsMenuOpen
+	{
+		get => _isMenuOpen;
+		set => SetProperty(ref _isMenuOpen, value);
+	}
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the grid-column menu and loads the user's hidden-column choices.
 	/// </summary>
@@ -71,39 +115,11 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 		Options        = [Keys, SqlType, Nullable, SampleValues];
 		ShowAllCommand = new RelayCommand(_ => ShowAll(), _ => HasHiddenColumns);
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public RuleGridColumnOption                 Keys           { get; }
-	public RuleGridColumnOption                 SqlType        { get; }
-	public RuleGridColumnOption                 Nullable       { get; }
-	public RuleGridColumnOption                 SampleValues   { get; }
-	public IReadOnlyList<RuleGridColumnOption>  Options        { get; }
-	public RelayCommand                         ShowAllCommand { get; }
-
-	public bool HasHiddenColumns => Options.Any(option => !option.IsVisible);
-
-	public string HiddenColumnsText
-	{
-		get
-		{
-			int hiddenCount = Options.Count(option => !option.IsVisible);
-
-			return hiddenCount switch
-			{
-				0 => "Columns",
-				_ => $"Columns ({hiddenCount} hidden)"
-			};
-		}
-	}
-
-	/// <summary>
-	///	Whether the drop-down list of the columns is open.
-	/// </summary>
-	public bool IsMenuOpen
-	{
-		get => _isMenuOpen;
-		set => SetProperty(ref _isMenuOpen, value);
-	}
-
+	#region METHODS
+	#region PRIVATE
 	/// <summary>
 	///	Creates one grid-column choice from the saved hidden-column set.
 	/// </summary>
@@ -159,7 +175,11 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 		{
 			UserPreferences preferences = _preferencesStore.Load();
 
-			preferences.HiddenRuleGridColumns = [.. Options.Where(option => !option.IsVisible).Select(option => option.Key)];
+			preferences.HiddenRuleGridColumns = [..
+				Options
+					.Where(option => !option.IsVisible)
+					.Select(option => option.Key)
+			];
 			_preferencesStore.Save(preferences);
 		}
 		catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
@@ -170,4 +190,6 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 			);
 		}
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

@@ -9,10 +9,27 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 public static class WindowTitleBar
 {
+	#region FIELDS
+	#region PRIVATE
 	private const int USE_IMMERSIVE_DARK_MODE_ATTRIBUTE        = 20;
 	private const int LEGACY_USE_IMMERSIVE_DARK_MODE_ATTRIBUTE = 19;
 	private const int S_OK                                     = 0;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Initialises the static state of <see cref="WindowTitleBar"/>.
+	/// </summary>
+	static WindowTitleBar()
+	{
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Asks Windows to draw the title bar dark or light; does nothing when the window has no handle yet or Windows does not support it.
 	/// </summary>
@@ -44,7 +61,9 @@ public static class WindowTitleBar
 			_ = DwmSetWindowAttribute(handle, LEGACY_USE_IMMERSIVE_DARK_MODE_ATTRIBUTE, ref value, sizeof(int));
 		}
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Sets a Desktop Window Manager attribute on a native window handle.
 	/// </summary>
@@ -65,4 +84,6 @@ public static class WindowTitleBar
 	/// </returns>
 	[DllImport("dwmapi.dll")]
 	private static extern int DwmSetWindowAttribute(IntPtr handle, int attribute, ref int value, int size);
+	#endregion PRIVATE
+	#endregion METHODS
 }

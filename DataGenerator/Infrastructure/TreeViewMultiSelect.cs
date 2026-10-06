@@ -15,14 +15,32 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 public static class TreeViewMultiSelect
 {
-	public static readonly DependencyProperty SELECT_COMMAND_PROPERTY =
-		DependencyProperty.RegisterAttached(
-			"SelectCommand",
-			typeof(ICommand),
-			typeof(TreeViewMultiSelect),
-			new PropertyMetadata(null, OnSelectCommandChanged)
-		);
+	#region FIELDS
+	#region PUBLIC
+	public static readonly DependencyProperty SELECT_COMMAND_PROPERTY;
+	#endregion PUBLIC
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="TreeViewMultiSelect"/>.
+	/// </summary>
+	static TreeViewMultiSelect()
+	{
+		SELECT_COMMAND_PROPERTY =
+			DependencyProperty.RegisterAttached(
+				"SelectCommand",
+				typeof(ICommand),
+				typeof(TreeViewMultiSelect),
+				new PropertyMetadata(null, OnSelectCommandChanged)
+			);
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Gets the command that receives tree selection requests.
 	/// </summary>
@@ -44,7 +62,9 @@ public static class TreeViewMultiSelect
 	///	The command to execute for selection gestures, or <see langword="null"/> to disable the behaviour.
 	/// </param>
 	public static void SetSelectCommand(DependencyObject element, ICommand? value) => element.SetValue(SELECT_COMMAND_PROPERTY, value);
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Adds or removes the mouse and keyboard handlers when the selection command changes.
 	/// </summary>
@@ -251,4 +271,6 @@ public static class TreeViewMultiSelect
 			element is Visual or Visual3D
 				? VisualTreeHelper.GetParent(element)
 				: LogicalTreeHelper.GetParent(element);
+	#endregion PRIVATE
+	#endregion METHODS
 }

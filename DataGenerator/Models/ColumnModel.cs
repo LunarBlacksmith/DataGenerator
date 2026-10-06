@@ -4,20 +4,28 @@ namespace DataGenerator.Models;
 
 public sealed class ColumnModel : ObservableObject
 {
+	#region FIELDS
+	#region PUBLIC
 	public const string FOREIGN_TABLE_KEY_SUFFIX = "ftk";
+	#endregion PUBLIC
 
-	private string _name          = string.Empty;
-	private string _sqlType       = string.Empty;
-	private int?   _maximumLength = null;
-	private byte?  _precision     = null;
-	private byte?  _scale         = null;
-	private bool   _isNullable    = false;
-	private bool   _isIdentity    = false;
-	private bool   _isComputed    = false;
-	private bool   _isPrimaryKey  = false;
-	private bool   _isForeignKey  = false;
-	private bool   _hasDefault    = false;
+	#region PRIVATE
+	private string _name;
+	private string _sqlType;
+	private int?   _maximumLength;
+	private byte?  _precision;
+	private byte?  _scale;
+	private bool   _isNullable;
+	private bool   _isIdentity;
+	private bool   _isComputed;
+	private bool   _isPrimaryKey;
+	private bool   _isForeignKey;
+	private bool   _hasDefault;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
 	public string Name
 	{
 		get => _name;
@@ -97,4 +105,28 @@ public sealed class ColumnModel : ObservableObject
 	public bool IsForeignTableKey
 		=> Name.Length > FOREIGN_TABLE_KEY_SUFFIX.Length
 			&& Name.EndsWith(FOREIGN_TABLE_KEY_SUFFIX, StringComparison.OrdinalIgnoreCase);
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="ColumnModel"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public ColumnModel()
+	{
+		_name          = string.Empty;
+		_sqlType       = string.Empty;
+		_maximumLength = null;
+		_precision     = null;
+		_scale         = null;
+		_isNullable    = false;
+		_isIdentity    = false;
+		_isComputed    = false;
+		_isPrimaryKey  = false;
+		_isForeignKey  = false;
+		_hasDefault    = false;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

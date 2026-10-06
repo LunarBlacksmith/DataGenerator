@@ -7,20 +7,41 @@
 /// </summary>
 public sealed class SavedRowSetConfiguration
 {
-	public string Name { get; set; } = string.Empty;
+	#region PROPERTIES
+	#region PUBLIC
+	public string Name { get; set; }
 
 	/// <summary>
 	///	The schema.table of the row set the configuration was saved from.
 	/// </summary>
-	public string TableName { get; set; } = string.Empty;
+	public string TableName { get; set; }
 
 	public DateTime SavedAt { get; set; }
 
 	/// <summary>
 	///	One entry per column; <see cref="SavedColumnSetting.ColumnName"/> names the column it belongs to.
 	/// </summary>
-	public List<SavedColumnSetting> Columns { get; set; } = [];
+	public List<SavedColumnSetting> Columns { get; set; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
 
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="SavedRowSetConfiguration"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public SavedRowSetConfiguration()
+	{
+		Name      = string.Empty;
+		TableName = string.Empty;
+		SavedAt   = default;
+		Columns   = [];
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Checks whether this configuration was saved from the given table.
 	/// </summary>
@@ -43,7 +64,15 @@ public sealed class SavedRowSetConfiguration
 	///	<paramref name="columnName"/>.
 	/// </returns>
 	public SavedColumnSetting? FindColumn(string columnName)
-		=> Columns.FirstOrDefault(column => string.Equals(column.ColumnName, columnName, StringComparison.OrdinalIgnoreCase));
+		=>
+			Columns
+				.FirstOrDefault(
+					column => string.Equals(
+						column.ColumnName,
+						columnName,
+						StringComparison.OrdinalIgnoreCase
+					)
+				);
 
 	/// <summary>
 	///	Creates a copy of this row-set configuration and all of its column settings.
@@ -58,4 +87,6 @@ public sealed class SavedRowSetConfiguration
 		SavedAt   = SavedAt,
 		Columns   = [.. Columns.Select(column => column.Clone())]
 	};
+	#endregion PUBLIC
+	#endregion METHODS
 }

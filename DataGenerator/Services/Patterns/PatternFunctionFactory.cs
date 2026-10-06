@@ -5,11 +5,13 @@ namespace DataGenerator.Services.Patterns;
 
 internal static class PatternFunctionFactory
 {
+	#region FIELDS
+	#region PUBLIC
 	// Every function must be described in PatternLanguageReference, which the reference window and suggestions use.
-	public static readonly IReadOnlyList<string> FUNCTION_NAMES = [.. PatternLanguageReference.FUNCTIONS.Select(entry => entry.Name)];
+	public static readonly IReadOnlyList<string> FUNCTION_NAMES;
+	#endregion PUBLIC
 
-	private static readonly string[] FUNCTION_ALIASES = ["SEQUENCE", "COLUMN"];
-
+	#region PRIVATE
 	private const int    MAXIMUM_TEXT_LENGTH    = 1000;
 	private const int    MAXIMUM_DECIMALS       = 10;
 	private const int    MAXIMUM_DIGITS         = 19;
@@ -26,6 +28,29 @@ internal static class PatternFunctionFactory
 	private const string LOWER_LETTERS            = "abcdefghijklmnopqrstuvwxyz";
 	private const string DIGITS                   = "0123456789";
 
+	private static readonly string[] FUNCTION_ALIASES;
+	#endregion PRIVATE
+	#endregion FIELDS
+
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="PatternFunctionFactory"/>.
+	/// </summary>
+	static PatternFunctionFactory()
+	{
+		FUNCTION_NAMES   = [..
+			PatternLanguageReference
+				.FUNCTIONS
+				.Select(entry => entry.Name)
+		];
+		FUNCTION_ALIASES = ["SEQUENCE", "COLUMN"];
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the pattern node for a recognised function call, evaluating static arguments immediately and preserving
 	///	nested-function arguments for row-time evaluation.
@@ -55,7 +80,10 @@ internal static class PatternFunctionFactory
 			);
 		}
 
-		if (arguments.Any(argument => argument.Kind == PatternArgumentKind.Expression))
+		if (
+			arguments
+				.Any(argument => argument.Kind == PatternArgumentKind.Expression)
+		)
 		{
 			return CreateDynamic(nameToken, arguments);
 		}
@@ -90,7 +118,9 @@ internal static class PatternFunctionFactory
 		node.FunctionName = functionName;
 		return node;
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Creates a function node whose arguments include nested function calls. When the nested calls do not depend on
 	///	other columns, they are tried once now so mistakes such as a wrong parameter are reported while the pattern is typed.
@@ -748,4 +778,6 @@ internal static class PatternFunctionFactory
 			DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out DateTime value)
 				? value
 				: throw binder.Error($"'{text}' is not a valid date. Use the form 'yyyy-MM-dd', e.g. '2024-12-31'.");
+	#endregion PRIVATE
+	#endregion METHODS
 }

@@ -5,23 +5,25 @@
 /// </summary>
 public sealed class ColumnRule
 {
+	#region PROPERTIES
+	#region PUBLIC
 	public required ColumnModel         Column            { get; init; }
 	public required ValueGenerationMode GenerationMode    { get; init; }
-	public string                       FixedValue        { get; init; } = string.Empty;
-	public decimal                      SequenceStart     { get; init; } = 1;
-	public decimal                      SequenceStep      { get; init; } = 1;
-	public string                       RegexPattern      { get; init; } = string.Empty;
-	public string                       PatternExpression { get; init; } = string.Empty;
+	public string                       FixedValue        { get; init; }
+	public decimal                      SequenceStart     { get; init; }
+	public decimal                      SequenceStep      { get; init; }
+	public string                       RegexPattern      { get; init; }
+	public string                       PatternExpression { get; init; }
 
 	/// <summary>
 	///	The column of the same row whose value is copied in <see cref="ValueGenerationMode.CopyColumn"/> mode.
 	/// </summary>
-	public string                       SourceColumnName  { get; init; } = string.Empty;
+	public string                       SourceColumnName  { get; init; }
 
 	/// <summary>
 	///	The "Value from table" expression as typed, e.g. dbo.Shirt.ShirtID UNIQUE.
 	/// </summary>
-	public string                       LookupExpression  { get; init; } = string.Empty;
+	public string                       LookupExpression  { get; init; }
 
 	/// <summary>
 	///	The resolved <see cref="LookupExpression"/> in <see cref="ValueGenerationMode.TableLookup"/> mode; null when it
@@ -29,4 +31,26 @@ public sealed class ColumnRule
 	/// </summary>
 	public ColumnLookup?                Lookup            { get; init; }
 	public ForeignKeyModel?             Reference         { get; init; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="ColumnRule"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public ColumnRule()
+	{
+		FixedValue        = string.Empty;
+		SequenceStart     = 1;
+		SequenceStep      = 1;
+		RegexPattern      = string.Empty;
+		PatternExpression = string.Empty;
+		SourceColumnName  = string.Empty;
+		LookupExpression  = string.Empty;
+		Lookup            = null;
+		Reference         = null;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

@@ -7,9 +7,26 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public static class SavedSettingDescriber
 {
+	#region FIELDS
+	#region PRIVATE
 	private const int    MAXIMUM_VALUE_LENGTH = 60;
 	private const string ELLIPSIS             = "…";
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Initialises the static state of <see cref="SavedSettingDescriber"/>.
+	/// </summary>
+	static SavedSettingDescriber()
+	{
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	The generation mode and its settings, e.g. "Sequence from 1, step 1".
 	/// </summary>
@@ -61,7 +78,9 @@ public static class SavedSettingDescriber
 					? $"Every column named {setting.ColumnName}"
 					: $"{setting.ColumnName} in {setting.TableName}";
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Makes a setting value safe for single-line summaries and shortens long values.
 	/// </summary>
@@ -80,4 +99,6 @@ public static class SavedSettingDescriber
 				? singleLine
 				: string.Concat(singleLine.AsSpan(0, MAXIMUM_VALUE_LENGTH - ELLIPSIS.Length), ELLIPSIS);
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

@@ -10,12 +10,71 @@ namespace DataGenerator.Services;
 /// </summary>
 public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 {
+	#region FIELDS
+	#region PUBLIC
 	public const string PRIMARY_KEY_SUFFIX    = "PK";
 	public const string TABLE_KEY_SUFFIX      = "TK";
 	public const string UNDERSCORE_KEY_SUFFIX = "_tk";
 	public const string INFERRED_KEY_PREFIX   = "inferred:";
+	#endregion PUBLIC
 
+	#region PRIVATE
 	private const char NAME_SEPARATOR = '_';
+	#endregion PRIVATE
+	#endregion FIELDS
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="ForeignTableKeyResolver"/>.
+	/// </summary>
+	public ForeignTableKeyResolver()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
+	/// <summary>
+	///	Gets the name of a key column without its key suffix and separator.
+	/// </summary>
+	/// <param name="columnName">
+	///	The column name to inspect, such as tagPK, tagTK, tag_PK or tag_tk.
+	/// </param>
+	/// <param name="baseName">
+	///	The key base name when a recognised key suffix is found, or an empty string otherwise.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when a non-empty key base name was found; otherwise <see langword="false"/>.
+	/// </returns>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="columnName"/> is <see langword="null"/>.
+	/// </exception>
+	public static bool TryGetKeyBaseName(string columnName, out string baseName)
+	{
+		ArgumentNullException.ThrowIfNull(columnName);
+
+		string? stripped = null;
+
+		if (columnName.EndsWith(UNDERSCORE_KEY_SUFFIX, StringComparison.OrdinalIgnoreCase))
+		{
+			stripped = columnName[..^UNDERSCORE_KEY_SUFFIX.Length];
+		}
+		else if (columnName.EndsWith(PRIMARY_KEY_SUFFIX, StringComparison.OrdinalIgnoreCase))
+		{
+			stripped = columnName[..^PRIMARY_KEY_SUFFIX.Length];
+		}
+		else if (columnName.Length > TABLE_KEY_SUFFIX.Length
+			&& columnName.EndsWith(TABLE_KEY_SUFFIX, StringComparison.Ordinal)
+			&& char.IsLower(columnName[^(TABLE_KEY_SUFFIX.Length + 1)]))
+		{
+			stripped = columnName[..^TABLE_KEY_SUFFIX.Length];
+		}
+
+		baseName = stripped is null ? string.Empty : TrimSeparator(stripped);
+		return baseName.Length > 0;
+	}
 
 	/// <summary>
 	///	Infers foreign keys for foreign-table-key columns by matching them to key-like columns in other tables.
@@ -59,8 +118,17 @@ public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 						candidates
 							.Where(candidate => !ReferenceEquals(candidate.Table, table))
 							.OrderByDescending(candidate => candidate.Column.IsPrimaryKey)
-							.ThenByDescending(candidate => string.Equals(candidate.Table.SchemaName, table.SchemaName, StringComparison.OrdinalIgnoreCase))
-							.ThenBy(candidate => candidate.Table.SchemaName, StringComparer.OrdinalIgnoreCase)
+							.ThenByDescending(
+								candidate => string.Equals(
+									candidate.Table.SchemaName,
+									table.SchemaName,
+									StringComparison.OrdinalIgnoreCase
+								)
+							)
+							.ThenBy(
+								candidate => candidate.Table.SchemaName,
+								StringComparer.OrdinalIgnoreCase
+							)
 							.ThenBy(candidate => candidate.Table.Name, StringComparer.OrdinalIgnoreCase)
 							.FirstOrDefault();
 
@@ -90,7 +158,9 @@ public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 
 		return inferredCount;
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Builds a lookup of key-like columns in a database, grouped by their base name.
 	/// </summary>
@@ -127,46 +197,6 @@ public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 	}
 
 	/// <summary>
-	///	Gets the name of a key column without its key suffix and separator.
-	/// </summary>
-	/// <param name="columnName">
-	///	The column name to inspect, such as tagPK, tagTK, tag_PK or tag_tk.
-	/// </param>
-	/// <param name="baseName">
-	///	The key base name when a recognised key suffix is found, or an empty string otherwise.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when a non-empty key base name was found; otherwise <see langword="false"/>.
-	/// </returns>
-	/// <exception cref="ArgumentNullException">
-	///	Thrown when <paramref name="columnName"/> is <see langword="null"/>.
-	/// </exception>
-	public static bool TryGetKeyBaseName(string columnName, out string baseName)
-	{
-		ArgumentNullException.ThrowIfNull(columnName);
-
-		string? stripped = null;
-
-		if (columnName.EndsWith(UNDERSCORE_KEY_SUFFIX, StringComparison.OrdinalIgnoreCase))
-		{
-			stripped = columnName[..^UNDERSCORE_KEY_SUFFIX.Length];
-		}
-		else if (columnName.EndsWith(PRIMARY_KEY_SUFFIX, StringComparison.OrdinalIgnoreCase))
-		{
-			stripped = columnName[..^PRIMARY_KEY_SUFFIX.Length];
-		}
-		else if (columnName.Length > TABLE_KEY_SUFFIX.Length
-			&& columnName.EndsWith(TABLE_KEY_SUFFIX, StringComparison.Ordinal)
-			&& char.IsLower(columnName[^(TABLE_KEY_SUFFIX.Length + 1)]))
-		{
-			stripped = columnName[..^TABLE_KEY_SUFFIX.Length];
-		}
-
-		baseName = stripped is null ? string.Empty : TrimSeparator(stripped);
-		return baseName.Length > 0;
-	}
-
-	/// <summary>
 	///	Removes trailing name separators from a base name.
 	/// </summary>
 	/// <param name="name">
@@ -190,7 +220,49 @@ public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 	///	<see langword="true"/> when an existing foreign key uses the column; otherwise <see langword="false"/>.
 	/// </returns>
 	private static bool HasForeignKey(TableModel table, ColumnModel column)
-		=> table.ForeignKeys.Any(foreignKey => string.Equals(foreignKey.ParentColumn, column.Name, StringComparison.OrdinalIgnoreCase));
+		=>
+			table
+				.ForeignKeys
+				.Any(
+					foreignKey => string.Equals(
+						foreignKey.ParentColumn,
+						column.Name,
+						StringComparison.OrdinalIgnoreCase
+					)
+				);
+	#endregion PRIVATE
+	#endregion METHODS
 
-	private sealed record KeyCandidate(TableModel Table, ColumnModel Column);
+	#region TYPES
+	#region PRIVATE
+	private sealed record KeyCandidate
+	{
+		#region PROPERTIES
+		#region PUBLIC
+		public TableModel  Table  { get; init; }
+		public ColumnModel Column { get; init; }
+		#endregion PUBLIC
+		#endregion PROPERTIES
+
+		#region CONSTRUCTORS
+		#region PUBLIC
+		/// <summary>
+		///	Creates a new <see cref="KeyCandidate"/> from the supplied values.
+		/// </summary>
+		/// <param name="table">
+		///	The value of <see cref="Table"/>.
+		/// </param>
+		/// <param name="column">
+		///	The value of <see cref="Column"/>.
+		/// </param>
+		public KeyCandidate(TableModel table, ColumnModel column)
+		{
+			Table  = table;
+			Column = column;
+		}
+		#endregion PUBLIC
+		#endregion CONSTRUCTORS
+	}
+	#endregion PRIVATE
+	#endregion TYPES
 }

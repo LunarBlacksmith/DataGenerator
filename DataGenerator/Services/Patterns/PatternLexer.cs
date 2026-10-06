@@ -4,6 +4,19 @@ namespace DataGenerator.Services.Patterns;
 
 internal static class PatternLexer
 {
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Initialises the static state of <see cref="PatternLexer"/>.
+	/// </summary>
+	static PatternLexer()
+	{
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Splits a pattern expression into tokens, preserving one-based positions for parser error messages.
 	/// </summary>
@@ -84,7 +97,9 @@ internal static class PatternLexer
 		tokens.Add(new PatternToken(PatternTokenKind.End, string.Empty, expression.Length + 1));
 		return tokens;
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Reads a single- or double-quoted text token, treating doubled quote characters as one literal quote.
 	/// </summary>
@@ -178,4 +193,6 @@ internal static class PatternLexer
 
 		return new PatternToken(PatternTokenKind.Number, expression[start..index], start + 1);
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

@@ -11,10 +11,37 @@ namespace DataGenerator.Services;
 
 public sealed class ExceptionFormatter : IExceptionFormatter
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string APPLICATION_NAMESPACE = "DataGenerator";
 
-	private static readonly string[] FRAMEWORK_NAMESPACES = ["System", "Microsoft", "MS"];
+	private static readonly string[] FRAMEWORK_NAMESPACES;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="ExceptionFormatter"/>.
+	/// </summary>
+	static ExceptionFormatter()
+	{
+		FRAMEWORK_NAMESPACES = ["System", "Microsoft", "MS"];
+	}
+	#endregion STATIC
+
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="ExceptionFormatter"/>.
+	/// </summary>
+	public ExceptionFormatter()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Builds a user-facing error report from an exception and its inner exceptions.
 	/// </summary>
@@ -75,7 +102,9 @@ public sealed class ExceptionFormatter : IExceptionFormatter
 			Details  = exception.ToString()
 		};
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Removes single-exception wrapper exceptions to reveal the primary failure.
 	/// </summary>
@@ -285,10 +314,12 @@ public sealed class ExceptionFormatter : IExceptionFormatter
 	{
 		string typeNamespace = type.Namespace ?? string.Empty;
 
-		return FRAMEWORK_NAMESPACES.Any(
-			frameworkNamespace => typeNamespace == frameworkNamespace
-				|| typeNamespace.StartsWith(frameworkNamespace + ".", StringComparison.Ordinal)
-		);
+		return
+			FRAMEWORK_NAMESPACES
+				.Any(
+					frameworkNamespace => typeNamespace == frameworkNamespace
+						|| typeNamespace.StartsWith(frameworkNamespace + ".", StringComparison.Ordinal)
+				);
 	}
 
 	/// <summary>
@@ -389,4 +420,6 @@ public sealed class ExceptionFormatter : IExceptionFormatter
 
 		return start >= 0 && end > start + 1 ? name[(start + 1)..end] : name;
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

@@ -9,15 +9,14 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class RowSetViewModel : ValidatableObservableObject
 {
+	#region FIELDS
+	#region PUBLIC
 	public const int MAXIMUM_ROW_COUNT = 1_000_000;
 	public const int MAXIMUM_STEP      = 99;
+	#endregion PUBLIC
 
-	private static readonly IReadOnlyList<ChoiceOption<RowScope>> UPDATE_SCOPE_OPTIONS =
-	[
-		new ChoiceOption<RowScope>(RowScope.Any,       "Any rows",            "Any rows of the table may be changed."),
-		new ChoiceOption<RowScope>(RowScope.Generated, "Rows generated now",  "Only rows inserted by this run (by earlier steps) may be changed."),
-		new ChoiceOption<RowScope>(RowScope.Existing,  "Rows already there",  "Only rows that existed before this run may be changed.")
-	];
+	#region PRIVATE
+	private static readonly IReadOnlyList<ChoiceOption<RowScope>> UPDATE_SCOPE_OPTIONS;
 
 	private string                _name;
 	private int                   _rowCount;
@@ -27,57 +26,11 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	private bool                  _requireAllRows;
 	private int                   _invalidRuleCount;
 	private OperationResultText?  _configurationResult;
+	#endregion PRIVATE
+	#endregion FIELDS
 
-	/// <summary>
-	///	Creates a row set with its column rules and attaches rule validation to the row-set state.
-	/// </summary>
-	/// <param name="name">
-	///	The initial row-set name; <see langword="null"/> becomes empty.
-	/// </param>
-	/// <param name="rowCount">
-	///	The requested number of rows, clamped to the supported range.
-	/// </param>
-	/// <param name="columnRules">
-	///	The column rules that belong to the row set.
-	/// </param>
-	/// <param name="action">
-	///	Whether the row set inserts new rows or updates existing ones.
-	/// </param>
-	/// <exception cref="ArgumentNullException">
-	///	Thrown when <paramref name="columnRules"/> is <see langword="null"/>.
-	/// </exception>
-	public RowSetViewModel(string name, int rowCount, IReadOnlyList<ColumnRuleViewModel> columnRules, RowSetAction action = RowSetAction.Insert)
-	{
-		ColumnRules          = columnRules ?? throw new ArgumentNullException(nameof(columnRules));
-		Action               = action;
-		_name                = name ?? string.Empty;
-		_rowCount            = ClampRowCount(rowCount);
-		_step                = action == RowSetAction.Update ? RowSetPlan.FIRST_STEP + 1 : RowSetPlan.FIRST_STEP;
-		_updateScope         = RowScope.Any;
-		_updateCondition     = string.Empty;
-		_requireAllRows      = true;
-		_configurationResult = null;
-
-		DismissConfigurationResultCommand = new RelayCommand(_ => ConfigurationResult = null);
-
-		foreach (ColumnRuleViewModel rule in ColumnRules)
-		{
-			rule.ErrorsChanged   += OnRuleErrorsChanged;
-			rule.SettingsChanged += OnRuleSettingsChanged;
-			rule.AttachToRowSet(ColumnRules, () => _rowCount);
-		}
-
-		_invalidRuleCount = CountInvalidRules();
-		BulkEdit          = new BulkColumnEditViewModel(ColumnRules);
-		ValidateName();
-		ValidateUpdateRules();
-	}
-
-	/// <summary>
-	///	Raised when the number of rows or the validity of the row set changes.
-	/// </summary>
-	public event EventHandler? SettingsChanged;
-
+	#region PROPERTIES
+	#region PUBLIC
 	public IReadOnlyList<ColumnRuleViewModel> ColumnRules { get; }
 
 	/// <summary>
@@ -208,6 +161,99 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	public bool   HasUpdateProblem => UpdateProblem.Length > 0;
 
 	/// <summary>
+	///	Columns whose values SQL Server always chooses (e.g. identity columns) are not part of set configurations.
+	/// </summary>
+	public IEnumerable<ColumnRuleViewModel> ConfigurableRules => ColumnRules.Where(rule => rule.CanChangeMode);
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region EVENTS
+	#region PUBLIC
+	/// <summary>
+	///	Raised when the number of rows or the validity of the row set changes.
+	/// </summary>
+	public event EventHandler? SettingsChanged;
+	#endregion PUBLIC
+	#endregion EVENTS
+
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="RowSetViewModel"/>.
+	/// </summary>
+	static RowSetViewModel()
+	{
+		UPDATE_SCOPE_OPTIONS =
+		[
+			new ChoiceOption<RowScope>(RowScope.Any,       "Any rows",            "Any rows of the table may be changed."),
+			new ChoiceOption<RowScope>(RowScope.Generated, "Rows generated now",  "Only rows inserted by this run (by earlier steps) may be changed."),
+			new ChoiceOption<RowScope>(RowScope.Existing,  "Rows already there",  "Only rows that existed before this run may be changed.")
+		];
+	}
+	#endregion STATIC
+
+	#region PUBLIC
+	/// <summary>
+	///	Creates a row set with its column rules and attaches rule validation to the row-set state.
+	/// </summary>
+	/// <param name="name">
+	///	The initial row-set name; <see langword="null"/> becomes empty.
+	/// </param>
+	/// <param name="rowCount">
+	///	The requested number of rows, clamped to the supported range.
+	/// </param>
+	/// <param name="columnRules">
+	///	The column rules that belong to the row set.
+	/// </param>
+	/// <param name="action">
+	///	Whether the row set inserts new rows or updates existing ones.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="columnRules"/> is <see langword="null"/>.
+	/// </exception>
+	public RowSetViewModel(string name, int rowCount, IReadOnlyList<ColumnRuleViewModel> columnRules, RowSetAction action = RowSetAction.Insert)
+	{
+		ColumnRules          = columnRules ?? throw new ArgumentNullException(nameof(columnRules));
+		Action               = action;
+		_name                = name ?? string.Empty;
+		_rowCount            = ClampRowCount(rowCount);
+		_step                = action == RowSetAction.Update ? RowSetPlan.FIRST_STEP + 1 : RowSetPlan.FIRST_STEP;
+		_updateScope         = RowScope.Any;
+		_updateCondition     = string.Empty;
+		_requireAllRows      = true;
+		_configurationResult = null;
+
+		DismissConfigurationResultCommand = new RelayCommand(_ => ConfigurationResult = null);
+
+		foreach (ColumnRuleViewModel rule in ColumnRules)
+		{
+			rule.ErrorsChanged   += OnRuleErrorsChanged;
+			rule.SettingsChanged += OnRuleSettingsChanged;
+			rule.AttachToRowSet(ColumnRules, () => _rowCount);
+		}
+
+		_invalidRuleCount = CountInvalidRules();
+		BulkEdit          = new BulkColumnEditViewModel(ColumnRules);
+		ValidateName();
+		ValidateUpdateRules();
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
+	/// <summary>
+	///	Limits a requested row count to the range supported by the UI and generator.
+	/// </summary>
+	/// <param name="rowCount">
+	///	The requested row count.
+	/// </param>
+	/// <returns>
+	///	The row count clamped between one and <see cref="MAXIMUM_ROW_COUNT"/>.
+	/// </returns>
+	public static int ClampRowCount(int rowCount) => Math.Clamp(rowCount, 1, MAXIMUM_ROW_COUNT);
+
+	/// <summary>
 	///	Creates the generation plan for this row set from the current settings.
 	/// </summary>
 	/// <returns>
@@ -217,7 +263,10 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	{
 		Name            = _name.Trim(),
 		RowCount        = _rowCount,
-		Rules           = [.. ColumnRules.Select(rule => rule.CreateRule())],
+		Rules           = [..
+			ColumnRules
+				.Select(rule => rule.CreateRule())
+		],
 		Action          = Action,
 		Step            = _step,
 		UpdateScope     = _updateScope,
@@ -245,11 +294,6 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	///	Columns whose values SQL Server always chooses (e.g. identity columns) are not part of set configurations.
-	/// </summary>
-	public IEnumerable<ColumnRuleViewModel> ConfigurableRules => ColumnRules.Where(rule => rule.CanChangeMode);
-
-	/// <summary>
 	///	The generation modes and settings of every configurable column, ready to be saved as a set configuration.
 	/// </summary>
 	/// <param name="name">
@@ -266,7 +310,10 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 		Name      = name.Trim(),
 		TableName = tableName,
 		SavedAt   = DateTime.Now,
-		Columns   = [.. ConfigurableRules.Select(CaptureColumn)]
+		Columns   = [..
+			ConfigurableRules
+				.Select(CaptureColumn)
+		]
 	};
 
 	/// <summary>
@@ -370,20 +417,13 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	public int CountMatchingColumns(SavedRowSetConfiguration configuration)
 	{
 		ArgumentNullException.ThrowIfNull(configuration);
-		return ConfigurableRules.Count(rule => configuration.FindColumn(rule.Name) is not null);
+		return
+			ConfigurableRules
+				.Count(rule => configuration.FindColumn(rule.Name) is not null);
 	}
+	#endregion PUBLIC
 
-	/// <summary>
-	///	Limits a requested row count to the range supported by the UI and generator.
-	/// </summary>
-	/// <param name="rowCount">
-	///	The requested row count.
-	/// </param>
-	/// <returns>
-	///	The row count clamped between one and <see cref="MAXIMUM_ROW_COUNT"/>.
-	/// </returns>
-	public static int ClampRowCount(int rowCount) => Math.Clamp(rowCount, 1, MAXIMUM_ROW_COUNT);
-
+	#region PROTECTED
 	/// <summary>
 	///	Refreshes validity and update-problem state after the row-set errors change.
 	/// </summary>
@@ -394,6 +434,37 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 		OnPropertyChanged(nameof(HasUpdateProblem));
 		SettingsChanged?.Invoke(this, EventArgs.Empty);
 	}
+	#endregion PROTECTED
+
+	#region PRIVATE
+	/// <summary>
+	///	Captures a column rule as a saved setting and stamps it with the column name.
+	/// </summary>
+	/// <param name="rule">
+	///	The rule to capture.
+	/// </param>
+	/// <returns>
+	///	The saved column setting for the rule.
+	/// </returns>
+	private static SavedColumnSetting CaptureColumn(ColumnRuleViewModel rule)
+	{
+		SavedColumnSetting setting = rule.CaptureSetting();
+
+		setting.Name = rule.Name;
+		return setting;
+	}
+
+	/// <summary>
+	///	Whether saved column settings depend on other columns in the same row set.
+	/// </summary>
+	/// <param name="setting">
+	///	The saved setting to inspect.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the setting copies or refers to other columns; otherwise <see langword="false"/>.
+	/// </returns>
+	private static bool UsesOtherColumns(SavedColumnSetting setting)
+		=> setting.GenerationMode is ValueGenerationMode.CopyColumn or ValueGenerationMode.Pattern;
 
 	/// <summary>
 	///	Checks that the row set has a non-empty name.
@@ -405,12 +476,21 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	///	An update set must change at least one column.
 	/// </summary>
 	private void ValidateUpdateRules()
-		=> SetError(
-				nameof(ColumnRules),
-				IsUpdate && ColumnRules.All(rule => !rule.CanChangeMode || rule.GenerationMode == ValueGenerationMode.KeepCurrent)
-					? "Choose a new value for at least one column. Columns set to Keep current value are not changed."
-					: null
-			);
+	{
+		bool changesNothing =
+			IsUpdate
+			&& ColumnRules
+				.All(
+					rule => !rule.CanChangeMode || rule.GenerationMode == ValueGenerationMode.KeepCurrent
+				);
+
+		SetError(
+			nameof(ColumnRules),
+			changesNothing
+				? "Choose a new value for at least one column. Columns set to Keep current value are not changed."
+				: null
+		);
+	}
 
 	/// <summary>
 	///	Refreshes the row-set validation summary after a column rule gains or loses errors.
@@ -465,7 +545,10 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	/// </summary>
 	private void RefreshPatternPreviews()
 	{
-		foreach (ColumnRuleViewModel rule in ColumnRules.Where(rule => rule.GenerationMode == ValueGenerationMode.Pattern))
+		foreach (ColumnRuleViewModel rule in
+			ColumnRules
+				.Where(rule => rule.GenerationMode == ValueGenerationMode.Pattern)
+		)
 		{
 			rule.RefreshPreview();
 		}
@@ -489,34 +572,9 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	///	<see langword="true"/> when a rule has the column name, ignoring case; otherwise <see langword="false"/>.
 	/// </returns>
 	private bool HasColumn(string columnName)
-		=> ColumnRules.Any(rule => string.Equals(rule.Name, columnName, StringComparison.OrdinalIgnoreCase));
-
-	/// <summary>
-	///	Captures a column rule as a saved setting and stamps it with the column name.
-	/// </summary>
-	/// <param name="rule">
-	///	The rule to capture.
-	/// </param>
-	/// <returns>
-	///	The saved column setting for the rule.
-	/// </returns>
-	private static SavedColumnSetting CaptureColumn(ColumnRuleViewModel rule)
-	{
-		SavedColumnSetting setting = rule.CaptureSetting();
-
-		setting.Name = rule.Name;
-		return setting;
-	}
-
-	/// <summary>
-	///	Whether saved column settings depend on other columns in the same row set.
-	/// </summary>
-	/// <param name="setting">
-	///	The saved setting to inspect.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when the setting copies or refers to other columns; otherwise <see langword="false"/>.
-	/// </returns>
-	private static bool UsesOtherColumns(SavedColumnSetting setting)
-		=> setting.GenerationMode is ValueGenerationMode.CopyColumn or ValueGenerationMode.Pattern;
+		=>
+			ColumnRules
+				.Any(rule => string.Equals(rule.Name, columnName, StringComparison.OrdinalIgnoreCase));
+	#endregion PRIVATE
+	#endregion METHODS
 }

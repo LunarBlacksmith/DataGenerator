@@ -10,12 +10,40 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class ThemeViewModel : ObservableObject
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string THEME_ERROR_TITLE = "Theme";
 
 	private readonly IThemeService         _themeService;
 	private readonly IUserPreferencesStore _preferencesStore;
 	private readonly IDialogService        _dialogService;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
+	public bool IsDarkTheme
+	{
+		get => _themeService.CurrentTheme == AppTheme.Dark;
+		set
+		{
+			if (value == IsDarkTheme)
+			{
+				return;
+			}
+
+			AppTheme theme = value ? AppTheme.Dark : AppTheme.Light;
+
+			_themeService.ApplyTheme(theme);
+			OnPropertyChanged();
+			SaveTheme(theme);
+		}
+	}
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the theme switcher and connects it to the theme service and preferences.
 	/// </summary>
@@ -41,25 +69,11 @@ public sealed class ThemeViewModel : ObservableObject
 		_preferencesStore = preferencesStore ?? throw new ArgumentNullException(nameof(preferencesStore));
 		_dialogService    = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public bool IsDarkTheme
-	{
-		get => _themeService.CurrentTheme == AppTheme.Dark;
-		set
-		{
-			if (value == IsDarkTheme)
-			{
-				return;
-			}
-
-			AppTheme theme = value ? AppTheme.Dark : AppTheme.Light;
-
-			_themeService.ApplyTheme(theme);
-			OnPropertyChanged();
-			SaveTheme(theme);
-		}
-	}
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Applies the theme the user chose last time, or the Windows application theme when they have never chosen one.
 	/// </summary>
@@ -70,7 +84,9 @@ public sealed class ThemeViewModel : ObservableObject
 		_themeService.ApplyTheme(theme);
 		OnPropertyChanged(nameof(IsDarkTheme));
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Stores the chosen theme in the user's preferences.
 	/// </summary>
@@ -94,4 +110,6 @@ public sealed class ThemeViewModel : ObservableObject
 			);
 		}
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

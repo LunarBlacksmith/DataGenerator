@@ -4,10 +4,37 @@ namespace DataGenerator.Services.Patterns;
 
 internal sealed class PatternContext
 {
+	#region FIELDS
+	#region PUBLIC
 	public const int MAXIMUM_OUTPUT_LENGTH = 100_000;
+	#endregion PUBLIC
 
+	#region PRIVATE
 	private readonly Func<string, string>? _columnValues;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
+	public long         RowIndex     { get; }
+
+	/// <summary>
+	///	The number of rows in the row set, or <see langword="null"/> when unknown (e.g. in the pattern reference window).
+	///	LAST(...) only knows which rows are the last ones when the count is known.
+	/// </summary>
+	public long?        RowCount     { get; }
+	public Random       Random       { get; }
+	public TimeProvider TimeProvider { get; }
+
+	/// <summary>
+	///	The local date and time at the moment a value is generated.
+	/// </summary>
+	public DateTime Now => TimeProvider.GetLocalNow().DateTime;
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the row-time services and counters used while a pattern value is generated.
 	/// </summary>
@@ -34,21 +61,27 @@ internal sealed class PatternContext
 		TimeProvider  = timeProvider;
 		_columnValues = columnValues;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public long         RowIndex     { get; }
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
-	///	The number of rows in the row set, or <see langword="null"/> when unknown (e.g. in the pattern reference window).
-	///	LAST(...) only knows which rows are the last ones when the count is known.
+	///	Checks that the generated output has not exceeded the pattern language length limit.
 	/// </summary>
-	public long?        RowCount     { get; }
-	public Random       Random       { get; }
-	public TimeProvider TimeProvider { get; }
-
-	/// <summary>
-	///	The local date and time at the moment a value is generated.
-	/// </summary>
-	public DateTime Now => TimeProvider.GetLocalNow().DateTime;
+	/// <param name="builder">
+	///	The builder containing the output generated so far.
+	/// </param>
+	/// <exception cref="InvalidOperationException">
+	///	Thrown when the output is longer than the maximum allowed pattern result.
+	/// </exception>
+	public static void EnsureLength(StringBuilder builder)
+	{
+		if (builder.Length > MAXIMUM_OUTPUT_LENGTH)
+		{
+			throw new InvalidOperationException($"The pattern produced more than {MAXIMUM_OUTPUT_LENGTH:N0} characters. Reduce the REPEATED counts.");
+		}
+	}
 
 	/// <summary>
 	///	Gets the value of another column of the row being generated, as text, for COL nodes.
@@ -73,32 +106,35 @@ internal sealed class PatternContext
 
 		return _columnValues(columnName);
 	}
-
-	/// <summary>
-	///	Checks that the generated output has not exceeded the pattern language length limit.
-	/// </summary>
-	/// <param name="builder">
-	///	The builder containing the output generated so far.
-	/// </param>
-	/// <exception cref="InvalidOperationException">
-	///	Thrown when the output is longer than the maximum allowed pattern result.
-	/// </exception>
-	public static void EnsureLength(StringBuilder builder)
-	{
-		if (builder.Length > MAXIMUM_OUTPUT_LENGTH)
-		{
-			throw new InvalidOperationException($"The pattern produced more than {MAXIMUM_OUTPUT_LENGTH:N0} characters. Reduce the REPEATED counts.");
-		}
-	}
+	#endregion PUBLIC
+	#endregion METHODS
 }
 
 internal abstract class PatternNode
 {
+	#region PROPERTIES
+	#region PUBLIC
 	/// <summary>
 	///	The function that created the node, e.g. "RAND_DATE", used in error messages.
 	/// </summary>
-	public string FunctionName { get; set; } = string.Empty;
+	public string FunctionName { get; set; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
 
+	#region CONSTRUCTORS
+	#region PROTECTED
+	/// <summary>
+	///	Creates a new <see cref="PatternNode"/> and sets the default values of its fields and properties.
+	/// </summary>
+	protected PatternNode()
+	{
+		FunctionName = string.Empty;
+	}
+	#endregion PROTECTED
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Appends this node's generated text for a single row.
 	/// </summary>
@@ -139,12 +175,20 @@ internal abstract class PatternNode
 	public virtual void CollectColumnReferences(ICollection<string> columnNames)
 	{
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }
 
 internal sealed class LiteralPatternNode : PatternNode
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly string _text;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a node that always appends the same literal text.
 	/// </summary>
@@ -155,7 +199,11 @@ internal sealed class LiteralPatternNode : PatternNode
 	{
 		_text = text;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Appends the literal text exactly as it was parsed or computed.
 	/// </summary>
@@ -174,12 +222,20 @@ internal sealed class LiteralPatternNode : PatternNode
 	///	A template set that matches the literal text, or the empty-text template for an empty literal.
 	/// </returns>
 	public override PatternTemplateSet ExpandTemplates() => PatternTemplateSet.FromLiteral(_text);
+	#endregion PUBLIC
+	#endregion METHODS
 }
 
 internal sealed class ConcatenationPatternNode : PatternNode
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly IReadOnlyList<PatternNode> _parts;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a node that appends child nodes in order for FOLLOWED BY, THEN or +.
 	/// </summary>
@@ -190,7 +246,11 @@ internal sealed class ConcatenationPatternNode : PatternNode
 	{
 		_parts = parts;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Appends each concatenated child node in source order.
 	/// </summary>
@@ -242,12 +302,20 @@ internal sealed class ConcatenationPatternNode : PatternNode
 
 		return result;
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }
 
 internal sealed class ChoicePatternNode : PatternNode
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly IReadOnlyList<PatternNode> _options;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a node that randomly chooses one child option for OR or |.
 	/// </summary>
@@ -258,7 +326,11 @@ internal sealed class ChoicePatternNode : PatternNode
 	{
 		_options = options;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Appends one randomly selected option.
 	/// </summary>
@@ -295,15 +367,28 @@ internal sealed class ChoicePatternNode : PatternNode
 	///	Thrown when an option cannot be translated, or when there are too many shapes.
 	/// </exception>
 	public override PatternTemplateSet ExpandTemplates()
-		=> PatternTemplateSet.Union([.. _options.Select(option => option.ExpandTemplates())]);
+		=> PatternTemplateSet.Union(
+			[..
+				_options
+					.Select(option => option.ExpandTemplates())
+			]
+		);
+	#endregion PUBLIC
+	#endregion METHODS
 }
 
 internal sealed class RepetitionPatternNode : PatternNode
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly PatternNode _node;
 	private readonly int         _minimumCount;
 	private readonly int         _maximumCount;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a node that repeats another node a fixed or random number of times.
 	/// </summary>
@@ -322,7 +407,11 @@ internal sealed class RepetitionPatternNode : PatternNode
 		_minimumCount = minimumCount;
 		_maximumCount = maximumCount;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Chooses a repetition count and appends the child node that many times.
 	/// </summary>
@@ -384,4 +473,6 @@ internal sealed class RepetitionPatternNode : PatternNode
 
 		return PatternTemplateSet.Union(counts);
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }

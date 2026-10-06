@@ -7,8 +7,25 @@ namespace DataGenerator.Services.Generation;
 /// </summary>
 internal static class SqlCleanupStatements
 {
+	#region FIELDS
+	#region PUBLIC
 	public const string RESEED_VARIABLE_NAME = "@dg_reseed";
+	#endregion PUBLIC
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Initialises the static state of <see cref="SqlCleanupStatements"/>.
+	/// </summary>
+	static SqlCleanupStatements()
+	{
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Checks whether a table contains an identity column.
 	/// </summary>
@@ -18,7 +35,11 @@ internal static class SqlCleanupStatements
 	/// <returns>
 	///	<see langword="true"/> when the table has an identity column; otherwise <see langword="false"/>.
 	/// </returns>
-	public static bool HasIdentityColumn(TableModel table) => table.Columns.Any(column => column.IsIdentity);
+	public static bool HasIdentityColumn(TableModel table)
+		=>
+			table
+				.Columns
+				.Any(column => column.IsIdentity);
 
 	/// <summary>
 	///	Builds the SQL statement that deletes all rows from a table.
@@ -65,4 +86,6 @@ internal static class SqlCleanupStatements
 				+ $"{SqlSyntax.QuoteUnicodeText(command)}, N'@value BIGINT', @value = {RESEED_VARIABLE_NAME};"
 		];
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }

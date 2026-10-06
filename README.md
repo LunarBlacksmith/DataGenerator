@@ -164,7 +164,21 @@ DataGenerator\
 - Curly braces on every body, including single-line `if` statements and `switch` cases.
 - Multi-line conditional expressions put the condition on its own line, with `?` and `:` indented one level further. Nested conditionals indent another level.
 - Short `if (...) { return ...; }` guards followed by a final `return` are written as one waterfall conditional expression. A method whose body is a single `return` uses an expression body (`=>`).
-- LINQ statements with more than two `.` member accesses in the chain put the receiver on its own line and every `.Call` (including the first) on its own line, one level deeper.
+- LINQ statements with more than two `.` characters (counted over the whole statement, or over a lambda's expression body) put the receiver on its own line and every `.Call` (including the first) on its own line, one level deeper. When a link's arguments do not fit on one line (100 columns), each argument goes on its own line and the closing `)` lines up with the link. A chain that is only an operand inside a larger expression (for example `!items.Any(...)`) is moved into a well-named local first.
+
+  ```csharp
+  bool referencedColumnExists =
+  	referencedPlan
+  		.Table
+  		.Columns
+  		.Any(
+  			item => string.Equals(
+  				item.Name,
+  				reference.ReferencedColumn,
+  				StringComparison.OrdinalIgnoreCase
+  			)
+  		);
+  ```
 - Multi-line collection expressions are laid out like method calls: `[..` (or `[`) stays on the line of the assignment, and the closing `]` is on its own line at the assignment's indentation.
 
   ```csharp
@@ -176,3 +190,5 @@ DataGenerator\
   ];
   ```
 - Every method has an XML documentation comment, with `<summary>`, `<param>`, `<returns>` and `<exception>` tags as needed. Tag lines use `/// `, text lines use `///` followed by a tab, and `<para>` blocks separate longer summaries.
+- Class layout, top to bottom: fields, properties, events, constructors, methods, nested types. Each is wrapped in a named region (`#region FIELDS` … `#endregion FIELDS`), with nested accessor regions (`#region PUBLIC`, `#region PRIVATE`, and so on), and `static`/`const` members at the top of their region. Classes that hold only fields or properties still use the regions.
+- Every class declares a constructor (static classes declare a static constructor). Default values for fields and properties are assigned in the constructor, never in an initialiser on the declaration. `const` values are the exception, because the language requires an initialiser. Static members are assigned in the static constructor.

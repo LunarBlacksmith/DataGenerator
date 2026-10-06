@@ -14,6 +14,8 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class RowSetConfigurationsViewModel : ObservableObject
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string DIALOG_TITLE        = "Set configurations";
 	private const string NAME_SEPARATOR      = " – ";
 	private const int    MAXIMUM_NAMED_SKIPS = 3;
@@ -26,45 +28,11 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	private bool                _isMenuOpen;
 	private string              _newName;
 	private string?             _nameError;
+	#endregion PRIVATE
+	#endregion FIELDS
 
-	/// <summary>
-	///	Creates the set-configuration menu and connects it to the saved configuration library.
-	/// </summary>
-	/// <param name="library">
-	///	The saved row-set configuration library.
-	/// </param>
-	/// <param name="dialogService">
-	///	The dialog service used for confirmations and errors.
-	/// </param>
-	/// <param name="fileDialogService">
-	///	The file dialog service used to import and export configurations.
-	/// </param>
-	/// <exception cref="ArgumentNullException">
-	///	Thrown when any service argument is <see langword="null"/>.
-	/// </exception>
-	public RowSetConfigurationsViewModel(
-		RowSetConfigurationLibrary library,
-		IDialogService             dialogService,
-		IFileDialogService         fileDialogService
-	)
-	{
-		_library           = library ?? throw new ArgumentNullException(nameof(library));
-		_dialogService     = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
-		_fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
-		_table             = null;
-		_isMenuOpen        = false;
-		_newName           = string.Empty;
-		_nameError         = null;
-
-		SaveCommand   = new RelayCommand(_ => Save(), _ => RowSet is not null && _nameError is null);
-		LoadCommand   = new RelayCommand(parameter => Load(parameter as RowSetConfigurationOption), parameter => RowSet is not null && parameter is RowSetConfigurationOption);
-		DeleteCommand = new RelayCommand(parameter => Delete(parameter as RowSetConfigurationOption), parameter => parameter is RowSetConfigurationOption);
-		ImportCommand = new RelayCommand(_ => Import());
-		ExportCommand = new RelayCommand(_ => Export(), _ => _library.Configurations.Count > 0);
-
-		_library.Changed += OnLibraryChanged;
-	}
-
+	#region PROPERTIES
+	#region PUBLIC
 	public RelayCommand SaveCommand   { get; }
 	public RelayCommand LoadCommand   { get; }
 	public RelayCommand DeleteCommand { get; }
@@ -74,7 +42,7 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	/// <summary>
 	///	The saved configurations that share at least one column with the row set; the ones saved from its table come first.
 	/// </summary>
-	public ObservableCollection<RowSetConfigurationOption> Options { get; } = [];
+	public ObservableCollection<RowSetConfigurationOption> Options { get; }
 
 	public bool HasOptions => Options.Count > 0;
 
@@ -139,11 +107,61 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	}
 
 	public bool HasNameError => _nameError is not null;
+	#endregion PUBLIC
 
+	#region PRIVATE
 	private RowSetViewModel? RowSet => _table?.SelectedRowSet;
 
 	private string TableName => _table?.Model.DisplayName ?? string.Empty;
+	#endregion PRIVATE
+	#endregion PROPERTIES
 
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates the set-configuration menu and connects it to the saved configuration library.
+	/// </summary>
+	/// <param name="library">
+	///	The saved row-set configuration library.
+	/// </param>
+	/// <param name="dialogService">
+	///	The dialog service used for confirmations and errors.
+	/// </param>
+	/// <param name="fileDialogService">
+	///	The file dialog service used to import and export configurations.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when any service argument is <see langword="null"/>.
+	/// </exception>
+	public RowSetConfigurationsViewModel(
+		RowSetConfigurationLibrary library,
+		IDialogService             dialogService,
+		IFileDialogService         fileDialogService
+	)
+	{
+		Options = [];
+
+		_library           = library ?? throw new ArgumentNullException(nameof(library));
+		_dialogService     = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
+		_fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
+		_table             = null;
+		_isMenuOpen        = false;
+		_newName           = string.Empty;
+		_nameError         = null;
+
+		SaveCommand   = new RelayCommand(_ => Save(), _ => RowSet is not null && _nameError is null);
+		LoadCommand   = new RelayCommand(parameter => Load(parameter as RowSetConfigurationOption), parameter => RowSet is not null && parameter is RowSetConfigurationOption);
+		DeleteCommand = new RelayCommand(parameter => Delete(parameter as RowSetConfigurationOption), parameter => parameter is RowSetConfigurationOption);
+		ImportCommand = new RelayCommand(_ => Import());
+		ExportCommand = new RelayCommand(_ => Export(), _ => _library.Configurations.Count > 0);
+
+		_library.Changed += OnLibraryChanged;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Makes the menu work on the row set shown for a table (the one selected in its tabs).
 	/// </summary>
@@ -166,6 +184,79 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		LoadCommand.NotifyCanExecuteChanged();
 		OnPropertyChanged(nameof(MenuTitle));
 	}
+	#endregion PUBLIC
+
+	#region PRIVATE
+	/// <summary>
+	///	Describes what happened when a configuration was loaded into a row set.
+	/// </summary>
+	/// <param name="name">
+	///	The name of the configuration that was loaded.
+	/// </param>
+	/// <param name="result">
+	///	The load result reported by the row set.
+	/// </param>
+	/// <returns>
+	///	The result text and tooltip details to show beside the row set.
+	/// </returns>
+	private static OperationResultText Describe(string name, RowSetConfigurationLoadResult result)
+	{
+		List<string> details = [..
+			result
+				.Skipped
+				.Select(skip => $"{skip.ColumnName}: {skip.Problem}")
+		];
+
+		if (result.NotInConfiguration.Count > 0)
+		{
+			details.Add($"Not in the configuration, so unchanged: {string.Join(", ", result.NotInConfiguration)}");
+		}
+
+		if (result.UnknownColumns.Count > 0)
+		{
+			details.Add($"In the configuration but not in this table: {string.Join(", ", result.UnknownColumns)}");
+		}
+
+		string text =
+			result.UpdatedCount == 1
+				? $"Loaded '{name}': 1 column updated."
+				: $"Loaded '{name}': {result.UpdatedCount} columns updated.";
+
+		if (result.Skipped.Count > 0)
+		{
+			string names      = string.Join(
+				", ",
+				result
+					.Skipped
+					.Take(MAXIMUM_NAMED_SKIPS)
+					.Select(skip => skip.ColumnName)
+			);
+			int    otherCount = result.Skipped.Count - MAXIMUM_NAMED_SKIPS;
+
+			text +=
+				otherCount > 0
+					? $" Kept as they were: {names} and {otherCount} more (hover for why)."
+					: $" Kept as they were: {names} (hover for why).";
+		}
+		else if (details.Count > 0)
+		{
+			text += " Hover for details.";
+		}
+
+		return new OperationResultText(text, details.Count > 0 ? string.Join(Environment.NewLine, details) : null, result.Skipped.Count > 0);
+	}
+
+	/// <summary>
+	///	Whether an exception means the configuration file could not be read or written.
+	/// </summary>
+	/// <param name="exception">
+	///	The exception to classify.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the exception is a file or data problem; otherwise <see langword="false"/>.
+	/// </returns>
+	private static bool IsFileProblem(Exception exception)
+		=> exception is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException or ArgumentException;
 
 	/// <summary>
 	///	Refreshes the menu contents and suggests a configuration name for the active row set.
@@ -358,7 +449,11 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 			return;
 		}
 
-		List<string> existingNames = [.. configurations.Where(configuration => _library.Find(configuration.Name) is not null).Select(configuration => configuration.Name)];
+		List<string> existingNames = [..
+			configurations
+				.Where(configuration => _library.Find(configuration.Name) is not null)
+				.Select(configuration => configuration.Name)
+		];
 		bool         replace       = false;
 
 		if (existingNames.Count > 0)
@@ -415,61 +510,6 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		{
 			_dialogService.ShowError(DIALOG_TITLE, $"The set configurations could not be exported.{Environment.NewLine}{Environment.NewLine}{exception.Message}");
 		}
-	}
-
-	/// <summary>
-	///	Describes what happened when a configuration was loaded into a row set.
-	/// </summary>
-	/// <param name="name">
-	///	The name of the configuration that was loaded.
-	/// </param>
-	/// <param name="result">
-	///	The load result reported by the row set.
-	/// </param>
-	/// <returns>
-	///	The result text and tooltip details to show beside the row set.
-	/// </returns>
-	private static OperationResultText Describe(string name, RowSetConfigurationLoadResult result)
-	{
-		List<string> details = [.. result.Skipped.Select(skip => $"{skip.ColumnName}: {skip.Problem}")];
-
-		if (result.NotInConfiguration.Count > 0)
-		{
-			details.Add($"Not in the configuration, so unchanged: {string.Join(", ", result.NotInConfiguration)}");
-		}
-
-		if (result.UnknownColumns.Count > 0)
-		{
-			details.Add($"In the configuration but not in this table: {string.Join(", ", result.UnknownColumns)}");
-		}
-
-		string text =
-			result.UpdatedCount == 1
-				? $"Loaded '{name}': 1 column updated."
-				: $"Loaded '{name}': {result.UpdatedCount} columns updated.";
-
-		if (result.Skipped.Count > 0)
-		{
-			string names      = string.Join(
-				", ",
-				result
-					.Skipped
-					.Take(MAXIMUM_NAMED_SKIPS)
-					.Select(skip => skip.ColumnName)
-			);
-			int    otherCount = result.Skipped.Count - MAXIMUM_NAMED_SKIPS;
-
-			text +=
-				otherCount > 0
-					? $" Kept as they were: {names} and {otherCount} more (hover for why)."
-					: $" Kept as they were: {names} (hover for why).";
-		}
-		else if (details.Count > 0)
-		{
-			text += " Hover for details.";
-		}
-
-		return new OperationResultText(text, details.Count > 0 ? string.Join(Environment.NewLine, details) : null, result.Skipped.Count > 0);
 	}
 
 	/// <summary>
@@ -533,16 +573,6 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 
 		ExportCommand.NotifyCanExecuteChanged();
 	}
-
-	/// <summary>
-	///	Whether an exception means the configuration file could not be read or written.
-	/// </summary>
-	/// <param name="exception">
-	///	The exception to classify.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when the exception is a file or data problem; otherwise <see langword="false"/>.
-	/// </returns>
-	private static bool IsFileProblem(Exception exception)
-		=> exception is IOException or UnauthorizedAccessException or InvalidDataException or InvalidOperationException or ArgumentException;
+	#endregion PRIVATE
+	#endregion METHODS
 }

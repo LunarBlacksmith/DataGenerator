@@ -5,8 +5,25 @@ namespace DataGenerator.Infrastructure;
 
 public abstract class ObservableObject : INotifyPropertyChanged
 {
+	#region EVENTS
+	#region PUBLIC
 	public event PropertyChangedEventHandler? PropertyChanged;
+	#endregion PUBLIC
+	#endregion EVENTS
 
+	#region CONSTRUCTORS
+	#region PROTECTED
+	/// <summary>
+	///	Creates a new <see cref="ObservableObject"/>.
+	/// </summary>
+	protected ObservableObject()
+	{
+	}
+	#endregion PROTECTED
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PROTECTED
 	/// <summary>
 	///	Updates a backing field and raises a property change notification when the value actually changed.
 	/// </summary>
@@ -49,4 +66,6 @@ public abstract class ObservableObject : INotifyPropertyChanged
 	/// </param>
 	protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
 		=> PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+	#endregion PROTECTED
+	#endregion METHODS
 }

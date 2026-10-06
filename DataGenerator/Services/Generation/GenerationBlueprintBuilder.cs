@@ -8,10 +8,16 @@ namespace DataGenerator.Services.Generation;
 /// </summary>
 internal sealed class GenerationBlueprintBuilder
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly ISqlValueConverter    _converter;
 	private readonly IColumnValueGenerator _valueGenerator;
 	private readonly IPatternSqlTranslator _patternTranslator;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the service that validates requests and builds generation blueprints.
 	/// </summary>
@@ -33,6 +39,36 @@ internal sealed class GenerationBlueprintBuilder
 		_valueGenerator    = valueGenerator    ?? throw new ArgumentNullException(nameof(valueGenerator));
 		_patternTranslator = patternTranslator ?? throw new ArgumentNullException(nameof(patternTranslator));
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
+	/// <summary>
+	///	Formats a table, row set, row and column location for generation error messages.
+	/// </summary>
+	/// <param name="table">
+	///	The table being generated or validated.
+	/// </param>
+	/// <param name="rowSet">
+	///	The row set within the table, or <see langword="null"/> for table-level messages.
+	/// </param>
+	/// <param name="rowIndex">
+	///	The zero-based row index, or <see langword="null"/> when the row is not known.
+	/// </param>
+	/// <param name="column">
+	///	The column involved, or <see langword="null"/> when the whole row set is involved.
+	/// </param>
+	/// <returns>
+	///	A display location suitable for user-facing errors.
+	/// </returns>
+	public static string DescribeLocation(
+		TableModel   table,
+		RowSetPlan?  rowSet   = null,
+		long?        rowIndex = null,
+		ColumnModel? column   = null
+	)
+		=> GenerationLocation.Describe(table, rowSet?.Name, rowIndex, column?.Name);
 
 	/// <summary>
 	///	Validates a generation request and builds the ordered blueprint used by script and direct modes.
@@ -103,33 +139,9 @@ internal sealed class GenerationBlueprintBuilder
 			PostGeneration     = request.PostGeneration is { Statements.Count: > 0 } ? request.PostGeneration : null
 		};
 	}
+	#endregion PUBLIC
 
-	/// <summary>
-	///	Formats a table, row set, row and column location for generation error messages.
-	/// </summary>
-	/// <param name="table">
-	///	The table being generated or validated.
-	/// </param>
-	/// <param name="rowSet">
-	///	The row set within the table, or <see langword="null"/> for table-level messages.
-	/// </param>
-	/// <param name="rowIndex">
-	///	The zero-based row index, or <see langword="null"/> when the row is not known.
-	/// </param>
-	/// <param name="column">
-	///	The column involved, or <see langword="null"/> when the whole row set is involved.
-	/// </param>
-	/// <returns>
-	///	A display location suitable for user-facing errors.
-	/// </returns>
-	public static string DescribeLocation(
-		TableModel   table,
-		RowSetPlan?  rowSet   = null,
-		long?        rowIndex = null,
-		ColumnModel? column   = null
-	)
-		=> GenerationLocation.Describe(table, rowSet?.Name, rowIndex, column?.Name);
-
+	#region PRIVATE
 	/// <summary>
 	///	Tables that insert rows come first, referenced tables before the tables that reference them (only insert sets
 	///	count, because update sets do not create keys); tables with only update sets follow in request order.
@@ -150,14 +162,40 @@ internal sealed class GenerationBlueprintBuilder
 	{
 		List<TableGenerationPlan> insertPlans = [..
 			plans
-				.Where(plan => plan.RowSets.Any(rowSet => !rowSet.IsUpdate))
-				.Select(plan => new TableGenerationPlan { Table = plan.Table, RowSets = [.. plan.RowSets.Where(rowSet => !rowSet.IsUpdate)] })
+				.Where(
+					plan =>
+						plan
+							.RowSets
+							.Any(rowSet => !rowSet.IsUpdate)
+				)
+				.Select(
+					plan => new TableGenerationPlan
+					{
+						Table   = plan.Table,
+						RowSets = [..
+							plan
+								.RowSets
+								.Where(rowSet => !rowSet.IsUpdate)
+						]
+					}
+				)
 		];
 
-		List<TableGenerationPlan> ordered     = [.. TableDependencySorter.SortForInsertion(insertPlans).Select(plan => plansByKey[plan.Table.Key])];
-		HashSet<string>           orderedKeys = new(ordered.Select(plan => plan.Table.Key), StringComparer.OrdinalIgnoreCase);
+		List<TableGenerationPlan> ordered     = [..
+			TableDependencySorter
+				.SortForInsertion(insertPlans)
+				.Select(plan => plansByKey[plan.Table.Key])
+		];
+		HashSet<string>           orderedKeys = new(
+			ordered
+				.Select(plan => plan.Table.Key),
+			StringComparer.OrdinalIgnoreCase
+		);
 
-		ordered.AddRange(plans.Where(plan => !orderedKeys.Contains(plan.Table.Key)));
+		ordered.AddRange(
+			plans
+				.Where(plan => !orderedKeys.Contains(plan.Table.Key))
+		);
 
 		return ordered;
 	}
@@ -225,7 +263,9 @@ internal sealed class GenerationBlueprintBuilder
 
 			if (insertSteps.Count > 0)
 			{
-				steps[plan.Table.Key] = insertSteps.Min();
+				steps[plan.Table.Key] =
+					insertSteps
+						.Min();
 			}
 		}
 
@@ -261,6 +301,267 @@ internal sealed class GenerationBlueprintBuilder
 
 		return plansByKey;
 	}
+
+	/// <summary>
+	///	Finds the first row-set-level validation problem.
+	/// </summary>
+	/// <param name="table">
+	///	The table that owns the row set.
+	/// </param>
+	/// <param name="rowSet">
+	///	The row set to validate.
+	/// </param>
+	/// <returns>
+	///	The validation message, or <see langword="null"/> when the row set is valid.
+	/// </returns>
+	private static string? FindRowSetProblem(TableModel table, RowSetPlan rowSet)
+	{
+		if (rowSet.Step < RowSetPlan.FIRST_STEP)
+		{
+			return $"The step must be {RowSetPlan.FIRST_STEP} or higher.";
+		}
+
+		if (!rowSet.IsUpdate)
+		{
+			return null;
+		}
+
+		if (
+			rowSet
+				.Rules
+				.All(rule => rule.GenerationMode == ValueGenerationMode.KeepCurrent)
+		)
+		{
+			return "The update set does not change any column. Choose another mode than 'Keep current value' for at least one column.";
+		}
+
+		bool hasPrimaryKey =
+			table
+				.Columns
+				.Any(column => column.IsPrimaryKey);
+
+		return
+			rowSet.UpdateScope != RowScope.Any && !hasPrimaryKey
+				? "Only tables with a primary key can limit an update set to generated or existing rows. Use 'Any rows' and a condition instead."
+				: null;
+	}
+
+	/// <summary>
+	///	Finds one cycle among rules that could not be sorted by column-value references.
+	/// </summary>
+	/// <param name="rules">
+	///	The rules being sorted.
+	/// </param>
+	/// <param name="references">
+	///	For each rule index, the indexes it references.
+	/// </param>
+	/// <param name="remainingReferences">
+	///	The number of unresolved references for each rule.
+	/// </param>
+	/// <returns>
+	///	The column names in the cycle, with the first name repeated at the end.
+	/// </returns>
+	private static List<string> FindCycle(
+		IReadOnlyList<ColumnRule> rules,
+		List<int>[]               references,
+		int[]                     remainingReferences
+	)
+	{
+		// Every unsorted rule still uses another unsorted rule, so following those references must return to a visited rule.
+		List<int> path    = [];
+		int       current = Array.FindIndex(remainingReferences, count => count > 0);
+
+		while (!path.Contains(current))
+		{
+			path.Add(current);
+			current = references[current].First(index => remainingReferences[index] > 0);
+		}
+
+		List<string> cycle = [..
+			path
+				.Skip(path.IndexOf(current))
+				.Select(index => rules[index].Column.Name)
+		];
+
+		cycle.Add(rules[current].Column.Name);
+		return cycle;
+	}
+
+	/// <summary>
+	///	Finds validation problems in a value-from-table rule.
+	/// </summary>
+	/// <param name="rule">
+	///	The column rule that uses the lookup.
+	/// </param>
+	/// <param name="rowSet">
+	///	The row set that contains the rule.
+	/// </param>
+	/// <param name="firstInsertSteps">
+	///	The first insert step for each generated table.
+	/// </param>
+	/// <returns>
+	///	The validation message, or <see langword="null"/> when the lookup can be used.
+	/// </returns>
+	private static string? FindLookupProblem(
+		ColumnRule              rule,
+		RowSetPlan              rowSet,
+		Dictionary<string, int> firstInsertSteps
+	)
+	{
+		if (rule.Lookup is not ColumnLookup lookup)
+		{
+			return "Enter which table column the values come from, e.g. dbo.Shirt.ShirtID.";
+		}
+
+		if (lookup.Scope == RowScope.Generated && !InsertsBy(firstInsertSteps, lookup.SourceTable.Key, rowSet.Step))
+		{
+			return $"'Value from table' uses rows generated for {lookup.SourceTable.DisplayName}, but no insert set of that table "
+				+ $"runs in step {rowSet.Step} or earlier. Move an insert set of that table to an earlier step, or use FROM ANY.";
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	///	Checks whether a table has inserted rows by a requested step.
+	/// </summary>
+	/// <param name="firstInsertSteps">
+	///	The first insert step for each generated table.
+	/// </param>
+	/// <param name="tableKey">
+	///	The table key to check.
+	/// </param>
+	/// <param name="step">
+	///	The step by which inserted rows must exist.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the table has an insert set at or before the step; otherwise <see langword="false"/>.
+	/// </returns>
+	private static bool InsertsBy(
+		Dictionary<string, int> firstInsertSteps,
+		string                  tableKey,
+		int                     step
+	)
+		=> firstInsertSteps.TryGetValue(tableKey, out int insertStep) && insertStep <= step;
+
+	/// <summary>
+	///	Creates key tables for generated-key references that need captured values from generated parent rows.
+	/// </summary>
+	/// <param name="plans">
+	///	The table plans to inspect for generated-key rules.
+	/// </param>
+	/// <param name="isScript">
+	///	Whether the blueprint is for SQL script generation.
+	/// </param>
+	/// <returns>
+	///	Generated key tables keyed by referenced table key.
+	/// </returns>
+	private static Dictionary<string, GeneratedKeyTable> CreateKeyTables(IReadOnlyList<TableGenerationPlan> plans, bool isScript)
+	{
+		Dictionary<string, List<string>> columnNamesByTable = new(StringComparer.OrdinalIgnoreCase);
+
+		foreach (ColumnRule rule in
+			plans
+				.SelectMany(plan => plan.RowSets)
+				.SelectMany(rowSet => rowSet.Rules)
+		)
+		{
+			ForeignKeyModel? reference = rule.Reference;
+
+			if (rule.GenerationMode != ValueGenerationMode.GeneratedForeignKey || reference is null)
+			{
+				continue;
+			}
+
+			if (!columnNamesByTable.TryGetValue(reference.ReferencedTableKey, out List<string>? columnNames))
+			{
+				columnNames                                     = [];
+				columnNamesByTable[reference.ReferencedTableKey] = columnNames;
+			}
+
+			bool isKnownColumn =
+				columnNames
+					.Contains(reference.ReferencedColumn, StringComparer.OrdinalIgnoreCase);
+
+			if (!isKnownColumn)
+			{
+				columnNames.Add(reference.ReferencedColumn);
+			}
+		}
+
+		Dictionary<string, GeneratedKeyTable> keyTables = new(StringComparer.OrdinalIgnoreCase);
+		int                                   number    = 0;
+
+		foreach (TableGenerationPlan plan in plans)
+		{
+			if (!columnNamesByTable.TryGetValue(plan.Table.Key, out List<string>? columnNames))
+			{
+				continue;
+			}
+
+			List<ColumnModel> columns = [..
+				plan
+					.Table
+					.Columns
+					.Where(
+						column =>
+							columnNames
+								.Contains(column.Name, StringComparer.OrdinalIgnoreCase)
+					)
+			];
+
+			++number;
+
+			bool    needsOutput        = isScript
+				&& plan
+					.RowSets
+					.Any(
+						rowSet => !rowSet.IsUpdate && columns.Any(column => IsProducedByDatabase(rowSet, column))
+					);
+			string? outputVariableName = needsOutput ? $"@dg_keys_{number}" : null;
+
+			keyTables[plan.Table.Key] = new GeneratedKeyTable(plan.Table, columns, outputVariableName);
+		}
+
+		return keyTables;
+	}
+
+	/// <summary>
+	///	Checks whether SQL Server, rather than the generator, produces a column value for a row set.
+	/// </summary>
+	/// <param name="rowSet">
+	///	The row set whose rule should be inspected.
+	/// </param>
+	/// <param name="column">
+	///	The column to check.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the column is omitted or marked database-generated; otherwise <see langword="false"/>.
+	/// </returns>
+	private static bool IsProducedByDatabase(RowSetPlan rowSet, ColumnModel column)
+	{
+		ColumnRule? rule =
+			rowSet
+				.Rules
+				.FirstOrDefault(item => IsSameColumn(item.Column, column));
+
+		return rule is null || rule.GenerationMode == ValueGenerationMode.DatabaseGenerated;
+	}
+
+	/// <summary>
+	///	Compares two column models by reference or case-insensitive name.
+	/// </summary>
+	/// <param name="first">
+	///	The first column.
+	/// </param>
+	/// <param name="second">
+	///	The second column.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when both values represent the same column; otherwise <see langword="false"/>.
+	/// </returns>
+	private static bool IsSameColumn(ColumnModel first, ColumnModel second)
+		=> ReferenceEquals(first, second) || string.Equals(first.Name, second.Name, StringComparison.OrdinalIgnoreCase);
 
 	/// <summary>
 	///	Validates all row sets and rules of one table plan before generation starts.
@@ -334,41 +635,6 @@ internal sealed class GenerationBlueprintBuilder
 	}
 
 	/// <summary>
-	///	Finds the first row-set-level validation problem.
-	/// </summary>
-	/// <param name="table">
-	///	The table that owns the row set.
-	/// </param>
-	/// <param name="rowSet">
-	///	The row set to validate.
-	/// </param>
-	/// <returns>
-	///	The validation message, or <see langword="null"/> when the row set is valid.
-	/// </returns>
-	private static string? FindRowSetProblem(TableModel table, RowSetPlan rowSet)
-	{
-		if (rowSet.Step < RowSetPlan.FIRST_STEP)
-		{
-			return $"The step must be {RowSetPlan.FIRST_STEP} or higher.";
-		}
-
-		if (!rowSet.IsUpdate)
-		{
-			return null;
-		}
-
-		if (rowSet.Rules.All(rule => rule.GenerationMode == ValueGenerationMode.KeepCurrent))
-		{
-			return "The update set does not change any column. Choose another mode than 'Keep current value' for at least one column.";
-		}
-
-		return
-			rowSet.UpdateScope != RowScope.Any && !table.Columns.Any(column => column.IsPrimaryKey)
-				? "Only tables with a primary key can limit an update set to generated or existing rows. Use 'Any rows' and a condition instead."
-				: null;
-	}
-
-	/// <summary>
 	///	Finds invalid dependencies on values of other columns in the same row set.
 	/// </summary>
 	/// <param name="rule">
@@ -389,7 +655,15 @@ internal sealed class GenerationBlueprintBuilder
 
 		foreach (string columnName in _valueGenerator.GetReferencedColumns(rule))
 		{
-			ColumnRule? referencedRule = rules.FirstOrDefault(item => string.Equals(item.Column.Name, columnName, StringComparison.OrdinalIgnoreCase));
+			ColumnRule? referencedRule =
+				rules
+					.FirstOrDefault(
+						item => string.Equals(
+							item.Column.Name,
+							columnName,
+							StringComparison.OrdinalIgnoreCase
+						)
+					);
 
 			if (referencedRule is null)
 			{
@@ -463,7 +737,11 @@ internal sealed class GenerationBlueprintBuilder
 			}
 		}
 
-		Queue<int> ready = new(Enumerable.Range(0, rules.Count).Where(index => remainingReferences[index] == 0));
+		Queue<int> ready = new(
+			Enumerable
+				.Range(0, rules.Count)
+				.Where(index => remainingReferences[index] == 0)
+		);
 		List<int>  order = new(rules.Count);
 
 		while (ready.Count > 0)
@@ -484,43 +762,6 @@ internal sealed class GenerationBlueprintBuilder
 		cycle = order.Count == rules.Count ? [] : FindCycle(rules, references, remainingReferences);
 
 		return [.. order];
-	}
-
-	/// <summary>
-	///	Finds one cycle among rules that could not be sorted by column-value references.
-	/// </summary>
-	/// <param name="rules">
-	///	The rules being sorted.
-	/// </param>
-	/// <param name="references">
-	///	For each rule index, the indexes it references.
-	/// </param>
-	/// <param name="remainingReferences">
-	///	The number of unresolved references for each rule.
-	/// </param>
-	/// <returns>
-	///	The column names in the cycle, with the first name repeated at the end.
-	/// </returns>
-	private static List<string> FindCycle(
-		IReadOnlyList<ColumnRule> rules,
-		List<int>[]               references,
-		int[]                     remainingReferences
-	)
-	{
-		// Every unsorted rule still uses another unsorted rule, so following those references must return to a visited rule.
-		List<int> path    = [];
-		int       current = Array.FindIndex(remainingReferences, count => count > 0);
-
-		while (!path.Contains(current))
-		{
-			path.Add(current);
-			current = references[current].First(index => remainingReferences[index] > 0);
-		}
-
-		List<string> cycle = [.. path.Skip(path.IndexOf(current)).Select(index => rules[index].Column.Name)];
-
-		cycle.Add(rules[current].Column.Name);
-		return cycle;
 	}
 
 	/// <summary>
@@ -636,129 +877,6 @@ internal sealed class GenerationBlueprintBuilder
 	}
 
 	/// <summary>
-	///	Finds validation problems in a value-from-table rule.
-	/// </summary>
-	/// <param name="rule">
-	///	The column rule that uses the lookup.
-	/// </param>
-	/// <param name="rowSet">
-	///	The row set that contains the rule.
-	/// </param>
-	/// <param name="firstInsertSteps">
-	///	The first insert step for each generated table.
-	/// </param>
-	/// <returns>
-	///	The validation message, or <see langword="null"/> when the lookup can be used.
-	/// </returns>
-	private static string? FindLookupProblem(
-		ColumnRule              rule,
-		RowSetPlan              rowSet,
-		Dictionary<string, int> firstInsertSteps
-	)
-	{
-		if (rule.Lookup is not ColumnLookup lookup)
-		{
-			return "Enter which table column the values come from, e.g. dbo.Shirt.ShirtID.";
-		}
-
-		if (lookup.Scope == RowScope.Generated && !InsertsBy(firstInsertSteps, lookup.SourceTable.Key, rowSet.Step))
-		{
-			return $"'Value from table' uses rows generated for {lookup.SourceTable.DisplayName}, but no insert set of that table "
-				+ $"runs in step {rowSet.Step} or earlier. Move an insert set of that table to an earlier step, or use FROM ANY.";
-		}
-
-		return null;
-	}
-
-	/// <summary>
-	///	Checks whether a table has inserted rows by a requested step.
-	/// </summary>
-	/// <param name="firstInsertSteps">
-	///	The first insert step for each generated table.
-	/// </param>
-	/// <param name="tableKey">
-	///	The table key to check.
-	/// </param>
-	/// <param name="step">
-	///	The step by which inserted rows must exist.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when the table has an insert set at or before the step; otherwise <see langword="false"/>.
-	/// </returns>
-	private static bool InsertsBy(
-		Dictionary<string, int> firstInsertSteps,
-		string                  tableKey,
-		int                     step
-	)
-		=> firstInsertSteps.TryGetValue(tableKey, out int insertStep) && insertStep <= step;
-
-	/// <summary>
-	///	Creates key tables for generated-key references that need captured values from generated parent rows.
-	/// </summary>
-	/// <param name="plans">
-	///	The table plans to inspect for generated-key rules.
-	/// </param>
-	/// <param name="isScript">
-	///	Whether the blueprint is for SQL script generation.
-	/// </param>
-	/// <returns>
-	///	Generated key tables keyed by referenced table key.
-	/// </returns>
-	private static Dictionary<string, GeneratedKeyTable> CreateKeyTables(IReadOnlyList<TableGenerationPlan> plans, bool isScript)
-	{
-		Dictionary<string, List<string>> columnNamesByTable = new(StringComparer.OrdinalIgnoreCase);
-
-		foreach (ColumnRule rule in plans.SelectMany(plan => plan.RowSets).SelectMany(rowSet => rowSet.Rules))
-		{
-			ForeignKeyModel? reference = rule.Reference;
-
-			if (rule.GenerationMode != ValueGenerationMode.GeneratedForeignKey || reference is null)
-			{
-				continue;
-			}
-
-			if (!columnNamesByTable.TryGetValue(reference.ReferencedTableKey, out List<string>? columnNames))
-			{
-				columnNames                                     = [];
-				columnNamesByTable[reference.ReferencedTableKey] = columnNames;
-			}
-
-			if (!columnNames.Contains(reference.ReferencedColumn, StringComparer.OrdinalIgnoreCase))
-			{
-				columnNames.Add(reference.ReferencedColumn);
-			}
-		}
-
-		Dictionary<string, GeneratedKeyTable> keyTables = new(StringComparer.OrdinalIgnoreCase);
-		int                                   number    = 0;
-
-		foreach (TableGenerationPlan plan in plans)
-		{
-			if (!columnNamesByTable.TryGetValue(plan.Table.Key, out List<string>? columnNames))
-			{
-				continue;
-			}
-
-			List<ColumnModel> columns = [..
-				plan
-					.Table
-					.Columns
-					.Where(column => columnNames.Contains(column.Name, StringComparer.OrdinalIgnoreCase))
-			];
-
-			++number;
-
-			bool    needsOutput        = isScript
-				&& plan.RowSets.Any(rowSet => !rowSet.IsUpdate && columns.Any(column => IsProducedByDatabase(rowSet, column)));
-			string? outputVariableName = needsOutput ? $"@dg_keys_{number}" : null;
-
-			keyTables[plan.Table.Key] = new GeneratedKeyTable(plan.Table, columns, outputVariableName);
-		}
-
-		return keyTables;
-	}
-
-	/// <summary>
 	///	Builds the value sources of a row set. Insert sets fill every column SQL Server does not generate; update sets
 	///	change every column that does not keep its current value.
 	/// </summary>
@@ -780,7 +898,11 @@ internal sealed class GenerationBlueprintBuilder
 	private RowSetBlueprint BuildRowSet(TableModel table, RowSetPlan rowSet, GeneratedKeyTable? keys, BuildContext context)
 	{
 		List<ColumnRule>      valueRules  = [..
-			rowSet.Rules.Where(rule => rule.GenerationMode is not (ValueGenerationMode.DatabaseGenerated or ValueGenerationMode.KeepCurrent))
+			rowSet
+				.Rules
+				.Where(
+					rule => rule.GenerationMode is not (ValueGenerationMode.DatabaseGenerated or ValueGenerationMode.KeepCurrent)
+				)
 		];
 		List<ExistingKeyPool> rowSetPools = [];
 		List<LookupPool>      lookupPools = [];
@@ -835,7 +957,13 @@ internal sealed class GenerationBlueprintBuilder
 		List<int> keySourceIndexes =
 			keys is null || rowSet.IsUpdate
 				? []
-				: [.. keys.Columns.Select(column => sources.FindIndex(source => IsSameColumn(source.Rule.Column, column)))];
+				: [..
+					keys
+						.Columns
+						.Select(
+							column => sources.FindIndex(source => IsSameColumn(source.Rule.Column, column))
+						)
+				];
 
 		Dictionary<string, int> sourceIndexesByName = new(StringComparer.OrdinalIgnoreCase);
 
@@ -895,7 +1023,17 @@ internal sealed class GenerationBlueprintBuilder
 
 		++context.UpdateCount;
 
-		return new RowSetUpdate(context.UpdateCount, table, rowSet, [.. sources.Select(source => source.Rule.Column)], scopeCondition, _converter);
+		return new RowSetUpdate(
+			context.UpdateCount,
+			table,
+			rowSet,
+			[..
+				sources
+					.Select(source => source.Rule.Column)
+			],
+			scopeCondition,
+			_converter
+		);
 	}
 
 	/// <summary>
@@ -953,7 +1091,10 @@ internal sealed class GenerationBlueprintBuilder
 		foreach (List<ColumnRule> groupRules in groups.Values)
 		{
 			ForeignKeyModel    reference         = groupRules[0].Reference!;
-			List<string>       referencedColumns = [.. groupRules.Select(rule => rule.Reference!.ReferencedColumn)];
+			List<string>       referencedColumns = [..
+				groupRules
+					.Select(rule => rule.Reference!.ReferencedColumn)
+			];
 			List<ColumnModel>  targetColumns     = [.. groupRules.Select(rule => rule.Column)];
 			string             signature         = ExistingKeyPool.CreateSignature(reference, referencedColumns, targetColumns, _converter);
 
@@ -987,51 +1128,40 @@ internal sealed class GenerationBlueprintBuilder
 
 		return sources;
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 
-	/// <summary>
-	///	Checks whether SQL Server, rather than the generator, produces a column value for a row set.
-	/// </summary>
-	/// <param name="rowSet">
-	///	The row set whose rule should be inspected.
-	/// </param>
-	/// <param name="column">
-	///	The column to check.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when the column is omitted or marked database-generated; otherwise <see langword="false"/>.
-	/// </returns>
-	private static bool IsProducedByDatabase(RowSetPlan rowSet, ColumnModel column)
-	{
-		ColumnRule? rule = rowSet.Rules.FirstOrDefault(item => IsSameColumn(item.Column, column));
-
-		return rule is null || rule.GenerationMode == ValueGenerationMode.DatabaseGenerated;
-	}
-
-	/// <summary>
-	///	Compares two column models by reference or case-insensitive name.
-	/// </summary>
-	/// <param name="first">
-	///	The first column.
-	/// </param>
-	/// <param name="second">
-	///	The second column.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when both values represent the same column; otherwise <see langword="false"/>.
-	/// </returns>
-	private static bool IsSameColumn(ColumnModel first, ColumnModel second)
-		=> ReferenceEquals(first, second) || string.Equals(first.Name, second.Name, StringComparison.OrdinalIgnoreCase);
-
+	#region TYPES
+	#region PRIVATE
 	/// <summary>
 	///	What the row sets of one request share while they are built.
 	/// </summary>
 	private sealed class BuildContext
 	{
+		#region PROPERTIES
+		#region PUBLIC
 		public required Dictionary<string, GeneratedKeyTable> KeyTables     { get; init; }
-		public Dictionary<string, ExistingKeyPool>            Pools         { get; } = new(StringComparer.OrdinalIgnoreCase);
+		public Dictionary<string, ExistingKeyPool>            Pools         { get; }
 		public required RowSnapshotSet                        Snapshots     { get; init; }
 		public required LookupPoolFactory                     LookupFactory { get; init; }
 		public required bool                                  IsScript      { get; init; }
 		public int                                            UpdateCount   { get; set; }
+		#endregion PUBLIC
+		#endregion PROPERTIES
+
+		#region CONSTRUCTORS
+		#region PUBLIC
+		/// <summary>
+		///	Creates a new <see cref="BuildContext"/> and sets the default values of its fields and properties.
+		/// </summary>
+		public BuildContext()
+		{
+			Pools       = new(StringComparer.OrdinalIgnoreCase);
+			UpdateCount = 0;
+		}
+		#endregion PUBLIC
+		#endregion CONSTRUCTORS
 	}
+	#endregion PRIVATE
+	#endregion TYPES
 }

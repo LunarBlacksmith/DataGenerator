@@ -9,13 +9,39 @@ namespace DataGenerator.Services.Patterns;
 /// </summary>
 internal sealed class PatternParser
 {
+	#region FIELDS
+	#region PUBLIC
 	public const int MAXIMUM_REPETITIONS = 1000;
+	#endregion PUBLIC
 
-	private static readonly string[] RESERVED_WORDS = ["FOLLOWED", "BY", "THEN", "OR", "REPEATED", "TO", "TIMES"];
+	#region PRIVATE
+	private static readonly string[] RESERVED_WORDS;
 
 	private readonly IReadOnlyList<PatternToken> _tokens;
 	private int                                  _index;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PRIVATE
+	private PatternToken Current => _tokens[_index];
+
+	private PatternToken Next => _tokens[Math.Min(_index + 1, _tokens.Count - 1)];
+	#endregion PRIVATE
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="PatternParser"/>.
+	/// </summary>
+	static PatternParser()
+	{
+		RESERVED_WORDS = ["FOLLOWED", "BY", "THEN", "OR", "REPEATED", "TO", "TIMES"];
+	}
+	#endregion STATIC
+
+	#region PRIVATE
 	/// <summary>
 	///	Creates a parser over an already-tokenized pattern expression.
 	/// </summary>
@@ -24,13 +50,15 @@ internal sealed class PatternParser
 	/// </param>
 	private PatternParser(IReadOnlyList<PatternToken> tokens)
 	{
+		_index = 0;
+
 		_tokens = tokens;
 	}
+	#endregion PRIVATE
+	#endregion CONSTRUCTORS
 
-	private PatternToken Current => _tokens[_index];
-
-	private PatternToken Next => _tokens[Math.Min(_index + 1, _tokens.Count - 1)];
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Parses a full pattern expression into an executable pattern tree.
 	/// </summary>
@@ -56,7 +84,9 @@ internal sealed class PatternParser
 		parser.ExpectEnd();
 		return node;
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Moves to the next token, stopping at the final End token.
 	/// </summary>
@@ -625,4 +655,6 @@ internal sealed class PatternParser
 			Current.Position
 		);
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

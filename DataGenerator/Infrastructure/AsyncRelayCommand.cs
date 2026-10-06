@@ -4,10 +4,22 @@ namespace DataGenerator.Infrastructure;
 
 public sealed class AsyncRelayCommand : ICommand
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly Func<object?, Task> _executeAsync;
 	private readonly Predicate<object?>? _canExecute;
 	private bool _isExecuting;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region EVENTS
+	#region PUBLIC
+	public event EventHandler? CanExecuteChanged;
+	#endregion PUBLIC
+	#endregion EVENTS
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a command that runs asynchronous work and disables itself while that work is running.
 	/// </summary>
@@ -22,12 +34,16 @@ public sealed class AsyncRelayCommand : ICommand
 	/// </exception>
 	public AsyncRelayCommand(Func<object?, Task> executeAsync, Predicate<object?>? canExecute = null)
 	{
+		_isExecuting = false;
+
 		_executeAsync = executeAsync ?? throw new ArgumentNullException(nameof(executeAsync));
 		_canExecute   = canExecute;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public event EventHandler? CanExecuteChanged;
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Checks whether the command is idle and the optional predicate allows execution.
 	/// </summary>
@@ -69,4 +85,6 @@ public sealed class AsyncRelayCommand : ICommand
 	///	Raises <see cref="CanExecuteChanged"/> so WPF queries the command state again.
 	/// </summary>
 	public void NotifyCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+	#endregion PUBLIC
+	#endregion METHODS
 }

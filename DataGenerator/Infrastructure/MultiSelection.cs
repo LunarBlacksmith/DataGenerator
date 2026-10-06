@@ -12,20 +12,43 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 public static class MultiSelection
 {
-	public static readonly DependencyProperty SELECTED_ITEMS_PROPERTY = DependencyProperty.RegisterAttached(
-		"SelectedItems",
-		typeof(IList),
-		typeof(MultiSelection),
-		new PropertyMetadata(null, OnSelectedItemsChanged)
-	);
+	#region FIELDS
+	#region PUBLIC
+	public static readonly DependencyProperty SELECTED_ITEMS_PROPERTY;
+	#endregion PUBLIC
 
-	private static readonly DependencyProperty SYNCHRONIZER_PROPERTY = DependencyProperty.RegisterAttached(
-		"Synchronizer",
-		typeof(Synchronizer),
-		typeof(MultiSelection),
-		new PropertyMetadata(null)
-	);
+	#region PRIVATE
+	private static readonly DependencyProperty SYNCHRONIZER_PROPERTY;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="MultiSelection"/>.
+	/// </summary>
+	static MultiSelection()
+	{
+		SELECTED_ITEMS_PROPERTY = DependencyProperty.RegisterAttached(
+			"SelectedItems",
+			typeof(IList),
+			typeof(MultiSelection),
+			new PropertyMetadata(null, OnSelectedItemsChanged)
+		);
+
+
+		SYNCHRONIZER_PROPERTY = DependencyProperty.RegisterAttached(
+			"Synchronizer",
+			typeof(Synchronizer),
+			typeof(MultiSelection),
+			new PropertyMetadata(null)
+		);
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Gets the view model collection bound to the selector's selected items.
 	/// </summary>
@@ -55,7 +78,9 @@ public static class MultiSelection
 	/// </exception>
 	public static void SetSelectedItems(DependencyObject element, IList? value)
 		=> (element ?? throw new ArgumentNullException(nameof(element))).SetValue(SELECTED_ITEMS_PROPERTY, value);
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Replaces any existing synchroniser when a selector is bound to a new collection.
 	/// </summary>
@@ -80,13 +105,23 @@ public static class MultiSelection
 			selector.SetValue(SYNCHRONIZER_PROPERTY, new Synchronizer(selector, items));
 		}
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 
+	#region TYPES
+	#region PRIVATE
 	private sealed class Synchronizer
 	{
+		#region FIELDS
+		#region PRIVATE
 		private readonly MultiSelector _selector;
 		private readonly IList         _items;
 		private bool                   _isSynchronizing;
+		#endregion PRIVATE
+		#endregion FIELDS
 
+		#region CONSTRUCTORS
+		#region PUBLIC
 		/// <summary>
 		///	Creates a synchroniser for a selector and a bound collection, starting with no selected items.
 		/// </summary>
@@ -119,7 +154,11 @@ public static class MultiSelection
 				observableItems.CollectionChanged += OnItemsChanged;
 			}
 		}
+		#endregion PUBLIC
+		#endregion CONSTRUCTORS
 
+		#region METHODS
+		#region PUBLIC
 		/// <summary>
 		///	Stops listening to selector and collection changes.
 		/// </summary>
@@ -132,7 +171,9 @@ public static class MultiSelection
 				observableItems.CollectionChanged -= OnItemsChanged;
 			}
 		}
+		#endregion PUBLIC
 
+		#region PRIVATE
 		/// <summary>
 		///	Copies user selection changes from the selector into the bound collection.
 		/// </summary>
@@ -185,7 +226,11 @@ public static class MultiSelection
 
 			try
 			{
-				List<object> wanted = [.. source.Cast<object>().Where(item => _selector.Items.Contains(item))];
+				List<object> wanted = [..
+					source
+						.Cast<object>()
+						.Where(item => _selector.Items.Contains(item))
+				];
 
 				for (int index = target.Count - 1; index >= 0; --index)
 				{
@@ -208,5 +253,9 @@ public static class MultiSelection
 				_isSynchronizing = false;
 			}
 		}
+		#endregion PRIVATE
+		#endregion METHODS
 	}
+	#endregion PRIVATE
+	#endregion TYPES
 }

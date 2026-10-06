@@ -7,6 +7,8 @@ namespace DataGenerator.Services;
 
 public sealed class SqlValueConverter : ISqlValueConverter
 {
+	#region FIELDS
+	#region PRIVATE
 	private const decimal MONEY_MAXIMUM       = 922337203685477.5807m;
 	private const decimal SMALL_MONEY_MAXIMUM = 214748.3647m;
 	private const int     MONEY_SCALE         = 4;
@@ -15,13 +17,43 @@ public sealed class SqlValueConverter : ISqlValueConverter
 	private const int     SYSNAME_LENGTH      = 128;
 	private const double  REAL_MAXIMUM        = 3.40E+38;
 
-	private static readonly CultureInfo INVARIANT              = CultureInfo.InvariantCulture;
-	private static readonly DateTime    DATETIME_MINIMUM       = new(1753, 1, 1);
-	private static readonly DateTime    SMALL_DATETIME_MINIMUM = new(1900, 1, 1);
-	private static readonly DateTime    SMALL_DATETIME_MAXIMUM = new(2079, 6, 6, 23, 59, 0);
-	private static readonly string[]    TRUE_VALUES            = ["1", "true", "yes", "y", "on"];
-	private static readonly string[]    FALSE_VALUES           = ["0", "false", "no", "n", "off"];
+	private static readonly CultureInfo INVARIANT;
+	private static readonly DateTime    DATETIME_MINIMUM;
+	private static readonly DateTime    SMALL_DATETIME_MINIMUM;
+	private static readonly DateTime    SMALL_DATETIME_MAXIMUM;
+	private static readonly string[]    TRUE_VALUES;
+	private static readonly string[]    FALSE_VALUES;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="SqlValueConverter"/>.
+	/// </summary>
+	static SqlValueConverter()
+	{
+		INVARIANT              = CultureInfo.InvariantCulture;
+		DATETIME_MINIMUM       = new(1753, 1, 1);
+		SMALL_DATETIME_MINIMUM = new(1900, 1, 1);
+		SMALL_DATETIME_MAXIMUM = new(2079, 6, 6, 23, 59, 0);
+		TRUE_VALUES            = ["1", "true", "yes", "y", "on"];
+		FALSE_VALUES           = ["0", "false", "no", "n", "off"];
+	}
+	#endregion STATIC
+
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="SqlValueConverter"/>.
+	/// </summary>
+	public SqlValueConverter()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Classifies a SQL column type into the value category used by generators and editors.
 	/// </summary>
@@ -628,7 +660,9 @@ public sealed class SqlValueConverter : ISqlValueConverter
 			}
 		}
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Normalises a column type name for comparisons.
 	/// </summary>
@@ -668,6 +702,81 @@ public sealed class SqlValueConverter : ISqlValueConverter
 		"int"      => (int.MinValue, int.MaxValue),
 		_          => (long.MinValue, long.MaxValue)
 	};
+
+	/// <summary>
+	///	Quotes text as a SQL string literal, using Unicode syntax unless the column is non-Unicode text.
+	/// </summary>
+	/// <param name="column">
+	///	The column whose SQL type controls the literal prefix.
+	/// </param>
+	/// <param name="text">
+	///	The text to quote.
+	/// </param>
+	/// <returns>
+	///	The quoted SQL literal with embedded apostrophes escaped.
+	/// </returns>
+	private static string QuoteText(ColumnModel column, string text)
+	{
+		string escapedText = text.Replace("'", "''");
+
+		return
+			NormalizeType(column) is "char" or "varchar" or "text"
+				? $"'{escapedText}'"
+				: $"N'{escapedText}'";
+	}
+
+	/// <summary>
+	///	Formats a date or date-time value using the precision expected by the SQL column type.
+	/// </summary>
+	/// <param name="column">
+	///	The column whose date type controls the format.
+	/// </param>
+	/// <param name="value">
+	///	The value to format.
+	/// </param>
+	/// <returns>
+	///	The invariant SQL date or date-time text without surrounding quotes.
+	/// </returns>
+	private static string FormatDateTimeLiteral(ColumnModel column, DateTime value) => NormalizeType(column) switch
+	{
+		"date"          => value.ToString("yyyy-MM-dd", INVARIANT),
+		"datetime"      => value.ToString("yyyy-MM-ddTHH:mm:ss.fff", INVARIANT),
+		"smalldatetime" => value.ToString("yyyy-MM-ddTHH:mm:ss", INVARIANT),
+		_               => value.ToString("yyyy-MM-ddTHH:mm:ss.fffffff", INVARIANT)
+	};
+
+	/// <summary>
+	///	Counts significant decimal places after trimming trailing zeroes.
+	/// </summary>
+	/// <param name="value">
+	///	The decimal value to inspect.
+	/// </param>
+	/// <returns>
+	///	The number of significant digits after the decimal point, or zero for whole numbers.
+	/// </returns>
+	private static int CountDecimalPlaces(decimal value)
+	{
+		string text         = value.ToString(INVARIANT);
+		int    decimalIndex = text.IndexOf('.');
+
+		return decimalIndex < 0 ? 0 : text.TrimEnd('0').Length - decimalIndex - 1;
+	}
+
+	/// <summary>
+	///	Counts the digits before the decimal point in the absolute value.
+	/// </summary>
+	/// <param name="value">
+	///	The decimal value to inspect.
+	/// </param>
+	/// <returns>
+	///	The number of integer digits, or zero when the integer part is zero.
+	/// </returns>
+	private static int CountIntegerDigits(decimal value)
+	{
+		decimal integerPart = decimal.Truncate(Math.Abs(value));
+
+		return integerPart == 0 ? 0 : integerPart.ToString(INVARIANT).Length;
+	}
 
 	/// <summary>
 	///	Converts a whole number to the CLR integer type that matches the SQL column.
@@ -916,7 +1025,9 @@ public sealed class SqlValueConverter : ISqlValueConverter
 				? trimmedText[2..]
 				: trimmedText;
 
-		if (hexText.Length % 2 != 0 || !hexText.All(Uri.IsHexDigit))
+		bool isHexadecimal = hexText.All(Uri.IsHexDigit);
+
+		if (hexText.Length % 2 != 0 || !isHexadecimal)
 		{
 			throw new FormatException($"'{text}' is not valid hexadecimal. Enter {DescribeAcceptedInput(column)}.");
 		}
@@ -959,79 +1070,6 @@ public sealed class SqlValueConverter : ISqlValueConverter
 			);
 		}
 	}
-
-	/// <summary>
-	///	Quotes text as a SQL string literal, using Unicode syntax unless the column is non-Unicode text.
-	/// </summary>
-	/// <param name="column">
-	///	The column whose SQL type controls the literal prefix.
-	/// </param>
-	/// <param name="text">
-	///	The text to quote.
-	/// </param>
-	/// <returns>
-	///	The quoted SQL literal with embedded apostrophes escaped.
-	/// </returns>
-	private static string QuoteText(ColumnModel column, string text)
-	{
-		string escapedText = text.Replace("'", "''");
-
-		return
-			NormalizeType(column) is "char" or "varchar" or "text"
-				? $"'{escapedText}'"
-				: $"N'{escapedText}'";
-	}
-
-	/// <summary>
-	///	Formats a date or date-time value using the precision expected by the SQL column type.
-	/// </summary>
-	/// <param name="column">
-	///	The column whose date type controls the format.
-	/// </param>
-	/// <param name="value">
-	///	The value to format.
-	/// </param>
-	/// <returns>
-	///	The invariant SQL date or date-time text without surrounding quotes.
-	/// </returns>
-	private static string FormatDateTimeLiteral(ColumnModel column, DateTime value) => NormalizeType(column) switch
-	{
-		"date"          => value.ToString("yyyy-MM-dd", INVARIANT),
-		"datetime"      => value.ToString("yyyy-MM-ddTHH:mm:ss.fff", INVARIANT),
-		"smalldatetime" => value.ToString("yyyy-MM-ddTHH:mm:ss", INVARIANT),
-		_               => value.ToString("yyyy-MM-ddTHH:mm:ss.fffffff", INVARIANT)
-	};
-
-	/// <summary>
-	///	Counts significant decimal places after trimming trailing zeroes.
-	/// </summary>
-	/// <param name="value">
-	///	The decimal value to inspect.
-	/// </param>
-	/// <returns>
-	///	The number of significant digits after the decimal point, or zero for whole numbers.
-	/// </returns>
-	private static int CountDecimalPlaces(decimal value)
-	{
-		string text         = value.ToString(INVARIANT);
-		int    decimalIndex = text.IndexOf('.');
-
-		return decimalIndex < 0 ? 0 : text.TrimEnd('0').Length - decimalIndex - 1;
-	}
-
-	/// <summary>
-	///	Counts the digits before the decimal point in the absolute value.
-	/// </summary>
-	/// <param name="value">
-	///	The decimal value to inspect.
-	/// </param>
-	/// <returns>
-	///	The number of integer digits, or zero when the integer part is zero.
-	/// </returns>
-	private static int CountIntegerDigits(decimal value)
-	{
-		decimal integerPart = decimal.Truncate(Math.Abs(value));
-
-		return integerPart == 0 ? 0 : integerPart.ToString(INVARIANT).Length;
-	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

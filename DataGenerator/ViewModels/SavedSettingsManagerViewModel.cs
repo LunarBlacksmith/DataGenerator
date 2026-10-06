@@ -12,6 +12,8 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposable
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string DIALOG_TITLE = "Saved column settings";
 
 	private readonly SavedSettingsLibrary _library;
@@ -21,7 +23,51 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 	private SavedSettingRowViewModel? _selectedSetting;
 	private string                    _statusText;
 	private bool                      _isDisposed;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
+	public ObservableCollection<SavedSettingRowViewModel> Settings { get; }
+
+	public RelayCommand DeleteCommand      { get; }
+	public RelayCommand ImportCommand      { get; }
+	public RelayCommand ExportCommand      { get; }
+	public RelayCommand ApplyToOpenCommand { get; }
+
+	public SavedSettingRowViewModel? SelectedSetting
+	{
+		get => _selectedSetting;
+		set
+		{
+			if (SetProperty(ref _selectedSetting, value))
+			{
+				DeleteCommand.NotifyCanExecuteChanged();
+			}
+		}
+	}
+
+	public bool   HasSettings          => Settings.Count > 0;
+	public bool   HasAutomaticSettings
+		=>
+			_library
+				.Settings
+				.Any(setting => setting.ApplyAutomatically);
+	public string FilePath             => _library.FilePath;
+
+	/// <summary>
+	///	The result of the last import, export or apply.
+	/// </summary>
+	public string StatusText
+	{
+		get => _statusText;
+		private set => SetProperty(ref _statusText, value);
+	}
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the saved-settings manager and loads the current saved settings.
 	/// </summary>
@@ -43,6 +89,10 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		IFileDialogService   fileDialogService
 	)
 	{
+		_selectedSetting = null;
+		_isDisposed      = false;
+		Settings         = [];
+
 		_library           = library ?? throw new ArgumentNullException(nameof(library));
 		_dialogService     = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 		_fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
@@ -56,39 +106,11 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		_library.Changed += OnLibraryChanged;
 		RebuildRows();
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public ObservableCollection<SavedSettingRowViewModel> Settings { get; } = [];
-
-	public RelayCommand DeleteCommand      { get; }
-	public RelayCommand ImportCommand      { get; }
-	public RelayCommand ExportCommand      { get; }
-	public RelayCommand ApplyToOpenCommand { get; }
-
-	public SavedSettingRowViewModel? SelectedSetting
-	{
-		get => _selectedSetting;
-		set
-		{
-			if (SetProperty(ref _selectedSetting, value))
-			{
-				DeleteCommand.NotifyCanExecuteChanged();
-			}
-		}
-	}
-
-	public bool   HasSettings          => Settings.Count > 0;
-	public bool   HasAutomaticSettings => _library.Settings.Any(setting => setting.ApplyAutomatically);
-	public string FilePath             => _library.FilePath;
-
-	/// <summary>
-	///	The result of the last import, export or apply.
-	/// </summary>
-	public string StatusText
-	{
-		get => _statusText;
-		private set => SetProperty(ref _statusText, value);
-	}
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Stops listening for saved-settings library changes.
 	/// </summary>
@@ -102,6 +124,20 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		_isDisposed       = true;
 		_library.Changed -= OnLibraryChanged;
 	}
+	#endregion PUBLIC
+
+	#region PRIVATE
+	/// <summary>
+	///	Whether an exception means the saved-settings file could not be read or written.
+	/// </summary>
+	/// <param name="exception">
+	///	The exception to classify.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the exception is a file or data problem; otherwise <see langword="false"/>.
+	/// </returns>
+	private static bool IsFileProblem(Exception exception)
+		=> exception is IOException or UnauthorizedAccessException or InvalidDataException;
 
 	/// <summary>
 	///	Refreshes rows and commands after the saved settings library changes.
@@ -116,7 +152,9 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 	{
 		bool isSameList =
 			Settings.Count == _library.Settings.Count
-			&& Settings.Select(row => row.Setting).SequenceEqual(_library.Settings);
+			&& Settings
+				.Select(row => row.Setting)
+				.SequenceEqual(_library.Settings);
 
 		if (isSameList)
 		{
@@ -148,9 +186,15 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 			Settings.Add(new SavedSettingRowViewModel(setting, Rename, SetApplyAutomatically));
 		}
 
-		SelectedSetting = Settings.FirstOrDefault(
-			row => string.Equals(row.Setting.Name, selectedName, StringComparison.OrdinalIgnoreCase)
-		);
+		SelectedSetting =
+			Settings
+				.FirstOrDefault(
+					row => string.Equals(
+						row.Setting.Name,
+						selectedName,
+						StringComparison.OrdinalIgnoreCase
+					)
+				);
 
 		OnPropertyChanged(nameof(HasSettings));
 		ExportCommand.NotifyCanExecuteChanged();
@@ -250,7 +294,11 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 			return;
 		}
 
-		List<string> existingNames = [.. settings.Where(setting => _library.Find(setting.Name) is not null).Select(setting => setting.Name)];
+		List<string> existingNames = [..
+			settings
+				.Where(setting => _library.Find(setting.Name) is not null)
+				.Select(setting => setting.Name)
+		];
 		bool         replace       = false;
 
 		if (existingNames.Count > 0)
@@ -350,16 +398,6 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 			return false;
 		}
 	}
-
-	/// <summary>
-	///	Whether an exception means the saved-settings file could not be read or written.
-	/// </summary>
-	/// <param name="exception">
-	///	The exception to classify.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when the exception is a file or data problem; otherwise <see langword="false"/>.
-	/// </returns>
-	private static bool IsFileProblem(Exception exception)
-		=> exception is IOException or UnauthorizedAccessException or InvalidDataException;
+	#endregion PRIVATE
+	#endregion METHODS
 }

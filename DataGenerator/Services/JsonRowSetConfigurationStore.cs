@@ -10,9 +10,21 @@ namespace DataGenerator.Services;
 /// </summary>
 public sealed class JsonRowSetConfigurationStore : IRowSetConfigurationStore
 {
+	#region FIELDS
+	#region PRIVATE
 	private const int    FORMAT_VERSION   = 1;
 	private const string FILE_DESCRIPTION = "set configurations file";
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
+	public string LibraryFilePath { get; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a store for the set configuration library file.
 	/// </summary>
@@ -30,9 +42,11 @@ public sealed class JsonRowSetConfigurationStore : IRowSetConfigurationStore
 		ArgumentException.ThrowIfNullOrWhiteSpace(libraryFilePath);
 		LibraryFilePath = libraryFilePath;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public string LibraryFilePath { get; }
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Loads the saved set configuration library when it exists.
 	/// </summary>
@@ -98,7 +112,9 @@ public sealed class JsonRowSetConfigurationStore : IRowSetConfigurationStore
 		ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 		Write(filePath, configurations);
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Reads and normalises a set configurations document.
 	/// </summary>
@@ -208,10 +224,33 @@ public sealed class JsonRowSetConfigurationStore : IRowSetConfigurationStore
 			}
 		);
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 
+	#region TYPES
+	#region PRIVATE
 	private sealed class RowSetConfigurationsDocument
 	{
+		#region PROPERTIES
+		#region PUBLIC
 		public int                              FormatVersion     { get; set; }
 		public List<SavedRowSetConfiguration?>? SetConfigurations { get; set; }
+		#endregion PUBLIC
+		#endregion PROPERTIES
+
+		#region CONSTRUCTORS
+		#region PUBLIC
+		/// <summary>
+		///	Creates a new <see cref="RowSetConfigurationsDocument"/> and sets the default values of its fields and properties.
+		/// </summary>
+		public RowSetConfigurationsDocument()
+		{
+			FormatVersion     = 0;
+			SetConfigurations = null;
+		}
+		#endregion PUBLIC
+		#endregion CONSTRUCTORS
 	}
+	#endregion PRIVATE
+	#endregion TYPES
 }

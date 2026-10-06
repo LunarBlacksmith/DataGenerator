@@ -7,9 +7,15 @@ namespace DataGenerator.Services;
 
 public sealed class HelpService : IHelpService
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly IPatternValueGenerator _patternGenerator;
 	private PatternHelpWindow?              _patternHelpWindow;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the service that shows the pattern language help window.
 	/// </summary>
@@ -21,9 +27,15 @@ public sealed class HelpService : IHelpService
 	/// </exception>
 	public HelpService(IPatternValueGenerator patternGenerator)
 	{
+		_patternHelpWindow = null;
+
 		_patternGenerator = patternGenerator ?? throw new ArgumentNullException(nameof(patternGenerator));
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Shows or activates the pattern language help window and optionally loads an expression into it.
 	/// </summary>
@@ -56,4 +68,6 @@ public sealed class HelpService : IHelpService
 
 		_ = _patternHelpWindow.Activate();
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }

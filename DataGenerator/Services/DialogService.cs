@@ -6,6 +6,19 @@ namespace DataGenerator.Services;
 
 public sealed class DialogService : IDialogService
 {
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="DialogService"/>.
+	/// </summary>
+	public DialogService()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Shows a warning confirmation dialog with OK and Cancel buttons.
 	/// </summary>
@@ -52,7 +65,9 @@ public sealed class DialogService : IDialogService
 	/// </param>
 	public void ShowError(string title, string message)
 		=> _ = Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Shows a WPF message box owned by the active application window when one is available.
 	/// </summary>
@@ -83,7 +98,11 @@ public sealed class DialogService : IDialogService
 	)
 	{
 		Window? owner =
-			Application.Current?.Windows.OfType<Window>().FirstOrDefault(window => window.IsActive)
+			Application
+				.Current
+				?.Windows
+				.OfType<Window>()
+				.FirstOrDefault(window => window.IsActive)
 			?? Application.Current?.MainWindow;
 
 		return
@@ -91,4 +110,6 @@ public sealed class DialogService : IDialogService
 				? MessageBox.Show(message, title, buttons, image, defaultResult)
 				: MessageBox.Show(owner, message, title, buttons, image, defaultResult);
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

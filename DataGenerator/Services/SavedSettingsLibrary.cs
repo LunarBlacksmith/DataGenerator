@@ -10,11 +10,45 @@ namespace DataGenerator.Services;
 /// </summary>
 public sealed class SavedSettingsLibrary
 {
+	#region FIELDS
+	#region PUBLIC
 	public const int MAXIMUM_NAME_LENGTH = 100;
+	#endregion PUBLIC
 
+	#region PRIVATE
 	private readonly ISavedSettingsStore      _store;
 	private readonly List<SavedColumnSetting> _settings;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
+	/// <summary>
+	///	The saved settings, sorted by name. Change them only through the methods of this class.
+	/// </summary>
+	public IReadOnlyList<SavedColumnSetting> Settings => _settings;
+
+	public string FilePath => _store.LibraryFilePath;
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region EVENTS
+	#region PUBLIC
+	/// <summary>
+	///	Raised after settings are added, changed, removed or loaded.
+	/// </summary>
+	public event EventHandler? Changed;
+
+	/// <summary>
+	///	Raised when the user asks for the automatic settings to be applied to the row sets that already exist.
+	///	Handlers report how many columns they updated.
+	/// </summary>
+	public event EventHandler<ApplyAutomaticSettingsEventArgs>? ApplyAutomaticSettingsRequested;
+	#endregion PUBLIC
+	#endregion EVENTS
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the library around the store that loads, saves, imports and exports saved column settings.
 	/// </summary>
@@ -29,24 +63,27 @@ public sealed class SavedSettingsLibrary
 		_store    = store ?? throw new ArgumentNullException(nameof(store));
 		_settings = [];
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
-	///	Raised after settings are added, changed, removed or loaded.
+	///	Returns the problem with a setting name, or <see langword="null"/> when it can be used.
 	/// </summary>
-	public event EventHandler? Changed;
-
-	/// <summary>
-	///	Raised when the user asks for the automatic settings to be applied to the row sets that already exist.
-	///	Handlers report how many columns they updated.
-	/// </summary>
-	public event EventHandler<ApplyAutomaticSettingsEventArgs>? ApplyAutomaticSettingsRequested;
-
-	/// <summary>
-	///	The saved settings, sorted by name. Change them only through the methods of this class.
-	/// </summary>
-	public IReadOnlyList<SavedColumnSetting> Settings => _settings;
-
-	public string FilePath => _store.LibraryFilePath;
+	/// <param name="name">
+	///	The proposed setting name.
+	/// </param>
+	/// <returns>
+	///	The validation message when the name is empty or too long; otherwise <see langword="null"/>.
+	/// </returns>
+	public static string? ValidateName(string? name)
+		=>
+			string.IsNullOrWhiteSpace(name)
+				? "Enter a name, e.g. Order numbers."
+				: name.Trim().Length > MAXIMUM_NAME_LENGTH
+					? $"Use at most {MAXIMUM_NAME_LENGTH} characters."
+					: null;
 
 	/// <summary>
 	///	Reads the saved settings. Returns a message for the user when the file could not be read; the unreadable file is
@@ -85,23 +122,6 @@ public sealed class SavedSettingsLibrary
 	}
 
 	/// <summary>
-	///	Returns the problem with a setting name, or <see langword="null"/> when it can be used.
-	/// </summary>
-	/// <param name="name">
-	///	The proposed setting name.
-	/// </param>
-	/// <returns>
-	///	The validation message when the name is empty or too long; otherwise <see langword="null"/>.
-	/// </returns>
-	public static string? ValidateName(string? name)
-		=>
-			string.IsNullOrWhiteSpace(name)
-				? "Enter a name, e.g. Order numbers."
-				: name.Trim().Length > MAXIMUM_NAME_LENGTH
-					? $"Use at most {MAXIMUM_NAME_LENGTH} characters."
-					: null;
-
-	/// <summary>
 	///	Finds a saved column setting by name, ignoring case and surrounding whitespace.
 	/// </summary>
 	/// <param name="name">
@@ -114,7 +134,14 @@ public sealed class SavedSettingsLibrary
 		=>
 			string.IsNullOrWhiteSpace(name)
 				? null
-				: _settings.FirstOrDefault(setting => string.Equals(setting.Name, name.Trim(), StringComparison.OrdinalIgnoreCase));
+				: _settings
+					.FirstOrDefault(
+						setting => string.Equals(
+							setting.Name,
+							name.Trim(),
+							StringComparison.OrdinalIgnoreCase
+						)
+					);
 
 	/// <summary>
 	///	Finds the automatic setting for a column; a setting for the exact table and column wins over one for any table.
@@ -168,12 +195,13 @@ public sealed class SavedSettingsLibrary
 
 		return
 			candidate.ApplyAutomatically
-				? _settings.FirstOrDefault(
-					setting =>
-						setting.ApplyAutomatically
-						&& setting.HasSameTarget(candidate)
-						&& !string.Equals(setting.Name, candidate.Name.Trim(), StringComparison.OrdinalIgnoreCase)
-				)
+				? _settings
+					.FirstOrDefault(
+						setting =>
+							setting.ApplyAutomatically
+							&& setting.HasSameTarget(candidate)
+							&& !string.Equals(setting.Name, candidate.Name.Trim(), StringComparison.OrdinalIgnoreCase)
+					)
 				: null;
 	}
 
@@ -201,7 +229,8 @@ public sealed class SavedSettingsLibrary
 		return
 			preferred is not null && preferred.HasSameValues(values)
 				? preferred
-				: _settings.FirstOrDefault(setting => setting.HasSameValues(values));
+				: _settings
+					.FirstOrDefault(setting => setting.HasSameValues(values));
 	}
 
 	/// <summary>
@@ -381,6 +410,39 @@ public sealed class SavedSettingsLibrary
 		ApplyAutomaticSettingsRequested?.Invoke(this, arguments);
 		return arguments.UpdatedColumnCount;
 	}
+	#endregion PUBLIC
+
+	#region PRIVATE
+	/// <summary>
+	///	Throws when a saved setting name cannot be saved.
+	/// </summary>
+	/// <param name="name">
+	///	The name to validate.
+	/// </param>
+	/// <exception cref="ArgumentException">
+	///	Thrown when <paramref name="name"/> is empty or too long.
+	/// </exception>
+	private static void EnsureValidName(string? name)
+	{
+		string? error = ValidateName(name);
+
+		if (error is not null)
+		{
+			throw new ArgumentException(error, nameof(name));
+		}
+	}
+
+	/// <summary>
+	///	Checks whether an exception represents a recoverable library-file problem.
+	/// </summary>
+	/// <param name="exception">
+	///	The exception raised while reading, writing or moving the library file.
+	/// </param>
+	/// <returns>
+	///	<see langword="true"/> when the exception is an expected file problem; otherwise <see langword="false"/>.
+	/// </returns>
+	private static bool IsFileProblem(Exception exception)
+		=> exception is IOException or UnauthorizedAccessException or InvalidDataException;
 
 	/// <summary>
 	///	Adds a setting to the in-memory list, replacing any existing setting with the same name.
@@ -525,37 +587,8 @@ public sealed class SavedSettingsLibrary
 	///	Raises the change notification after the in-memory list may have changed.
 	/// </summary>
 	private void OnChanged() => Changed?.Invoke(this, EventArgs.Empty);
-
-	/// <summary>
-	///	Throws when a saved setting name cannot be saved.
-	/// </summary>
-	/// <param name="name">
-	///	The name to validate.
-	/// </param>
-	/// <exception cref="ArgumentException">
-	///	Thrown when <paramref name="name"/> is empty or too long.
-	/// </exception>
-	private static void EnsureValidName(string? name)
-	{
-		string? error = ValidateName(name);
-
-		if (error is not null)
-		{
-			throw new ArgumentException(error, nameof(name));
-		}
-	}
-
-	/// <summary>
-	///	Checks whether an exception represents a recoverable library-file problem.
-	/// </summary>
-	/// <param name="exception">
-	///	The exception raised while reading, writing or moving the library file.
-	/// </param>
-	/// <returns>
-	///	<see langword="true"/> when the exception is an expected file problem; otherwise <see langword="false"/>.
-	/// </returns>
-	private static bool IsFileProblem(Exception exception)
-		=> exception is IOException or UnauthorizedAccessException or InvalidDataException;
+	#endregion PRIVATE
+	#endregion METHODS
 }
 
 /// <summary>
@@ -563,5 +596,21 @@ public sealed class SavedSettingsLibrary
 /// </summary>
 public sealed class ApplyAutomaticSettingsEventArgs : EventArgs
 {
+	#region PROPERTIES
+	#region PUBLIC
 	public int UpdatedColumnCount { get; set; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="ApplyAutomaticSettingsEventArgs"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public ApplyAutomaticSettingsEventArgs()
+	{
+		UpdatedColumnCount = 0;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

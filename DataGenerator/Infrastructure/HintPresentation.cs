@@ -13,6 +13,8 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 public static class HintPresentation
 {
+	#region FIELDS
+	#region PUBLIC
 	/// <summary>
 	///	How far, in device-independent pixels, a hint is moved to the right of the mouse pointer.
 	/// </summary>
@@ -42,9 +44,27 @@ public static class HintPresentation
 	///	The longest time a hint is shown for, however long its text is.
 	/// </summary>
 	public const int MAXIMUM_SHOW_DURATION_MILLISECONDS = 45000;
+	#endregion PUBLIC
 
+	#region PRIVATE
 	private static bool IS_REGISTERED;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="HintPresentation"/>.
+	/// </summary>
+	static HintPresentation()
+	{
+		IS_REGISTERED = false;
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Makes every hint in the application close on its own after its reading time. Call once at start-up, before any
 	///	window is shown; later calls do nothing.
@@ -80,7 +100,9 @@ public static class HintPresentation
 
 		return (int)Math.Clamp(readingTime, MINIMUM_SHOW_DURATION_MILLISECONDS, MAXIMUM_SHOW_DURATION_MILLISECONDS);
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Sets the show duration of the hint that is about to open. WPF reads the duration from the hint's owner straight
 	///	after this event, so the value applies to this opening.
@@ -128,4 +150,6 @@ public static class HintPresentation
 			ToolTip { Content: string toolTipText }   => toolTipText,
 			_                                         => null
 		};
+	#endregion PRIVATE
+	#endregion METHODS
 }

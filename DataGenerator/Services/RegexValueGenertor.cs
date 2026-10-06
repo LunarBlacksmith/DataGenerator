@@ -5,8 +5,25 @@ namespace DataGenerator.Services;
 
 public sealed class RegexValueGenerator : IRegexValueGenerator
 {
+	#region FIELDS
+	#region PRIVATE
 	private const int MAXIMUM_REPEAT_COUNT = 1000;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="RegexValueGenerator"/>.
+	/// </summary>
+	public RegexValueGenerator()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Generates a random value from the supported subset of a regular expression, stopping at the requested length.
 	/// </summary>
@@ -127,7 +144,9 @@ public sealed class RegexValueGenerator : IRegexValueGenerator
 
 		return result.ToString();
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Checks whether a pattern character starts a regular-expression construct that the generator cannot expand.
 	/// </summary>
@@ -313,4 +332,6 @@ public sealed class RegexValueGenerator : IRegexValueGenerator
 				? throw new InvalidOperationException("The character class did not contain any usable characters.")
 				: characters.ToString();
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

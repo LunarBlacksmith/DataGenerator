@@ -10,6 +10,8 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class PostGenerationSqlViewModel : ObservableObject
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly IPostGenerationSqlParser _parser;
 
 	private string                                 _text;
@@ -18,32 +20,11 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 	private IReadOnlyList<string>                  _databaseNames;
 	private IReadOnlyList<PostGenerationStatement> _statements;
 	private string?                                _parseError;
+	#endregion PRIVATE
+	#endregion FIELDS
 
-	/// <summary>
-	///	Creates the post-generation SQL editor with no statements and no chosen database.
-	/// </summary>
-	/// <param name="parser">
-	///	The parser used to split and validate the text.
-	/// </param>
-	/// <exception cref="ArgumentNullException">
-	///	Thrown when <paramref name="parser"/> is <see langword="null"/>.
-	/// </exception>
-	public PostGenerationSqlViewModel(IPostGenerationSqlParser parser)
-	{
-		_parser           = parser ?? throw new ArgumentNullException(nameof(parser));
-		_text             = string.Empty;
-		_databaseName     = null;
-		_isDatabaseChosen = false;
-		_databaseNames    = [];
-		_statements       = [];
-		_parseError       = null;
-	}
-
-	/// <summary>
-	///	Raised whenever the statements, their validity or the database change.
-	/// </summary>
-	public event EventHandler? Changed;
-
+	#region PROPERTIES
+	#region PUBLIC
 	/// <summary>
 	///	One stored procedure name per line, or SQL that is run as typed.
 	/// </summary>
@@ -115,7 +96,9 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 				return "Choose the database the post-generation SQL runs in.";
 			}
 
-			int          procedureCount = _statements.Count(statement => statement.Kind == PostGenerationStatementKind.StoredProcedure);
+			int          procedureCount =
+				_statements
+					.Count(statement => statement.Kind == PostGenerationStatementKind.StoredProcedure);
 			int          sqlCount       = _statements.Count - procedureCount;
 			List<string> parts          = [];
 
@@ -133,7 +116,44 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 				+ "If any of it fails, nothing is saved.";
 		}
 	}
+	#endregion PUBLIC
+	#endregion PROPERTIES
 
+	#region EVENTS
+	#region PUBLIC
+	/// <summary>
+	///	Raised whenever the statements, their validity or the database change.
+	/// </summary>
+	public event EventHandler? Changed;
+	#endregion PUBLIC
+	#endregion EVENTS
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates the post-generation SQL editor with no statements and no chosen database.
+	/// </summary>
+	/// <param name="parser">
+	///	The parser used to split and validate the text.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="parser"/> is <see langword="null"/>.
+	/// </exception>
+	public PostGenerationSqlViewModel(IPostGenerationSqlParser parser)
+	{
+		_parser           = parser ?? throw new ArgumentNullException(nameof(parser));
+		_text             = string.Empty;
+		_databaseName     = null;
+		_isDatabaseChosen = false;
+		_databaseNames    = [];
+		_statements       = [];
+		_parseError       = null;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Replaces the databases that can be chosen, keeping the chosen one when it still exists.
 	/// </summary>
@@ -148,7 +168,11 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 		ArgumentNullException.ThrowIfNull(databaseNames);
 
 		List<string> names = [.. databaseNames.Distinct(StringComparer.OrdinalIgnoreCase)];
-		string?      kept  = names.FirstOrDefault(name => string.Equals(name, _databaseName, StringComparison.OrdinalIgnoreCase));
+		string?      kept  =
+			names
+				.FirstOrDefault(
+					name => string.Equals(name, _databaseName, StringComparison.OrdinalIgnoreCase)
+				);
 
 		DatabaseNames = names;
 
@@ -173,7 +197,11 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 			return;
 		}
 
-		string? match = _databaseNames.FirstOrDefault(name => string.Equals(name, databaseName, StringComparison.OrdinalIgnoreCase));
+		string? match =
+			_databaseNames
+				.FirstOrDefault(
+					name => string.Equals(name, databaseName, StringComparison.OrdinalIgnoreCase)
+				);
 
 		if (match is not null)
 		{
@@ -196,7 +224,9 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 					Statements   = _statements
 				}
 				: null;
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Changes the selected database without marking it as explicitly chosen by the user.
 	/// </summary>
@@ -241,4 +271,6 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 		OnPropertyChanged(nameof(Summary));
 		Changed?.Invoke(this, EventArgs.Empty);
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

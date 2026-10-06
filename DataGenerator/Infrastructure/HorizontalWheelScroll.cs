@@ -11,14 +11,32 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 public static class HorizontalWheelScroll
 {
-	public static readonly DependencyProperty IS_ENABLED_PROPERTY =
-		DependencyProperty.RegisterAttached(
-			"IsEnabled",
-			typeof(bool),
-			typeof(HorizontalWheelScroll),
-			new FrameworkPropertyMetadata(false, OnIsEnabledChanged)
-		);
+	#region FIELDS
+	#region PUBLIC
+	public static readonly DependencyProperty IS_ENABLED_PROPERTY;
+	#endregion PUBLIC
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="HorizontalWheelScroll"/>.
+	/// </summary>
+	static HorizontalWheelScroll()
+	{
+		IS_ENABLED_PROPERTY =
+			DependencyProperty.RegisterAttached(
+				"IsEnabled",
+				typeof(bool),
+				typeof(HorizontalWheelScroll),
+				new FrameworkPropertyMetadata(false, OnIsEnabledChanged)
+			);
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Gets whether horizontal wheel handling is enabled on a scroll viewer.
 	/// </summary>
@@ -40,7 +58,9 @@ public static class HorizontalWheelScroll
 	///	Whether the behaviour should handle the scroll viewer's wheel events.
 	/// </param>
 	public static void SetIsEnabled(DependencyObject element, bool value) => element.SetValue(IS_ENABLED_PROPERTY, value);
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Adds or removes the wheel handler when the attached setting changes.
 	/// </summary>
@@ -107,4 +127,6 @@ public static class HorizontalWheelScroll
 			});
 		}
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

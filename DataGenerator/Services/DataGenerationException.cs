@@ -5,6 +5,17 @@
 /// </summary>
 public sealed class DataGenerationException : Exception
 {
+	#region PROPERTIES
+	#region PUBLIC
+	/// <summary>
+	///	Human readable location, e.g. [Shop].[dbo].[Shirt] › Set 'Set 1' › Row 5 › Column [Size].
+	/// </summary>
+	public string DataLocation { get; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates an exception for a generation failure at a specific data location.
 	/// </summary>
@@ -22,9 +33,6 @@ public sealed class DataGenerationException : Exception
 	{
 		DataLocation = dataLocation;
 	}
-
-	/// <summary>
-	///	Human readable location, e.g. [Shop].[dbo].[Shirt] › Set 'Set 1' › Row 5 › Column [Size].
-	/// </summary>
-	public string DataLocation { get; }
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

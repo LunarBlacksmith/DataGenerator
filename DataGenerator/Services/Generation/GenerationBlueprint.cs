@@ -15,6 +15,8 @@ internal enum ValueSourceKind
 /// </summary>
 internal sealed class ValueSource
 {
+	#region PROPERTIES
+	#region PUBLIC
 	public required ColumnRule         Rule        { get; init; }
 	public required ValueSourceKind    Kind        { get; init; }
 	public GeneratedKeyTable?          KeyTable    { get; init; }
@@ -30,10 +32,30 @@ internal sealed class ValueSource
 	///	Columns of the same (composite) foreign key share a group, so they use the same referenced row.
 	/// </summary>
 	public int                         GroupIndex  { get; init; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="ValueSource"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public ValueSource()
+	{
+		KeyTable    = null;
+		Pool        = null;
+		Lookup      = null;
+		ColumnIndex = 0;
+		GroupIndex  = 0;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }
 
 internal sealed class RowSetBlueprint
 {
+	#region PROPERTIES
+	#region PUBLIC
 	public required RowSetPlan                 Plan                   { get; init; }
 
 	/// <summary>
@@ -77,6 +99,20 @@ internal sealed class RowSetBlueprint
 	public RowSetUpdate?                           Update              { get; init; }
 
 	public bool IsUpdate => Update is not null;
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="RowSetBlueprint"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public RowSetBlueprint()
+	{
+		Update = null;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }
 
 /// <summary>
@@ -84,12 +120,29 @@ internal sealed class RowSetBlueprint
 /// </summary>
 internal sealed class GenerationOperation
 {
+	#region PROPERTIES
+	#region PUBLIC
 	public required TableBlueprint  Table  { get; init; }
 	public required RowSetBlueprint RowSet { get; init; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="GenerationOperation"/>.
+	/// </summary>
+	public GenerationOperation()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }
 
 internal sealed class TableBlueprint
 {
+	#region PROPERTIES
+	#region PUBLIC
 	public required TableModel                     Table            { get; init; }
 	public required IReadOnlyList<RowSetBlueprint> RowSets          { get; init; }
 
@@ -101,13 +154,37 @@ internal sealed class TableBlueprint
 	/// <summary>
 	///	The number of inserted rows; rows changed by update sets are counted by <see cref="UpdatedRowCount"/>.
 	/// </summary>
-	public long TotalRowCount   => RowSets.Where(rowSet => !rowSet.IsUpdate).Sum(rowSet => (long)rowSet.Plan.RowCount);
+	public long TotalRowCount
+		=>
+			RowSets
+				.Where(rowSet => !rowSet.IsUpdate)
+				.Sum(rowSet => (long)rowSet.Plan.RowCount);
 
-	public long UpdatedRowCount => RowSets.Where(rowSet => rowSet.IsUpdate).Sum(rowSet => (long)rowSet.Plan.RowCount);
+	public long UpdatedRowCount
+		=>
+			RowSets
+				.Where(rowSet => rowSet.IsUpdate)
+				.Sum(rowSet => (long)rowSet.Plan.RowCount);
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="TableBlueprint"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public TableBlueprint()
+	{
+		Keys = null;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }
 
 internal sealed class GenerationBlueprint
 {
+	#region PROPERTIES
+	#region PUBLIC
 	public required IReadOnlyList<TableBlueprint>      Tables             { get; init; }
 
 	/// <summary>
@@ -147,7 +224,28 @@ internal sealed class GenerationBlueprint
 				.Distinct()
 				.Count();
 
-	public IEnumerable<LookupPool>   LookupPools => Operations.SelectMany(operation => operation.RowSet.LookupPools);
+	public IEnumerable<LookupPool>   LookupPools
+		=>
+			Operations
+				.SelectMany(operation => operation.RowSet.LookupPools);
 
-	public IEnumerable<RowSetUpdate> Updates     => Operations.Select(operation => operation.RowSet.Update).OfType<RowSetUpdate>();
+	public IEnumerable<RowSetUpdate> Updates
+		=>
+			Operations
+				.Select(operation => operation.RowSet.Update)
+				.OfType<RowSetUpdate>();
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="GenerationBlueprint"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public GenerationBlueprint()
+	{
+		PostGeneration = null;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

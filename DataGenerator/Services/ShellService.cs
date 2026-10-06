@@ -6,6 +6,19 @@ namespace DataGenerator.Services;
 
 public sealed class ShellService : IShellService
 {
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="ShellService"/>.
+	/// </summary>
+	public ShellService()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Opens a folder in Explorer, optionally selecting an existing file inside it.
 	/// </summary>
@@ -48,4 +61,6 @@ public sealed class ShellService : IShellService
 			UseShellExecute = true
 		});
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }

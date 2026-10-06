@@ -2,6 +2,8 @@
 
 public sealed class GenerationRequest
 {
+	#region PROPERTIES
+	#region PUBLIC
 	public required IReadOnlyList<TableGenerationPlan> Plans              { get; init; }
 	public required GenerationMode                     Mode               { get; init; }
 	public string?                                     OutputFilePath     { get; init; }
@@ -10,7 +12,7 @@ public sealed class GenerationRequest
 	/// <summary>
 	///	Tables whose existing rows are deleted (inside the same transaction) before any data is inserted.
 	/// </summary>
-	public IReadOnlyList<TableModel>                   TablesToClear      { get; init; } = [];
+	public IReadOnlyList<TableModel>                   TablesToClear      { get; init; }
 
 	/// <summary>
 	///	Resets the identity seed of every cleared table so new rows start numbering from the original seed again.
@@ -21,4 +23,22 @@ public sealed class GenerationRequest
 	///	Stored procedures or SQL that run after the inserts and before the commit; null when there are none.
 	/// </summary>
 	public PostGenerationScript?                       PostGeneration     { get; init; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="GenerationRequest"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public GenerationRequest()
+	{
+		OutputFilePath     = null;
+		ConnectionString   = null;
+		TablesToClear      = [];
+		ResetIdentitySeeds = false;
+		PostGeneration     = null;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

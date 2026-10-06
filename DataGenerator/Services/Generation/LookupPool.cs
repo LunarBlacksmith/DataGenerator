@@ -8,10 +8,48 @@ namespace DataGenerator.Services.Generation;
 /// </summary>
 internal sealed class LookupPool
 {
+	#region FIELDS
+	#region PRIVATE
 	private const int SCRIPT_CHOICE_RANGE = 1_000_000_000;
 
 	private List<object?>? _values;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
+	public int          Number              { get; }
+	public ColumnLookup Lookup              { get; }
+
+	/// <summary>
+	///	The column that receives the values; the values are converted to its type.
+	/// </summary>
+	public ColumnModel  TargetColumn        { get; }
+
+	/// <summary>
+	///	The number of values needed: one per row for UNIQUE lookups, otherwise one.
+	/// </summary>
+	public int          RequiredCount       { get; }
+
+	/// <summary>
+	///	Selects the values, already converted to the type of the target column, in random order.
+	/// </summary>
+	public string       SelectStatement     { get; }
+
+	/// <summary>
+	///	The table, row set and column that use the values, for error messages.
+	/// </summary>
+	public string       Location            { get; }
+
+	public bool         UsesScriptVariables { get; }
+
+	public string VariableName      => $"@dg_lookup_{Number}";
+	public string CountVariableName => $"@dg_lookup_{Number}_count";
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a pool descriptor for one value-from-table rule.
 	/// </summary>
@@ -46,6 +84,8 @@ internal sealed class LookupPool
 		bool         usesScriptVariables
 	)
 	{
+		_values = null;
+
 		Number              = number;
 		Lookup              = lookup;
 		TargetColumn        = targetColumn;
@@ -54,35 +94,11 @@ internal sealed class LookupPool
 		Location            = location;
 		UsesScriptVariables = usesScriptVariables;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public int          Number              { get; }
-	public ColumnLookup Lookup              { get; }
-
-	/// <summary>
-	///	The column that receives the values; the values are converted to its type.
-	/// </summary>
-	public ColumnModel  TargetColumn        { get; }
-
-	/// <summary>
-	///	The number of values needed: one per row for UNIQUE lookups, otherwise one.
-	/// </summary>
-	public int          RequiredCount       { get; }
-
-	/// <summary>
-	///	Selects the values, already converted to the type of the target column, in random order.
-	/// </summary>
-	public string       SelectStatement     { get; }
-
-	/// <summary>
-	///	The table, row set and column that use the values, for error messages.
-	/// </summary>
-	public string       Location            { get; }
-
-	public bool         UsesScriptVariables { get; }
-
-	public string VariableName      => $"@dg_lookup_{Number}";
-	public string CountVariableName => $"@dg_lookup_{Number}_count";
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Describes why the lookup cannot supply enough values.
 	/// </summary>
@@ -167,4 +183,6 @@ internal sealed class LookupPool
 
 		return Lookup.IsUnique ? _values[(int)rowIndex] : _values[random.Next(_values.Count)];
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }

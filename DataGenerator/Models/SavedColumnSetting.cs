@@ -6,17 +6,23 @@
 /// </summary>
 public sealed class SavedColumnSetting
 {
+	#region FIELDS
+	#region PUBLIC
 	public const string DEFAULT_SEQUENCE_VALUE = "1";
+	#endregion PUBLIC
+	#endregion FIELDS
 
-	public string              Name              { get; set; } = string.Empty;
+	#region PROPERTIES
+	#region PUBLIC
+	public string              Name              { get; set; }
 	public ValueGenerationMode GenerationMode    { get; set; }
-	public string              FixedValue        { get; set; } = string.Empty;
-	public string              SequenceStart     { get; set; } = DEFAULT_SEQUENCE_VALUE;
-	public string              SequenceStep      { get; set; } = DEFAULT_SEQUENCE_VALUE;
-	public string              RegexPattern      { get; set; } = string.Empty;
-	public string              PatternExpression { get; set; } = string.Empty;
-	public string              SourceColumnName  { get; set; } = string.Empty;
-	public string              LookupExpression  { get; set; } = string.Empty;
+	public string              FixedValue        { get; set; }
+	public string              SequenceStart     { get; set; }
+	public string              SequenceStep      { get; set; }
+	public string              RegexPattern      { get; set; }
+	public string              PatternExpression { get; set; }
+	public string              SourceColumnName  { get; set; }
+	public string              LookupExpression  { get; set; }
 
 	/// <summary>
 	///	The schema.table of the column the setting was saved from, or <see langword="null"/> when it applies to a column
@@ -35,7 +41,34 @@ public sealed class SavedColumnSetting
 	public bool ApplyAutomatically { get; set; }
 
 	public bool AppliesToAnyTable => string.IsNullOrWhiteSpace(TableName);
+	#endregion PUBLIC
+	#endregion PROPERTIES
 
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="SavedColumnSetting"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public SavedColumnSetting()
+	{
+		Name               = string.Empty;
+		GenerationMode     = ValueGenerationMode.Random;
+		FixedValue         = string.Empty;
+		SequenceStart      = DEFAULT_SEQUENCE_VALUE;
+		SequenceStep       = DEFAULT_SEQUENCE_VALUE;
+		RegexPattern       = string.Empty;
+		PatternExpression  = string.Empty;
+		SourceColumnName   = string.Empty;
+		LookupExpression   = string.Empty;
+		TableName          = null;
+		ColumnName         = null;
+		ApplyAutomatically = false;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Checks whether this setting can apply automatically to the given table and column.
 	/// </summary>
@@ -114,4 +147,6 @@ public sealed class SavedColumnSetting
 	///	A new setting instance with the same values as this one.
 	/// </returns>
 	public SavedColumnSetting Clone() => (SavedColumnSetting)MemberwiseClone();
+	#endregion PUBLIC
+	#endregion METHODS
 }

@@ -12,8 +12,14 @@ internal enum PatternArgumentKind
 
 internal sealed class PatternArgument
 {
-	private static readonly CultureInfo INVARIANT = CultureInfo.InvariantCulture;
+	#region FIELDS
+	#region PRIVATE
+	private static readonly CultureInfo INVARIANT;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
 	public required string?             Name        { get; init; }
 	public required PatternArgumentKind Kind        { get; init; }
 	public required string              Text        { get; init; }
@@ -32,7 +38,37 @@ internal sealed class PatternArgument
 	///	even when it looks like a number (e.g. TODAY(format='yyyyMMdd')).
 	/// </summary>
 	public bool                         IsEvaluated { get; init; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="PatternArgument"/>.
+	/// </summary>
+	static PatternArgument()
+	{
+		INVARIANT = CultureInfo.InvariantCulture;
+	}
+	#endregion STATIC
+
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="PatternArgument"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public PatternArgument()
+	{
+		Number      = 0;
+		RangeStart  = 0;
+		RangeEnd    = 0;
+		Expression  = null;
+		IsEvaluated = false;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a copy of the argument using the text produced by its nested function call. Numeric text is kept as a number;
 	///	all other text stays as text and is marked as evaluated.
@@ -62,6 +98,8 @@ internal sealed class PatternArgument
 			IsEvaluated = true
 		};
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }
 
 /// <summary>
@@ -70,16 +108,34 @@ internal sealed class PatternArgument
 /// </summary>
 internal sealed class PatternArgumentBinder
 {
+	#region FIELDS
+	#region PUBLIC
 	public const long MAXIMUM_MAGNITUDE = 1_000_000_000_000_000_000;
+	#endregion PUBLIC
 
-	private static readonly CultureInfo INVARIANT = CultureInfo.InvariantCulture;
+	#region PRIVATE
+	private static readonly CultureInfo INVARIANT;
 
 	private readonly string                              _functionName;
 	private readonly int                                 _position;
-	private readonly List<PatternArgument>               _positional = [];
-	private readonly Dictionary<string, PatternArgument> _named      = new(StringComparer.OrdinalIgnoreCase);
+	private readonly List<PatternArgument>               _positional;
+	private readonly Dictionary<string, PatternArgument> _named;
 	private int                                          _nextPositional;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="PatternArgumentBinder"/>.
+	/// </summary>
+	static PatternArgumentBinder()
+	{
+		INVARIANT = CultureInfo.InvariantCulture;
+	}
+	#endregion STATIC
+
+	#region PUBLIC
 	/// <summary>
 	///	Splits a function call's arguments into positional and named lookups and rejects positional values after named ones or
 	///	duplicate names.
@@ -98,6 +154,10 @@ internal sealed class PatternArgumentBinder
 	/// </exception>
 	public PatternArgumentBinder(string functionName, IReadOnlyList<PatternArgument> arguments, int position)
 	{
+		_positional     = [];
+		_named          = new(StringComparer.OrdinalIgnoreCase);
+		_nextPositional = 0;
+
 		_functionName = functionName;
 		_position     = position;
 
@@ -121,7 +181,11 @@ internal sealed class PatternArgumentBinder
 			}
 		}
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Builds a syntax error at the function's position with the function name prefixed to the message.
 	/// </summary>
@@ -447,7 +511,9 @@ internal sealed class PatternArgumentBinder
 			);
 		}
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Removes and returns a named argument if it has not already been consumed.
 	/// </summary>
@@ -565,4 +631,6 @@ internal sealed class PatternArgumentBinder
 
 		return (minimum, maximum);
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

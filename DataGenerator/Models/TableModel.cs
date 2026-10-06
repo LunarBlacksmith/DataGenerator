@@ -5,10 +5,16 @@ namespace DataGenerator.Models;
 
 public sealed class TableModel : ObservableObject
 {
-	private string _databaseName = string.Empty;
-	private string _schemaName   = string.Empty;
-	private string _name         = string.Empty;
+	#region FIELDS
+	#region PRIVATE
+	private string _databaseName;
+	private string _schemaName;
+	private string _name;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region PROPERTIES
+	#region PUBLIC
 	public string DatabaseName
 	{
 		get => _databaseName;
@@ -57,9 +63,29 @@ public sealed class TableModel : ObservableObject
 
 	public string DisplayName => $"{SchemaName}.{Name}";
 
-	public ObservableCollection<ColumnModel>     Columns     { get; } = [];
-	public ObservableCollection<ForeignKeyModel> ForeignKeys { get; } = [];
+	public ObservableCollection<ColumnModel>     Columns     { get; }
+	public ObservableCollection<ForeignKeyModel> ForeignKeys { get; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
 
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="TableModel"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public TableModel()
+	{
+		_databaseName = string.Empty;
+		_schemaName   = string.Empty;
+		_name         = string.Empty;
+		Columns       = [];
+		ForeignKeys   = [];
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Builds the case-insensitive lookup key for a table.
 	/// </summary>
@@ -77,7 +103,9 @@ public sealed class TableModel : ObservableObject
 	/// </returns>
 	public static string CreateKey(string databaseName, string schemaName, string tableName)
 		=> $"{databaseName}.{schemaName}.{tableName}";
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Raises change notifications for all derived table-name properties.
 	/// </summary>
@@ -87,4 +115,6 @@ public sealed class TableModel : ObservableObject
 		OnPropertyChanged(nameof(Key));
 		OnPropertyChanged(nameof(DisplayName));
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

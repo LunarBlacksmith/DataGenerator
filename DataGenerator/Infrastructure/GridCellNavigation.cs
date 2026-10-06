@@ -14,14 +14,32 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 public static class GridCellNavigation
 {
-	public static readonly DependencyProperty IS_ENABLED_PROPERTY =
-		DependencyProperty.RegisterAttached(
-			"IsEnabled",
-			typeof(bool),
-			typeof(GridCellNavigation),
-			new FrameworkPropertyMetadata(false, OnIsEnabledChanged)
-		);
+	#region FIELDS
+	#region PUBLIC
+	public static readonly DependencyProperty IS_ENABLED_PROPERTY;
+	#endregion PUBLIC
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="GridCellNavigation"/>.
+	/// </summary>
+	static GridCellNavigation()
+	{
+		IS_ENABLED_PROPERTY =
+			DependencyProperty.RegisterAttached(
+				"IsEnabled",
+				typeof(bool),
+				typeof(GridCellNavigation),
+				new FrameworkPropertyMetadata(false, OnIsEnabledChanged)
+			);
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Gets whether arrow-key cell navigation is enabled on a data grid.
 	/// </summary>
@@ -43,7 +61,9 @@ public static class GridCellNavigation
 	///	Whether the behaviour should handle the data grid's preview key events.
 	/// </param>
 	public static void SetIsEnabled(DependencyObject element, bool value) => element.SetValue(IS_ENABLED_PROPERTY, value);
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Adds or removes the preview key handler when the attached setting changes.
 	/// </summary>
@@ -304,7 +324,10 @@ public static class GridCellNavigation
 
 			CollectCells(presenter, cells);
 
-			foreach (DataGridCell cell in cells.OrderBy(cell => cell.Column?.DisplayIndex ?? int.MaxValue))
+			foreach (DataGridCell cell in
+				cells
+					.OrderBy(cell => cell.Column?.DisplayIndex ?? int.MaxValue)
+			)
 			{
 				editors.AddRange(GetEditors(cell));
 			}
@@ -451,4 +474,6 @@ public static class GridCellNavigation
 			textBox.SelectAll();
 		}
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

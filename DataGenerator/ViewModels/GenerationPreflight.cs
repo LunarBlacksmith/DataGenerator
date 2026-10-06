@@ -8,6 +8,19 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public static class GenerationPreflight
 {
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Initialises the static state of <see cref="GenerationPreflight"/>.
+	/// </summary>
+	static GenerationPreflight()
+	{
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Collects validation problems from the included tables' row sets and column rules.
 	/// </summary>
@@ -44,7 +57,11 @@ public static class GenerationPreflight
 					);
 				}
 
-				foreach (ColumnRuleViewModel rule in rowSet.ColumnRules.Where(rule => rule.ValidationError is not null))
+				foreach (ColumnRuleViewModel rule in
+					rowSet
+						.ColumnRules
+						.Where(rule => rule.ValidationError is not null)
+				)
 				{
 					problems.Add(
 						new RuleProblem(
@@ -123,14 +140,89 @@ public static class GenerationPreflight
 
 		return missing;
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }
 
 /// <summary>
 ///	A rule that must be fixed before generating, with where it is.
 /// </summary>
-public sealed record RuleProblem(TableNodeViewModel Table, RowSetViewModel RowSet, string Location, string Message);
+public sealed record RuleProblem
+{
+	#region PROPERTIES
+	#region PUBLIC
+	public TableNodeViewModel Table    { get; init; }
+	public RowSetViewModel    RowSet   { get; init; }
+	public string             Location { get; init; }
+	public string             Message  { get; init; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="RuleProblem"/> from the supplied values.
+	/// </summary>
+	/// <param name="table">
+	///	The value of <see cref="Table"/>.
+	/// </param>
+	/// <param name="rowSet">
+	///	The value of <see cref="RowSet"/>.
+	/// </param>
+	/// <param name="location">
+	///	The value of <see cref="Location"/>.
+	/// </param>
+	/// <param name="message">
+	///	The value of <see cref="Message"/>.
+	/// </param>
+	public RuleProblem(TableNodeViewModel table, RowSetViewModel rowSet, string location, string message)
+	{
+		Table    = table;
+		RowSet   = rowSet;
+		Location = location;
+		Message  = message;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+}
 
 /// <summary>
-///	A "Generated key" rule of <paramref name="ReferencingTable"/> that needs rows generated for <paramref name="ReferencedTable"/>.
+///	A "Generated key" rule of <see cref="ReferencingTable"/> that needs rows generated for <see cref="ReferencedTable"/>.
 /// </summary>
-public sealed record MissingReference(TableNodeViewModel ReferencingTable, ColumnRuleViewModel Rule, TableNodeViewModel ReferencedTable);
+public sealed record MissingReference
+{
+	#region PROPERTIES
+	#region PUBLIC
+	public TableNodeViewModel  ReferencingTable { get; init; }
+	public ColumnRuleViewModel Rule             { get; init; }
+	public TableNodeViewModel  ReferencedTable  { get; init; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="MissingReference"/> from the supplied values.
+	/// </summary>
+	/// <param name="referencingTable">
+	///	The value of <see cref="ReferencingTable"/>.
+	/// </param>
+	/// <param name="rule">
+	///	The value of <see cref="Rule"/>.
+	/// </param>
+	/// <param name="referencedTable">
+	///	The value of <see cref="ReferencedTable"/>.
+	/// </param>
+	public MissingReference(
+		TableNodeViewModel  referencingTable,
+		ColumnRuleViewModel rule,
+		TableNodeViewModel  referencedTable
+	)
+	{
+		ReferencingTable = referencingTable;
+		Rule             = rule;
+		ReferencedTable  = referencedTable;
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+}

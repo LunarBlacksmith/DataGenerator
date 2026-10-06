@@ -9,13 +9,17 @@ namespace DataGenerator.Services.Generation;
 /// </summary>
 internal sealed class LookupPoolFactory
 {
+	#region FIELDS
+	#region PUBLIC
 	public const int MAXIMUM_SAMPLE_SIZE = ExistingKeyPool.MAXIMUM_SAMPLE_SIZE;
 
 	/// <summary>
 	///	The source row alias that SQL filters (WHERE SQL …) use, e.g. s.[Colour] = 'Red'.
 	/// </summary>
 	public const string SOURCE_ALIAS = "s";
+	#endregion PUBLIC
 
+	#region PRIVATE
 	private const string TARGET_ALIAS      = "t";
 	private const string VALUE_ALIAS       = "[d]";
 	private const string FILTER_TEXT_TYPE  = "nvarchar(4000)";
@@ -27,7 +31,11 @@ internal sealed class LookupPoolFactory
 	private readonly RowSnapshotSet        _snapshots;
 	private readonly bool                  _usesScriptVariables;
 	private int                            _poolCount;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the factory that turns value-from-table rules into lookup pools.
 	/// </summary>
@@ -49,12 +57,18 @@ internal sealed class LookupPoolFactory
 	/// </exception>
 	public LookupPoolFactory(ISqlValueConverter converter, IPatternSqlTranslator translator, RowSnapshotSet snapshots, bool usesScriptVariables)
 	{
+		_poolCount = 0;
+
 		_converter           = converter  ?? throw new ArgumentNullException(nameof(converter));
 		_translator          = translator ?? throw new ArgumentNullException(nameof(translator));
 		_snapshots           = snapshots  ?? throw new ArgumentNullException(nameof(snapshots));
 		_usesScriptVariables = usesScriptVariables;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the lookup pool for one value-from-table column rule.
 	/// </summary>
@@ -92,7 +106,9 @@ internal sealed class LookupPoolFactory
 			_usesScriptVariables
 		);
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Builds the randomised SQL statement that reads lookup values from the source table.
 	/// </summary>
@@ -234,4 +250,6 @@ internal sealed class LookupPoolFactory
 			SqlTypeCategory.Binary   => $"CONVERT({FILTER_TEXT_TYPE}, {sourceColumn}, {BINARY_TEXT_STYLE})",
 			_                        => $"CONVERT({FILTER_TEXT_TYPE}, {sourceColumn})"
 		};
+	#endregion PRIVATE
+	#endregion METHODS
 }

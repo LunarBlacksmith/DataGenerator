@@ -4,14 +4,41 @@ namespace DataGenerator.Services;
 
 public sealed class PatternCompletionProvider : IPatternCompletionProvider
 {
+	#region FIELDS
+	#region PRIVATE
 	private const int  MINIMUM_PREFIX_LENGTH = 2;
 	private const char NO_QUOTE              = '\0';
 	private const char OPENING_BRACKET       = '(';
 	private const char SPACE                 = ' ';
 
-	private static readonly IReadOnlyList<PatternLanguageEntry> ENTRIES =
-		[.. PatternLanguageReference.FUNCTIONS, .. PatternLanguageReference.KEYWORDS];
+	private static readonly IReadOnlyList<PatternLanguageEntry> ENTRIES;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="PatternCompletionProvider"/>.
+	/// </summary>
+	static PatternCompletionProvider()
+	{
+		ENTRIES =
+			[.. PatternLanguageReference.FUNCTIONS, .. PatternLanguageReference.KEYWORDS];
+	}
+	#endregion STATIC
+
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="PatternCompletionProvider"/>.
+	/// </summary>
+	public PatternCompletionProvider()
+	{
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Finds pattern-language functions and keywords that complete the word immediately before the caret.
 	/// </summary>
@@ -58,7 +85,10 @@ public sealed class PatternCompletionProvider : IPatternCompletionProvider
 		}
 
 		List<PatternLanguageEntry> entries = [..
-			ENTRIES.Where(entry => entry.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && !IsAlreadyWritten(text, wordStart, entry))
+			ENTRIES
+				.Where(
+					entry => entry.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && !IsAlreadyWritten(text, wordStart, entry)
+				)
 		];
 
 		return entries.Count == 0 ? null : new PatternCompletionResult(wordStart, wordEnd - wordStart, prefix, entries);
@@ -107,7 +137,9 @@ public sealed class PatternCompletionProvider : IPatternCompletionProvider
 
 		return new PatternCompletionEdit(completions.WordStart, completions.WordLength, insertion, caretIndex);
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Checks whether a character can be part of a function or keyword word while completions are located.
 	/// </summary>
@@ -185,4 +217,6 @@ public sealed class PatternCompletionProvider : IPatternCompletionProvider
 		int writtenEnd = wordStart + written.Length;
 		return entry.IsFunction || writtenEnd >= text.Length || !IsWordCharacter(text[writtenEnd]);
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

@@ -5,20 +5,39 @@
 /// </summary>
 public sealed class RowSetConfigurationLoadResult
 {
+	#region PROPERTIES
+	#region PUBLIC
 	public int UpdatedCount { get; init; }
 
 	/// <summary>
 	///	Columns of the configuration that the row set has, but that could not use the saved settings, with the reason.
 	/// </summary>
-	public IReadOnlyList<(string ColumnName, string Problem)> Skipped { get; init; } = [];
+	public IReadOnlyList<(string ColumnName, string Problem)> Skipped { get; init; }
 
 	/// <summary>
 	///	Columns of the row set that the configuration does not mention; they keep their settings.
 	/// </summary>
-	public IReadOnlyList<string> NotInConfiguration { get; init; } = [];
+	public IReadOnlyList<string> NotInConfiguration { get; init; }
 
 	/// <summary>
 	///	Columns of the configuration that the row set does not have.
 	/// </summary>
-	public IReadOnlyList<string> UnknownColumns { get; init; } = [];
+	public IReadOnlyList<string> UnknownColumns { get; init; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
+	/// <summary>
+	///	Creates a new <see cref="RowSetConfigurationLoadResult"/> and sets the default values of its fields and properties.
+	/// </summary>
+	public RowSetConfigurationLoadResult()
+	{
+		UpdatedCount       = 0;
+		Skipped            = [];
+		NotInConfiguration = [];
+		UnknownColumns     = [];
+	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

@@ -5,34 +5,60 @@ namespace DataGenerator.Infrastructure;
 
 public static class PasswordBoxBinding
 {
-	public static readonly DependencyProperty BOUND_PASSWORD_PROPERTY =
-		DependencyProperty.RegisterAttached(
-			"BoundPassword",
-			typeof(string),
-			typeof(PasswordBoxBinding),
-			new FrameworkPropertyMetadata(
-				string.Empty,
-				FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
-				OnBoundPasswordChanged
-			)
-		);
+	#region FIELDS
+	#region PUBLIC
+	public static readonly DependencyProperty BOUND_PASSWORD_PROPERTY;
 
-	public static readonly DependencyProperty BIND_PASSWORD_PROPERTY =
-		DependencyProperty.RegisterAttached(
-			"BindPassword",
-			typeof(bool),
-			typeof(PasswordBoxBinding),
-			new PropertyMetadata(false, OnBindPasswordChanged)
-		);
+	public static readonly DependencyProperty BIND_PASSWORD_PROPERTY;
+	#endregion PUBLIC
 
-	private static readonly DependencyProperty UPDATING_PASSWORD_PROPERTY =
-		DependencyProperty.RegisterAttached(
-			"UpdatingPassword",
-			typeof(bool),
-			typeof(PasswordBoxBinding),
-			new PropertyMetadata(false)
-		);
+	#region PRIVATE
+	private static readonly DependencyProperty UPDATING_PASSWORD_PROPERTY;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="PasswordBoxBinding"/>.
+	/// </summary>
+	static PasswordBoxBinding()
+	{
+		BOUND_PASSWORD_PROPERTY =
+			DependencyProperty.RegisterAttached(
+				"BoundPassword",
+				typeof(string),
+				typeof(PasswordBoxBinding),
+				new FrameworkPropertyMetadata(
+					string.Empty,
+					FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
+					OnBoundPasswordChanged
+				)
+			);
+
+
+		BIND_PASSWORD_PROPERTY =
+			DependencyProperty.RegisterAttached(
+				"BindPassword",
+				typeof(bool),
+				typeof(PasswordBoxBinding),
+				new PropertyMetadata(false, OnBindPasswordChanged)
+			);
+
+
+		UPDATING_PASSWORD_PROPERTY =
+			DependencyProperty.RegisterAttached(
+				"UpdatingPassword",
+				typeof(bool),
+				typeof(PasswordBoxBinding),
+				new PropertyMetadata(false)
+			);
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Gets the password value mirrored from a password box.
 	/// </summary>
@@ -76,7 +102,9 @@ public static class PasswordBoxBinding
 	///	Whether the password box should update the bound password property as the user types.
 	/// </param>
 	public static void SetBindPassword(DependencyObject element, bool value) => element.SetValue(BIND_PASSWORD_PROPERTY, value);
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Adds or removes the password changed handler when password binding is enabled or disabled.
 	/// </summary>
@@ -144,4 +172,6 @@ public static class PasswordBoxBinding
 		SetBoundPassword(passwordBox, passwordBox.Password);
 		passwordBox.SetValue(UPDATING_PASSWORD_PROPERTY, false);
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

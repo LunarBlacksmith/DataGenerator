@@ -10,14 +10,32 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 public static class TextInputFilter
 {
-	public static readonly DependencyProperty KIND_PROPERTY =
-		DependencyProperty.RegisterAttached(
-			"Kind",
-			typeof(TextInputKind),
-			typeof(TextInputFilter),
-			new PropertyMetadata(TextInputKind.Any, OnKindChanged)
-		);
+	#region FIELDS
+	#region PUBLIC
+	public static readonly DependencyProperty KIND_PROPERTY;
+	#endregion PUBLIC
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Sets the default values of the static fields and properties of <see cref="TextInputFilter"/>.
+	/// </summary>
+	static TextInputFilter()
+	{
+		KIND_PROPERTY =
+			DependencyProperty.RegisterAttached(
+				"Kind",
+				typeof(TextInputKind),
+				typeof(TextInputFilter),
+				new PropertyMetadata(TextInputKind.Any, OnKindChanged)
+			);
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Gets the kind of value allowed by a text box.
 	/// </summary>
@@ -61,7 +79,9 @@ public static class TextInputFilter
 
 		return text.All(character => IsAllowedCharacter(kind, character));
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Checks whether one character can appear in a value of the given kind.
 	/// </summary>
@@ -165,4 +185,6 @@ public static class TextInputFilter
 			e.CancelCommand();
 		}
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

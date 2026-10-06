@@ -5,6 +5,14 @@
 /// </summary>
 public sealed class PatternSyntaxException : FormatException
 {
+	#region PROPERTIES
+	#region PUBLIC
+	public int Position { get; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a syntax exception with the pattern message and one-based source position appended.
 	/// </summary>
@@ -19,6 +27,6 @@ public sealed class PatternSyntaxException : FormatException
 	{
 		Position = position;
 	}
-
-	public int Position { get; }
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }

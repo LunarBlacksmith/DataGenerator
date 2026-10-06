@@ -18,6 +18,16 @@ internal enum PatternTokenKind
 
 internal sealed class PatternToken
 {
+	#region PROPERTIES
+	#region PUBLIC
+	public PatternTokenKind Kind     { get; }
+	public string           Text     { get; }
+	public int              Position { get; }
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a token with its kind, source text and one-based position in the pattern.
 	/// </summary>
@@ -36,11 +46,11 @@ internal sealed class PatternToken
 		Text     = text;
 		Position = position;
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public PatternTokenKind Kind     { get; }
-	public string           Text     { get; }
-	public int              Position { get; }
-
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Checks whether this token is a word matching a pattern keyword, ignoring case.
 	/// </summary>
@@ -52,4 +62,6 @@ internal sealed class PatternToken
 	/// </returns>
 	public bool IsKeyword(string keyword)
 		=> Kind == PatternTokenKind.Word && string.Equals(Text, keyword, StringComparison.OrdinalIgnoreCase);
+	#endregion PUBLIC
+	#endregion METHODS
 }

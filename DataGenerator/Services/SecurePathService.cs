@@ -4,6 +4,8 @@ namespace DataGenerator.Services;
 
 public static class SecurePathService
 {
+	#region FIELDS
+	#region PRIVATE
 	private const string COMPANY_DIRECTORY        = "LocalTools";
 	private const string APPLICATION_DIRECTORY    = "DataGenerator";
 	private const string GENERATED_DATA_DIRECTORY = "GeneratedData";
@@ -11,7 +13,22 @@ public static class SecurePathService
 	private const string SAVED_SETTINGS_FILE      = "SavedColumnSettings.json";
 	private const string SET_CONFIGURATIONS_FILE  = "SavedSetConfigurations.json";
 	private const string PREFERENCES_FILE         = "Preferences.json";
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region STATIC
+	/// <summary>
+	///	Initialises the static state of <see cref="SecurePathService"/>.
+	/// </summary>
+	static SecurePathService()
+	{
+	}
+	#endregion STATIC
+	#endregion CONSTRUCTORS
+
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Creates and returns the application data directory under the user's local application data folder.
 	/// </summary>
@@ -132,4 +149,6 @@ public static class SecurePathService
 				StringComparison.OrdinalIgnoreCase
 			);
 	}
+	#endregion PUBLIC
+	#endregion METHODS
 }

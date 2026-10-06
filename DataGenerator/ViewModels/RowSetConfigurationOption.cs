@@ -9,6 +9,20 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class RowSetConfigurationOption
 {
+	#region PROPERTIES
+	#region PUBLIC
+	public SavedRowSetConfiguration Configuration       { get; }
+	public int                      MatchingColumnCount { get; }
+	public bool                     IsFromActiveTable   { get; }
+	public string                   Summary             { get; }
+	public string                   ToolTipText         { get; }
+
+	public string Name => Configuration.Name;
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a saved row-set configuration choice for the active row set.
 	/// </summary>
@@ -35,15 +49,11 @@ public sealed class RowSetConfigurationOption
 				: $"From {configuration.TableName} · {matchingColumnCount} of its {configuration.Columns.Count} columns are in this table";
 		ToolTipText         = BuildToolTipText(configuration);
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
-	public SavedRowSetConfiguration Configuration       { get; }
-	public int                      MatchingColumnCount { get; }
-	public bool                     IsFromActiveTable   { get; }
-	public string                   Summary             { get; }
-	public string                   ToolTipText         { get; }
-
-	public string Name => Configuration.Name;
-
+	#region METHODS
+	#region PRIVATE
 	/// <summary>
 	///	Builds the tooltip that lists the saved values for every column in a configuration.
 	/// </summary>
@@ -66,4 +76,6 @@ public sealed class RowSetConfigurationOption
 
 		return text.ToString();
 	}
+	#endregion PRIVATE
+	#endregion METHODS
 }

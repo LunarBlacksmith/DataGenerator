@@ -7,10 +7,16 @@ namespace DataGenerator.Services;
 
 public sealed class SavedSettingsWindowService : ISavedSettingsWindowService
 {
+	#region FIELDS
+	#region PRIVATE
 	private readonly SavedSettingsLibrary _library;
 	private readonly IDialogService       _dialogService;
 	private readonly IFileDialogService   _fileDialogService;
+	#endregion PRIVATE
+	#endregion FIELDS
 
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates the window service used to show saved-setting dialogs and the settings manager.
 	/// </summary>
@@ -32,7 +38,11 @@ public sealed class SavedSettingsWindowService : ISavedSettingsWindowService
 		_dialogService     = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 		_fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
 	}
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 
+	#region METHODS
+	#region PUBLIC
 	/// <summary>
 	///	Shows the modal dialog that lets the user name and save the current column settings.
 	/// </summary>
@@ -73,7 +83,9 @@ public sealed class SavedSettingsWindowService : ISavedSettingsWindowService
 
 		_ = window.ShowDialog();
 	}
+	#endregion PUBLIC
 
+	#region PRIVATE
 	/// <summary>
 	///	Finds the active application window to own a dialog, falling back to the main window.
 	/// </summary>
@@ -81,6 +93,13 @@ public sealed class SavedSettingsWindowService : ISavedSettingsWindowService
 	///	The active window, the main window or <see langword="null"/> when no application window is available.
 	/// </returns>
 	private static Window? GetOwner()
-		=> Application.Current?.Windows.OfType<Window>().FirstOrDefault(window => window.IsActive)
+		=>
+			Application
+				.Current
+				?.Windows
+				.OfType<Window>()
+				.FirstOrDefault(window => window.IsActive)
 			?? Application.Current?.MainWindow;
+	#endregion PRIVATE
+	#endregion METHODS
 }

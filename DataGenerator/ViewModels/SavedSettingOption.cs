@@ -7,6 +7,22 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public sealed class SavedSettingOption
 {
+	#region PROPERTIES
+	#region PUBLIC
+	public SavedColumnSetting Setting          { get; }
+	public bool               IsSavedForColumn { get; }
+	public string             Summary          { get; }
+
+	public string Name => Setting.Name;
+
+	public string ToolTipText
+		=> $"{Summary}{Environment.NewLine}Saved for: {SavedSettingDescriber.DescribeTarget(Setting)}"
+			+ (Setting.ApplyAutomatically ? $"{Environment.NewLine}Applied automatically to new row sets" : string.Empty);
+	#endregion PUBLIC
+	#endregion PROPERTIES
+
+	#region CONSTRUCTORS
+	#region PUBLIC
 	/// <summary>
 	///	Creates a saved setting choice for a column-rule menu.
 	/// </summary>
@@ -25,14 +41,6 @@ public sealed class SavedSettingOption
 		IsSavedForColumn = isSavedForColumn;
 		Summary          = SavedSettingDescriber.DescribeValues(setting);
 	}
-
-	public SavedColumnSetting Setting          { get; }
-	public bool               IsSavedForColumn { get; }
-	public string             Summary          { get; }
-
-	public string Name => Setting.Name;
-
-	public string ToolTipText
-		=> $"{Summary}{Environment.NewLine}Saved for: {SavedSettingDescriber.DescribeTarget(Setting)}"
-			+ (Setting.ApplyAutomatically ? $"{Environment.NewLine}Applied automatically to new row sets" : string.Empty);
+	#endregion PUBLIC
+	#endregion CONSTRUCTORS
 }
