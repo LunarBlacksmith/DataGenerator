@@ -4,6 +4,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using DataGenerator.Interfaces;
 using DataGenerator.Services;
 
 namespace DataGenerator.Infrastructure;
@@ -38,7 +39,10 @@ internal sealed class PatternCompletionController
 		_textBox.Unloaded          += OnUnloaded;
 	}
 
-	private bool IsOpen => _popup?.IsOpen == true;
+	/// <summary>
+	/// Whether the suggestions are shown, in which case ↑ and ↓ choose a suggestion.
+	/// </summary>
+	public bool IsOpen => _popup?.IsOpen == true;
 
 	public void Detach()
 	{
@@ -78,23 +82,30 @@ internal sealed class PatternCompletionController
 		switch (e.Key)
 		{
 			case Key.Down:
+			{
 				_session.MoveSelection(1);
 				ScrollSelectedIntoView();
 				e.Handled = true;
 				break;
+			}
 
 			case Key.Up:
+			{
 				_session.MoveSelection(-1);
 				ScrollSelectedIntoView();
 				e.Handled = true;
 				break;
+			}
 
 			case Key.Escape:
+			{
 				Close();
 				e.Handled = true;
 				break;
+			}
 
 			case Key.Tab when Keyboard.Modifiers == ModifierKeys.None:
+			{
 				// Tab is pressed twice to insert, so a single Tab can never replace a word by accident.
 				if (_session.IsArmed)
 				{
@@ -107,6 +118,7 @@ internal sealed class PatternCompletionController
 
 				e.Handled = true;
 				break;
+			}
 		}
 	}
 
@@ -208,7 +220,7 @@ internal sealed class PatternCompletionController
 			return _popup;
 		}
 
-		ContentPresenter presenter = new ContentPresenter
+		ContentPresenter presenter = new()
 		{
 			Content         = _session,
 			ContentTemplate = (DataTemplate)_textBox.FindResource(POPUP_TEMPLATE_KEY)

@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using DataGenerator.Infrastructure;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 using DataGenerator.Services;
 using Microsoft.Data.SqlClient;
@@ -28,6 +29,7 @@ public sealed class MainViewModel : ObservableObject
 	private readonly IHelpService             _helpService;
 	private readonly IExceptionFormatter      _exceptionFormatter;
 	private readonly IForeignTableKeyResolver _foreignTableKeyResolver;
+	private readonly ITableCatalog            _tableCatalog;
 
 	private CancellationTokenSource? _cancellationTokenSource;
 	private string                   _serverName;
@@ -248,6 +250,7 @@ public sealed class MainViewModel : ObservableObject
 		IHelpService               helpService,
 		IExceptionFormatter        exceptionFormatter,
 		IForeignTableKeyResolver   foreignTableKeyResolver,
+		ITableCatalog              tableCatalog,
 		DatabaseExplorerViewModel  explorer,
 		ThemeViewModel             theme,
 		PostGenerationSqlViewModel postGeneration
@@ -280,6 +283,7 @@ public sealed class MainViewModel : ObservableObject
 		_helpService             = helpService ?? throw new ArgumentNullException(nameof(helpService));
 		_exceptionFormatter      = exceptionFormatter ?? throw new ArgumentNullException(nameof(exceptionFormatter));
 		_foreignTableKeyResolver = foreignTableKeyResolver ?? throw new ArgumentNullException(nameof(foreignTableKeyResolver));
+		_tableCatalog            = tableCatalog ?? throw new ArgumentNullException(nameof(tableCatalog));
 		Explorer                 = explorer ?? throw new ArgumentNullException(nameof(explorer));
 		Theme                    = theme ?? throw new ArgumentNullException(nameof(theme));
 		PostGeneration           = postGeneration ?? throw new ArgumentNullException(nameof(postGeneration));
@@ -329,7 +333,7 @@ public sealed class MainViewModel : ObservableObject
 				StatusMessage = "Connecting to SQL Server and loading metadata…";
 
 				string           connectionString = BuildConnectionString(MASTER_DATABASE);
-				Progress<string> progress         = new Progress<string>(message => StatusMessage = message);
+				Progress<string> progress         = new(message => StatusMessage = message);
 
 				IReadOnlyList<DatabaseModel> databases = await _metadataService.LoadMetadataAsync(
 					connectionString,
@@ -339,6 +343,8 @@ public sealed class MainViewModel : ObservableObject
 
 				int inferredKeyCount = _foreignTableKeyResolver.ResolveInferredKeys(databases);
 
+				// Filled before the explorer creates the column rules, so "Value from table" settings can be resolved.
+				_tableCatalog.SetTables(databases.SelectMany(database => database.Tables));
 				Explorer.Load(databases);
 				PostGeneration.SetDatabases(databases.Select(database => database.Name));
 
@@ -408,7 +414,7 @@ public sealed class MainViewModel : ObservableObject
 			async cancellationToken =>
 			{
 				GenerationRequest request  = CreateRequest(includedTables);
-				Progress<string>  progress = new Progress<string>(message => StatusMessage = message);
+				Progress<string>  progress = new(message => StatusMessage = message);
 				long              rowCount = request.Plans.Sum(plan => (long)plan.TotalRowCount);
 
 				await _generationService.GenerateAsync(
@@ -461,17 +467,23 @@ public sealed class MainViewModel : ObservableObject
 			switch (choice)
 			{
 				case DialogChoice.Yes:
+				{
 					Explorer.IncludeTables(missingReferences.Select(reference => reference.ReferencedTable).Distinct());
 					includedTables = Explorer.GetIncludedTables();
 					break;
+				}
 
 				case DialogChoice.No:
+				{
 					UseExistingKeys(missingReferences, includedTables);
 					break;
+				}
 
 				default:
+				{
 					StatusMessage = CANCELLED_STATUS;
 					return null;
+				}
 			}
 		}
 
@@ -504,7 +516,7 @@ public sealed class MainViewModel : ObservableObject
 
 	private static string BuildMissingReferenceMessage(IReadOnlyList<MissingReference> missingReferences)
 	{
-		StringBuilder builder = new StringBuilder("Some columns take their values from rows generated for tables that are not included:");
+		StringBuilder builder = new("Some columns take their values from rows generated for tables that are not included:");
 		List<IGrouping<TableNodeViewModel, MissingReference>> groups = [.. missingReferences.GroupBy(reference => reference.ReferencedTable)];
 
 		_ = builder.AppendLine();
@@ -539,7 +551,7 @@ public sealed class MainViewModel : ObservableObject
 
 	private void ShowRuleProblems(IReadOnlyList<RuleProblem> problems)
 	{
-		StringBuilder summary = new StringBuilder($"{problems.Count:N0} setting(s) must be fixed before generating:");
+		StringBuilder summary = new($"{problems.Count:N0} setting(s) must be fixed before generating:");
 
 		foreach (RuleProblem problem in problems.Take(MAXIMUM_LISTED_ITEMS))
 		{
@@ -604,7 +616,7 @@ public sealed class MainViewModel : ObservableObject
 
 	private string BuildConnectionString(string databaseName)
 	{
-		SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
+		SqlConnectionStringBuilder builder = new()
 		{
 			DataSource               = ServerName.Trim(),
 			InitialCatalog           = databaseName,

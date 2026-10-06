@@ -1,6 +1,6 @@
 ﻿using DataGenerator.Models;
 
-namespace DataGenerator.Services;
+namespace DataGenerator.Interfaces;
 
 /// <summary>
 /// Switches the colours of the whole application between the light and dark themes.

@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using DataGenerator.Interfaces;
 using DataGenerator.ViewModels;
 using DataGenerator.Views;
 
@@ -21,7 +22,7 @@ public sealed class SavedSettingsWindowService : ISavedSettingsWindowService
 	{
 		ArgumentNullException.ThrowIfNull(viewModel);
 
-		SaveColumnSettingWindow window = new SaveColumnSettingWindow
+		SaveColumnSettingWindow window = new()
 		{
 			DataContext = viewModel,
 			Owner       = GetOwner()
@@ -32,9 +33,9 @@ public sealed class SavedSettingsWindowService : ISavedSettingsWindowService
 
 	public void ShowManager()
 	{
-		using SavedSettingsManagerViewModel viewModel = new SavedSettingsManagerViewModel(_library, _dialogService, _fileDialogService);
+		using SavedSettingsManagerViewModel viewModel = new(_library, _dialogService, _fileDialogService);
 
-		SavedSettingsManagerWindow window = new SavedSettingsManagerWindow
+		SavedSettingsManagerWindow window = new()
 		{
 			DataContext = viewModel,
 			Owner       = GetOwner()

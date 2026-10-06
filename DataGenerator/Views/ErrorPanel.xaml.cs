@@ -7,6 +7,11 @@ namespace DataGenerator.Views;
 /// </summary>
 public partial class ErrorPanel : UserControl
 {
+	/// <summary>
+	/// The tallest the message area grows before it scrolls, so a long error never squashes the rest of the window.
+	/// </summary>
+	public const double MAXIMUM_MESSAGE_HEIGHT = 110;
+
 	public ErrorPanel()
 	{
 		InitializeComponent();

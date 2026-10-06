@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.IO;
 using System.Text;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 
 namespace DataGenerator.Services.Generation;
@@ -10,9 +11,11 @@ namespace DataGenerator.Services.Generation;
 /// </summary>
 internal sealed class SqlScriptWriter
 {
-	private const int    SCRIPT_BATCH_SIZE = 100;
-	private const string INDENT            = "\t";
-	private const string SEPARATOR_LINE    = "-- =============================================================================";
+	private const int    SCRIPT_BATCH_SIZE     = 100;
+	private const int    UPDATE_SHORTAGE_ERROR = 50002;
+	private const int    LOOKUP_SHORTAGE_ERROR = 50003;
+	private const string INDENT                = "\t";
+	private const string SEPARATOR_LINE        = "-- =============================================================================";
 
 	private readonly ISqlValueConverter _converter;
 	private readonly RowValueBuilder    _rowValueBuilder;
@@ -50,7 +53,7 @@ internal sealed class SqlScriptWriter
 
 		try
 		{
-			using (StreamWriter writer = new StreamWriter(tempPath, false, new UTF8Encoding(false)))
+			using (StreamWriter writer = new(tempPath, false, new UTF8Encoding(false)))
 			{
 				writer.NewLine = "\r\n";
 				WriteScript(writer, blueprint, progress, cancellationToken);
@@ -72,7 +75,7 @@ internal sealed class SqlScriptWriter
 		CancellationToken   cancellationToken
 	)
 	{
-		HashSet<ExistingKeyPool> loadedPools = new HashSet<ExistingKeyPool>();
+		HashSet<ExistingKeyPool> loadedPools = [];
 
 		WriteHeader(writer, blueprint);
 
@@ -87,12 +90,24 @@ internal sealed class SqlScriptWriter
 		writer.WriteLine();
 
 		WriteCleanup(writer, blueprint);
+		WriteSnapshots(writer, blueprint);
 
-		foreach (TableBlueprint table in blueprint.Tables)
+		int currentStep = 0;
+
+		foreach (GenerationOperation operation in blueprint.Operations)
 		{
+			RowSetBlueprint rowSet = operation.RowSet;
+
 			cancellationToken.ThrowIfCancellationRequested();
 
-			foreach (ExistingKeyPool pool in table.ExistingKeyPools)
+			if (blueprint.StepCount > 1 && rowSet.Plan.Step != currentStep)
+			{
+				currentStep = rowSet.Plan.Step;
+				writer.WriteLine($"{INDENT}-- ----- Step {currentStep} -----");
+				writer.WriteLine();
+			}
+
+			foreach (ExistingKeyPool pool in rowSet.ExistingKeyPools)
 			{
 				if (loadedPools.Add(pool))
 				{
@@ -100,15 +115,30 @@ internal sealed class SqlScriptWriter
 				}
 			}
 
-			foreach (RowSetBlueprint rowSet in table.RowSets)
+			foreach (LookupPool lookup in rowSet.LookupPools)
 			{
-				WriteRowSet(writer, table, rowSet, progress, cancellationToken);
+				WriteLookupLoad(writer, lookup);
+			}
+
+			if (rowSet.Update is RowSetUpdate update)
+			{
+				WriteUpdate(writer, operation.Table, rowSet, update, progress, cancellationToken);
+			}
+			else
+			{
+				WriteRowSet(writer, operation.Table, rowSet, progress, cancellationToken);
 			}
 		}
 
 		WritePostGeneration(writer, blueprint);
 
 		writer.WriteLine($"{INDENT}COMMIT TRANSACTION;");
+
+		foreach (RowSnapshot snapshot in blueprint.Snapshots)
+		{
+			writer.WriteLine($"{INDENT}{snapshot.BuildDropStatement()}");
+		}
+
 		writer.WriteLine("END TRY");
 		writer.WriteLine("BEGIN CATCH");
 		writer.WriteLine($"{INDENT}IF XACT_STATE() <> 0");
@@ -127,7 +157,8 @@ internal sealed class SqlScriptWriter
 		writer.WriteLine(
 			$"-- {FormatCount(blueprint.Tables.Count, "table")}, "
 			+ $"{FormatCount(blueprint.RowSetCount, "row set")}, "
-			+ $"{FormatCount(blueprint.TotalRowCount, "row")}"
+			+ $"{FormatCount(blueprint.TotalRowCount, "new row")}"
+			+ (blueprint.UpdatedRowCount > 0 ? $", {FormatCount(blueprint.UpdatedRowCount, "changed row")}" : string.Empty)
 		);
 		writer.WriteLine("--");
 
@@ -135,8 +166,20 @@ internal sealed class SqlScriptWriter
 		{
 			writer.WriteLine(
 				$"--   {SqlSyntax.ToCommentText(table.Table.FullyQualifiedName)}: "
-				+ $"{FormatCount(table.RowSets.Count, "row set")}, {FormatCount(table.TotalRowCount, "row")}"
+				+ $"{FormatCount(table.RowSets.Count, "row set")}, {FormatCount(table.TotalRowCount, "new row")}"
+				+ (table.UpdatedRowCount > 0 ? $", {FormatCount(table.UpdatedRowCount, "changed row")}" : string.Empty)
 			);
+		}
+
+		if (blueprint.StepCount > 1 || blueprint.UpdatedRowCount > 0)
+		{
+			writer.WriteLine("--");
+			writer.WriteLine("-- Run order:");
+
+			foreach (GenerationOperation operation in blueprint.Operations)
+			{
+				writer.WriteLine($"--   {SqlSyntax.ToCommentText(DescribeOperation(operation))}");
+			}
 		}
 
 		if (blueprint.TablesToClear.Count > 0)
@@ -180,6 +223,32 @@ internal sealed class SqlScriptWriter
 			writer.WriteLine($"-- Sample of existing keys of {SqlSyntax.ToCommentText(pool.ReferencedTableName)} used by \"Existing key\" columns");
 			writer.WriteLine($"DECLARE {pool.VariableName} TABLE ({DescribeVariableColumns(pool.TargetColumns)});");
 			writer.WriteLine($"DECLARE {pool.CountVariableName} INT = 0;");
+			hasDeclarations = true;
+		}
+
+		foreach (LookupPool lookup in blueprint.LookupPools)
+		{
+			writer.WriteLine($"-- Values of {SqlSyntax.ToCommentText(lookup.Lookup.SourceDisplayName)} used by {SqlSyntax.ToCommentText(lookup.Location)}");
+			writer.WriteLine($"DECLARE {lookup.VariableName} TABLE ({DescribeVariableColumns([lookup.TargetColumn])});");
+			writer.WriteLine($"DECLARE {lookup.CountVariableName} INT = 0;");
+			hasDeclarations = true;
+		}
+
+		List<string> temporaryTables =
+		[
+			.. blueprint.Snapshots.Select(snapshot => snapshot.BuildDropStatement()),
+			.. blueprint.Updates.Select(update => update.BuildDropStatement())
+		];
+
+		if (temporaryTables.Count > 0)
+		{
+			writer.WriteLine("-- Temporary tables left behind by an earlier, failed run of this script");
+
+			foreach (string statement in temporaryTables)
+			{
+				writer.WriteLine(statement);
+			}
+
 			hasDeclarations = true;
 		}
 
@@ -265,6 +334,110 @@ internal sealed class SqlScriptWriter
 		}
 	}
 
+	/// <summary>
+	/// Copies the rows that exist before anything is inserted, for the "Generated rows" and "Existing rows" scopes.
+	/// </summary>
+	private static void WriteSnapshots(TextWriter writer, GenerationBlueprint blueprint)
+	{
+		if (blueprint.Snapshots.Count == 0)
+		{
+			return;
+		}
+
+		writer.WriteLine($"{INDENT}-- Remember which rows exist before this run");
+
+		foreach (RowSnapshot snapshot in blueprint.Snapshots)
+		{
+			writer.WriteLine($"{INDENT}{snapshot.BuildCreateStatement()}");
+		}
+
+		writer.WriteLine();
+	}
+
+	private static void WriteLookupLoad(TextWriter writer, LookupPool lookup)
+	{
+		string valueColumn = SqlSyntax.QuoteIdentifier(GeneratedKeyTable.GetValueColumnName(0));
+
+		writer.WriteLine($"{INDENT}-- Values of {SqlSyntax.ToCommentText(lookup.Lookup.SourceDisplayName)} for {SqlSyntax.ToCommentText(lookup.Location)}");
+		writer.WriteLine($"{INDENT}INSERT INTO {lookup.VariableName} ({valueColumn})");
+		writer.WriteLine($"{INDENT}{lookup.SelectStatement};");
+		writer.WriteLine($"{INDENT}SET {lookup.CountVariableName} = @@ROWCOUNT;");
+		writer.WriteLine();
+		writer.WriteLine($"{INDENT}IF {lookup.CountVariableName} < {lookup.RequiredCount}");
+		writer.WriteLine($"{INDENT}BEGIN");
+		writer.WriteLine(
+			$"{INDENT}{INDENT}THROW {LOOKUP_SHORTAGE_ERROR}, {SqlSyntax.QuoteUnicodeText($"{lookup.DescribeShortage()} ({lookup.Location})")}, 1;"
+		);
+		writer.WriteLine($"{INDENT}END;");
+		writer.WriteLine();
+	}
+
+	/// <summary>
+	/// Writes an update set: its new values go into a staging table, then randomly chosen matching rows are changed.
+	/// </summary>
+	private void WriteUpdate(
+		TextWriter         writer,
+		TableBlueprint     table,
+		RowSetBlueprint    rowSet,
+		RowSetUpdate       update,
+		GenerationProgress progress,
+		CancellationToken  cancellationToken
+	)
+	{
+		RowSetPlan   plan         = rowSet.Plan;
+		string       insertPrefix = update.CreateInsertPrefix();
+		List<string> batch        = new(SCRIPT_BATCH_SIZE);
+
+		writer.WriteLine(
+			$"{INDENT}-- {SqlSyntax.ToCommentText($"{table.Table.FullyQualifiedName} › Set '{plan.Name}'")}: "
+			+ $"change {FormatCount(plan.RowCount, "row")}"
+		);
+		writer.WriteLine($"{INDENT}{update.CreateStatement}");
+
+		for (long rowIndex = 0; rowIndex < plan.RowCount; ++rowIndex)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+
+			object?[] values = _rowValueBuilder.Build(table, rowSet, rowIndex);
+
+			batch.Add($"{(rowIndex + 1).ToString(CultureInfo.InvariantCulture)}, {FormatValues(rowSet, values)}");
+
+			if (batch.Count == SCRIPT_BATCH_SIZE)
+			{
+				WriteBatch(writer, insertPrefix, batch);
+			}
+
+			progress.ReportRows("Writing", table.Table.DisplayName, plan.Name, rowIndex + 1, plan.RowCount);
+		}
+
+		WriteBatch(writer, insertPrefix, batch);
+		writer.WriteLine();
+		writer.WriteLine($"{INDENT}{update.UpdateStatement}");
+
+		if (update.RequiredCount > 0)
+		{
+			writer.WriteLine();
+			writer.WriteLine($"{INDENT}IF @@ROWCOUNT < {update.RequiredCount}");
+			writer.WriteLine($"{INDENT}BEGIN");
+			writer.WriteLine(
+				$"{INDENT}{INDENT}THROW {UPDATE_SHORTAGE_ERROR}, {SqlSyntax.QuoteUnicodeText($"{update.DescribeShortage(null)} ({update.Location})")}, 1;"
+			);
+			writer.WriteLine($"{INDENT}END;");
+		}
+
+		writer.WriteLine();
+		writer.WriteLine($"{INDENT}DROP TABLE {update.StagingTableName};");
+		writer.WriteLine();
+	}
+
+	private static string DescribeOperation(GenerationOperation operation)
+	{
+		RowSetPlan plan   = operation.RowSet.Plan;
+		string     action = plan.IsUpdate ? $"change {FormatCount(plan.RowCount, "row")}" : $"insert {FormatCount(plan.RowCount, "row")}";
+
+		return $"Step {plan.Step}: {operation.Table.Table.FullyQualifiedName} › Set '{plan.Name}' ({action})";
+	}
+
 	private void WritePoolLoad(TextWriter writer, ExistingKeyPool pool)
 	{
 		string columns = string.Join(
@@ -295,7 +468,7 @@ internal sealed class SqlScriptWriter
 		RowSetPlan         plan         = rowSet.Plan;
 		GeneratedKeyTable? keys         = table.Keys;
 		string             insertPrefix = CreateInsertPrefix(table.Table, rowSet) + CreateOutputClause(keys);
-		List<string>       batch        = new List<string>(SCRIPT_BATCH_SIZE);
+		List<string>       batch        = new(SCRIPT_BATCH_SIZE);
 
 		writer.WriteLine(
 			$"{INDENT}-- {SqlSyntax.ToCommentText($"{table.Table.FullyQualifiedName} › Set '{plan.Name}'")}: "
@@ -389,7 +562,7 @@ internal sealed class SqlScriptWriter
 
 	private string FormatValues(RowSetBlueprint rowSet, object?[] values)
 	{
-		StringBuilder builder = new StringBuilder();
+		StringBuilder builder = new();
 
 		for (int index = 0; index < values.Length; ++index)
 		{
@@ -406,7 +579,7 @@ internal sealed class SqlScriptWriter
 
 	private string DescribeVariableColumns(IReadOnlyList<ColumnModel> columns)
 	{
-		StringBuilder builder = new StringBuilder("[RowNumber] INT IDENTITY(1, 1) PRIMARY KEY");
+		StringBuilder builder = new("[RowNumber] INT IDENTITY(1, 1) PRIMARY KEY");
 
 		for (int index = 0; index < columns.Count; ++index)
 		{

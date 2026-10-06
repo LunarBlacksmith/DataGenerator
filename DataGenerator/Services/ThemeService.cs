@@ -4,6 +4,7 @@ using System.IO;
 using System.Security;
 using System.Windows;
 using DataGenerator.Infrastructure;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 using Microsoft.Win32;
 
@@ -55,7 +56,7 @@ public sealed class ThemeService : IThemeService
 			throw new ArgumentOutOfRangeException(nameof(theme), theme, "Unknown theme.");
 		}
 
-		ResourceDictionary brushes = new ResourceDictionary
+		ResourceDictionary brushes = new()
 		{
 			Source = new Uri(string.Format(CultureInfo.InvariantCulture, BRUSHES_URI_FORMAT, theme), UriKind.Absolute)
 		};

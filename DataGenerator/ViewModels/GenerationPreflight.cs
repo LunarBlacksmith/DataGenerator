@@ -62,7 +62,7 @@ public static class GenerationPreflight
 		ArgumentNullException.ThrowIfNull(includedTables);
 
 		HashSet<TableNodeViewModel> plannedTables = [.. includedTables];
-		Queue<TableNodeViewModel>   pendingTables = new Queue<TableNodeViewModel>(includedTables);
+		Queue<TableNodeViewModel>   pendingTables = new(includedTables);
 		List<MissingReference>      missing       = [];
 
 		while (pendingTables.Count > 0)

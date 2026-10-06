@@ -43,23 +43,34 @@ internal sealed class SequencePatternNode : PatternNode
 
 		PatternNumberFormatter.AppendPadded(builder, (long)(_minimum + wrapped), _digits);
 	}
+
+	public override PatternTemplateSet ExpandTemplates() => PatternTemplateSet.ForNumbers(_minimum, _maximum, _digits, FunctionName);
 }
 
 internal sealed class RandomNumberPatternNode : PatternNode
 {
-	private readonly long _minimum;
-	private readonly long _maximum;
-	private readonly int  _digits;
+	private readonly int _digits;
 
 	public RandomNumberPatternNode(long minimum, long maximum, int digits)
 	{
-		_minimum = minimum;
-		_maximum = maximum;
-		_digits  = digits;
+		Minimum = minimum;
+		Maximum = maximum;
+		_digits = digits;
 	}
 
+	public long Minimum { get; }
+	public long Maximum { get; }
+
 	public override void Append(StringBuilder builder, PatternContext context)
-		=> PatternNumberFormatter.AppendPadded(builder, context.Random.NextInt64(_minimum, _maximum + 1), _digits);
+		=> PatternNumberFormatter.AppendPadded(builder, context.Random.NextInt64(Minimum, Maximum + 1), _digits);
+
+	public override PatternTemplateSet ExpandTemplates() => PatternTemplateSet.ForNumbers(Minimum, Maximum, _digits, FunctionName);
+
+	/// <summary>
+	/// The same function limited to <paramref name="minimum"/> to <paramref name="maximum"/>, e.g. for NUM(...) GREATER THAN 50.
+	/// </summary>
+	public RandomNumberPatternNode WithRange(long minimum, long maximum)
+		=> new RandomNumberPatternNode(minimum, maximum, _digits) { FunctionName = FunctionName };
 }
 
 internal sealed class RandomDecimalPatternNode : PatternNode
@@ -108,6 +119,16 @@ internal sealed class RandomTextPatternNode : PatternNode
 
 		PatternContext.EnsureLength(builder);
 	}
+
+	public override PatternTemplateSet ExpandTemplates()
+	{
+		string likeClass =
+			_alphabet.All(char.IsDigit)    ? "[0-9]"
+			: _alphabet.All(char.IsLetter) ? "[A-Z]"
+			: "[A-Z0-9]";
+
+		return PatternTemplateSet.ForCharacters(likeClass, _minimumLength, _maximumLength);
+	}
 }
 
 internal sealed class RandomDatePatternNode : PatternNode
@@ -125,7 +146,7 @@ internal sealed class RandomDatePatternNode : PatternNode
 
 	public override void Append(StringBuilder builder, PatternContext context)
 	{
-		DateTime value = new DateTime(context.Random.NextInt64(_minimum.Ticks, _maximum.Ticks + 1));
+		DateTime value = new(context.Random.NextInt64(_minimum.Ticks, _maximum.Ticks + 1));
 
 		_ = builder.Append(value.ToString(_format, CultureInfo.InvariantCulture));
 	}
@@ -159,6 +180,10 @@ internal sealed class TodayPatternNode : PatternNode
 
 internal sealed class GuidPatternNode : PatternNode
 {
+	private const string HEX_CLASS = "[0-9A-F]";
+
+	private static readonly int[] GROUP_LENGTHS = [8, 4, 4, 4, 12];
+
 	private readonly bool _upperCase;
 
 	public GuidPatternNode(bool upperCase)
@@ -172,6 +197,100 @@ internal sealed class GuidPatternNode : PatternNode
 
 		_ = builder.Append(_upperCase ? text.ToUpperInvariant() : text);
 	}
+
+	public override PatternTemplateSet ExpandTemplates()
+	{
+		PatternTemplateSet result = PatternTemplateSet.EMPTY_TEXT;
+
+		for (int index = 0; index < GROUP_LENGTHS.Length; ++index)
+		{
+			if (index > 0)
+			{
+				result = result.Then(PatternTemplateSet.FromLiteral("-"));
+			}
+
+			result = result.Then(PatternTemplateSet.ForCharacters(HEX_CLASS, GROUP_LENGTHS[index], GROUP_LENGTHS[index]));
+		}
+
+		return result;
+	}
+}
+
+/// <summary>
+/// The one-based number of the row within its row set, e.g. ROW(3) → 001, 002, …
+/// </summary>
+internal sealed class RowNumberPatternNode : PatternNode
+{
+	private readonly int _digits;
+
+	public RowNumberPatternNode(int digits)
+	{
+		_digits = digits;
+	}
+
+	public override void Append(StringBuilder builder, PatternContext context)
+		=> PatternNumberFormatter.AppendPadded(builder, context.RowIndex + 1, _digits);
+}
+
+/// <summary>
+/// The listed values in turn, one per row, starting again after the last, e.g. CYCLE('A', 'B') → A, B, A, B, …
+/// </summary>
+internal sealed class CyclePatternNode : PatternNode
+{
+	private readonly IReadOnlyList<string> _values;
+
+	public CyclePatternNode(IReadOnlyList<string> values)
+	{
+		_values = values;
+	}
+
+	public override void Append(StringBuilder builder, PatternContext context)
+		=> _ = builder.Append(_values[(int)(context.RowIndex % _values.Count)]);
+
+	public override PatternTemplateSet ExpandTemplates()
+		=> PatternTemplateSet.Union([.. _values.Select(PatternTemplateSet.FromLiteral)]);
+}
+
+/// <summary>
+/// Values for the first or last rows of the row set (FIRST and LAST); every other row gets the else value.
+/// LAST(3, 'A', 'B', 'C') gives the third-last row A, the second-last B and the last C.
+/// </summary>
+internal sealed class RowPositionPatternNode : PatternNode
+{
+	private readonly bool                  _fromEnd;
+	private readonly IReadOnlyList<string> _values;
+	private readonly string                _otherValue;
+
+	public RowPositionPatternNode(bool fromEnd, IReadOnlyList<string> values, string otherValue)
+	{
+		_fromEnd    = fromEnd;
+		_values     = values;
+		_otherValue = otherValue;
+	}
+
+	public override void Append(StringBuilder builder, PatternContext context)
+	{
+		long position;
+
+		if (!_fromEnd)
+		{
+			position = context.RowIndex;
+		}
+		else if (context.RowCount.HasValue)
+		{
+			// Counted back from the end, so that the last listed value belongs to the last row.
+			position = _values.Count - (context.RowCount.Value - context.RowIndex);
+		}
+		else
+		{
+			position = -1;
+		}
+
+		_ = builder.Append(position >= 0 && position < _values.Count ? _values[(int)position] : _otherValue);
+	}
+
+	public override PatternTemplateSet ExpandTemplates()
+		=> PatternTemplateSet.Union([.. _values.Append(_otherValue).Select(PatternTemplateSet.FromLiteral)]);
 }
 
 /// <summary>
@@ -221,8 +340,8 @@ internal sealed class DynamicFunctionPatternNode : PatternNode
 
 	public override void Append(StringBuilder builder, PatternContext context)
 	{
-		List<PatternArgument> evaluatedArguments = new List<PatternArgument>(_arguments.Count);
-		StringBuilder         keyBuilder         = new StringBuilder();
+		List<PatternArgument> evaluatedArguments = new(_arguments.Count);
+		StringBuilder         keyBuilder         = new();
 
 		foreach (PatternArgument argument in _arguments)
 		{
@@ -230,7 +349,7 @@ internal sealed class DynamicFunctionPatternNode : PatternNode
 
 			if (argument.Expression is not null)
 			{
-				StringBuilder valueBuilder = new StringBuilder();
+				StringBuilder valueBuilder = new();
 
 				argument.Expression.Append(valueBuilder, context);
 				evaluatedArgument = argument.WithEvaluatedValue(valueBuilder.ToString());

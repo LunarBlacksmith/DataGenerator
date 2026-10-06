@@ -15,11 +15,12 @@ public sealed class ColumnRuleFactory
 		_services = services ?? throw new ArgumentNullException(nameof(services));
 	}
 
-	public IReadOnlyList<ColumnRuleViewModel> CreateRules(TableModel table)
+	/// <param name="isUpdate">Whether the rules are for an update set; their columns keep their current values until changed.</param>
+	public IReadOnlyList<ColumnRuleViewModel> CreateRules(TableModel table, bool isUpdate = false)
 	{
 		ArgumentNullException.ThrowIfNull(table);
 
-		List<ColumnRuleViewModel> rules = new List<ColumnRuleViewModel>(table.Columns.Count);
+		List<ColumnRuleViewModel> rules = new(table.Columns.Count);
 
 		foreach (ColumnModel column in table.Columns)
 		{
@@ -28,9 +29,14 @@ public sealed class ColumnRuleFactory
 				reference is not null
 				&& string.Equals(reference.ReferencedTableKey, table.Key, StringComparison.OrdinalIgnoreCase);
 
-			ColumnRuleViewModel rule = new ColumnRuleViewModel(table.DisplayName, column, reference, isSelfReference, _services);
+			ColumnRuleViewModel rule = new(table, column, reference, isSelfReference, isUpdate, _services);
 
-			_ = rule.ApplyAutomaticSetting();
+			// Update sets only change the columns the user chooses.
+			if (!isUpdate)
+			{
+				_ = rule.ApplyAutomaticSetting();
+			}
+
 			rules.Add(rule);
 		}
 

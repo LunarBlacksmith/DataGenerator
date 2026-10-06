@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Threading;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 using DataGenerator.Services;
 using DataGenerator.Services.Patterns;
@@ -32,15 +33,17 @@ public partial class App : Application
 		IPatternValueGenerator      patternGenerator     = new PatternValueGenerator();
 		IColumnValueCaster          columnValueCaster    = new ColumnValueCaster(converter);
 		IColumnValueGenerator       columnValueGenerator = new ColumnValueGenerator(converter, regexGenerator, patternGenerator, columnValueCaster);
+		IPatternSqlTranslator       patternTranslator    = new PatternSqlTranslator();
+		ITableCatalog               tableCatalog         = new TableCatalog();
 		IFileDialogService          fileDialogService    = new FileDialogService();
-		SavedSettingsLibrary        savedSettings        = new SavedSettingsLibrary(new JsonSavedSettingsStore(SecurePathService.GetSavedSettingsFilePath()));
+		SavedSettingsLibrary        savedSettings        = new(new JsonSavedSettingsStore(SecurePathService.GetSavedSettingsFilePath()));
 		ISavedSettingsWindowService savedSettingsWindows = new SavedSettingsWindowService(savedSettings, _dialogService, fileDialogService);
 		string?                     savedSettingsWarning = savedSettings.Load();
-		RowSetConfigurationLibrary  setConfigurations    = new RowSetConfigurationLibrary(new JsonRowSetConfigurationStore(SecurePathService.GetSetConfigurationsFilePath()));
+		RowSetConfigurationLibrary  setConfigurations    = new(new JsonRowSetConfigurationStore(SecurePathService.GetSetConfigurationsFilePath()));
 		string?                     setConfigWarning     = setConfigurations.Load();
 		IUserPreferencesStore       preferencesStore     = new JsonUserPreferencesStore(SecurePathService.GetPreferencesFilePath());
 
-		ThemeViewModel theme = new ThemeViewModel(
+		ThemeViewModel theme = new(
 			new ThemeService(this),
 			preferencesStore,
 			_dialogService
@@ -49,16 +52,18 @@ public partial class App : Application
 		// Applied before any window is created, so nothing is ever drawn in the wrong colours.
 		theme.ApplySavedTheme();
 
-		ColumnRuleServices ruleServices = new ColumnRuleServices(
+		ColumnRuleServices ruleServices = new(
 			converter,
 			columnValueGenerator,
 			patternGenerator,
 			RegexProfile.DEFAULT_PROFILES,
 			savedSettings,
-			savedSettingsWindows
+			savedSettingsWindows,
+			tableCatalog,
+			new LookupExpressionParser(tableCatalog, patternTranslator)
 		);
 
-		DatabaseExplorerViewModel explorer = new DatabaseExplorerViewModel(
+		DatabaseExplorerViewModel explorer = new(
 			new ColumnRuleFactory(ruleServices),
 			savedSettings,
 			savedSettingsWindows,
@@ -69,7 +74,7 @@ public partial class App : Application
 
 		_mainViewModel = new MainViewModel(
 			new SqlMetadataService(),
-			new DataGenerationService(converter, columnValueGenerator),
+			new DataGenerationService(converter, columnValueGenerator, patternTranslator),
 			fileDialogService,
 			_dialogService,
 			new ShellService(),
@@ -77,12 +82,13 @@ public partial class App : Application
 			new HelpService(patternGenerator),
 			_exceptionFormatter,
 			new ForeignTableKeyResolver(),
+			tableCatalog,
 			explorer,
 			theme,
 			new PostGenerationSqlViewModel(new PostGenerationSqlParser())
 		);
 
-		MainWindow window = new MainWindow
+		MainWindow window = new()
 		{
 			DataContext = _mainViewModel
 		};

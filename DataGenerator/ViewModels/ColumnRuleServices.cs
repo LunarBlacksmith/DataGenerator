@@ -1,4 +1,5 @@
-﻿using DataGenerator.Models;
+﻿using DataGenerator.Interfaces;
+using DataGenerator.Models;
 using DataGenerator.Services;
 
 namespace DataGenerator.ViewModels;
@@ -14,7 +15,9 @@ public sealed class ColumnRuleServices
 		IPatternValueGenerator      patternGenerator,
 		IReadOnlyList<RegexProfile> regexProfiles,
 		SavedSettingsLibrary        savedSettings,
-		ISavedSettingsWindowService savedSettingsWindows
+		ISavedSettingsWindowService savedSettingsWindows,
+		ITableCatalog               tableCatalog,
+		ILookupExpressionParser     lookupParser
 	)
 	{
 		Converter            = converter ?? throw new ArgumentNullException(nameof(converter));
@@ -23,6 +26,8 @@ public sealed class ColumnRuleServices
 		RegexProfiles        = regexProfiles ?? throw new ArgumentNullException(nameof(regexProfiles));
 		SavedSettings        = savedSettings ?? throw new ArgumentNullException(nameof(savedSettings));
 		SavedSettingsWindows = savedSettingsWindows ?? throw new ArgumentNullException(nameof(savedSettingsWindows));
+		TableCatalog         = tableCatalog ?? throw new ArgumentNullException(nameof(tableCatalog));
+		LookupParser         = lookupParser ?? throw new ArgumentNullException(nameof(lookupParser));
 	}
 
 	public ISqlValueConverter          Converter            { get; }
@@ -31,4 +36,6 @@ public sealed class ColumnRuleServices
 	public IReadOnlyList<RegexProfile> RegexProfiles        { get; }
 	public SavedSettingsLibrary        SavedSettings        { get; }
 	public ISavedSettingsWindowService SavedSettingsWindows { get; }
+	public ITableCatalog               TableCatalog         { get; }
+	public ILookupExpressionParser     LookupParser         { get; }
 }

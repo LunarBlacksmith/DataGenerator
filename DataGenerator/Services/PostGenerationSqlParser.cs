@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 
 namespace DataGenerator.Services;
@@ -17,7 +18,7 @@ public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 	/// <summary>
 	/// Words that can stand alone on a line of SQL and must not be mistaken for a stored procedure.
 	/// </summary>
-	private static readonly HashSet<string> SQL_KEYWORDS = new HashSet<string>(
+	private static readonly HashSet<string> SQL_KEYWORDS = new(
 		[
 			"ALL", "AND", "AS", "BEGIN", "BREAK", "BY", "CASE", "CATCH", "CHECKPOINT", "COMMIT", "CONTINUE", "DECLARE",
 			"DEFAULT", "DISTINCT", "ELSE", "END", "EXCEPT", "FROM", "GO", "GROUP", "HAVING", "IF", "INTERSECT", "INTO",

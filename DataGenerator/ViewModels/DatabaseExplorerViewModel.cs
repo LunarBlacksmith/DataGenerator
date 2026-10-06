@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Globalization;
 using DataGenerator.Infrastructure;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 using DataGenerator.Services;
 
@@ -71,6 +72,7 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		ApplyRowCountCommand    = new RelayCommand(_ => ApplyRowCountToSelection(), _ => HasSelection && TryGetBulkRowCount(out int _));
 		ClearFilterCommand      = new RelayCommand(_ => FilterText = string.Empty, _ => _filterText.Length > 0);
 		AddRowSetCommand        = new RelayCommand(_ => AddRowSet(), _ => _activeTable is not null);
+		AddUpdateSetCommand     = new RelayCommand(_ => AddUpdateSet(), _ => _activeTable is not null);
 		DuplicateRowSetCommand  = new RelayCommand(_ => DuplicateRowSet(), _ => _activeTable?.SelectedRowSet is not null);
 		RemoveRowSetCommand     = new RelayCommand(_ => RemoveRowSet(), _ => _activeTable?.CanRemoveRowSet == true);
 
@@ -120,6 +122,7 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	public RelayCommand ApplyRowCountCommand    { get; }
 	public RelayCommand ClearFilterCommand      { get; }
 	public RelayCommand AddRowSetCommand        { get; }
+	public RelayCommand AddUpdateSetCommand     { get; }
 	public RelayCommand DuplicateRowSetCommand  { get; }
 	public RelayCommand RemoveRowSetCommand     { get; }
 
@@ -259,7 +262,7 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 
 		foreach (DatabaseModel model in databases.OrderBy(database => database.Name, StringComparer.OrdinalIgnoreCase))
 		{
-			DatabaseNodeViewModel database = new DatabaseNodeViewModel(model, _ruleFactory);
+			DatabaseNodeViewModel database = new(model, _ruleFactory);
 
 			// Databases start expanded so every table of every database can be seen at once.
 			database.IsExpanded = true;
@@ -621,6 +624,14 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		}
 	}
 
+	private void AddUpdateSet()
+	{
+		if (_activeTable is not null)
+		{
+			_ = _activeTable.AddUpdateSet();
+		}
+	}
+
 	private void DuplicateRowSet()
 	{
 		if (_activeTable?.SelectedRowSet is RowSetViewModel rowSet)
@@ -638,7 +649,7 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 
 		bool isConfirmed = _dialogService.Confirm(
 			"Remove row set",
-			$"Remove the row set '{rowSet.Name}' ({rowSet.RowCount:N0} rows) from {_activeTable.DisplayName}?"
+			$"Remove the {(rowSet.IsUpdate ? "update set" : "row set")} '{rowSet.Name}' ({rowSet.RowCount:N0} rows) from {_activeTable.DisplayName}?"
 				+ $"{Environment.NewLine}{Environment.NewLine}Its column rules will be lost."
 		);
 
@@ -651,6 +662,7 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	private void RefreshRowSetCommands()
 	{
 		AddRowSetCommand.NotifyCanExecuteChanged();
+		AddUpdateSetCommand.NotifyCanExecuteChanged();
 		DuplicateRowSetCommand.NotifyCanExecuteChanged();
 		RemoveRowSetCommand.NotifyCanExecuteChanged();
 		SetConfigurations.RefreshCommands();

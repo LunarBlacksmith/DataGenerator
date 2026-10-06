@@ -1,4 +1,5 @@
-﻿using DataGenerator.Models;
+﻿using DataGenerator.Interfaces;
+using DataGenerator.Models;
 
 namespace DataGenerator.Services.Generation;
 
@@ -9,55 +10,64 @@ internal sealed class GenerationBlueprintBuilder
 {
 	private readonly ISqlValueConverter    _converter;
 	private readonly IColumnValueGenerator _valueGenerator;
+	private readonly IPatternSqlTranslator _patternTranslator;
 
-	public GenerationBlueprintBuilder(ISqlValueConverter converter, IColumnValueGenerator valueGenerator)
+	public GenerationBlueprintBuilder(ISqlValueConverter converter, IColumnValueGenerator valueGenerator, IPatternSqlTranslator patternTranslator)
 	{
-		_converter      = converter ?? throw new ArgumentNullException(nameof(converter));
-		_valueGenerator = valueGenerator ?? throw new ArgumentNullException(nameof(valueGenerator));
+		_converter         = converter         ?? throw new ArgumentNullException(nameof(converter));
+		_valueGenerator    = valueGenerator    ?? throw new ArgumentNullException(nameof(valueGenerator));
+		_patternTranslator = patternTranslator ?? throw new ArgumentNullException(nameof(patternTranslator));
 	}
 
 	public GenerationBlueprint Build(GenerationRequest request)
 	{
 		ArgumentNullException.ThrowIfNull(request);
 
-		bool                                    isScript   = request.Mode == GenerationMode.SqlFile;
-		Dictionary<string, TableGenerationPlan> plansByKey = IndexPlans(request.Plans);
+		bool                                    isScript         = request.Mode == GenerationMode.SqlFile;
+		Dictionary<string, TableGenerationPlan> plansByKey       = IndexPlans(request.Plans);
+		Dictionary<string, int>                 firstInsertSteps = FindFirstInsertSteps(request.Plans);
 
 		foreach (TableGenerationPlan plan in request.Plans)
 		{
-			ValidatePlan(plan, plansByKey);
+			ValidatePlan(plan, plansByKey, firstInsertSteps);
 		}
 
-		IReadOnlyList<TableGenerationPlan>    orderedPlans = TableDependencySorter.SortForInsertion(request.Plans);
-		Dictionary<string, GeneratedKeyTable> keyTables    = CreateKeyTables(request.Plans, isScript);
-		Dictionary<string, ExistingKeyPool>   pools        = new Dictionary<string, ExistingKeyPool>(StringComparer.OrdinalIgnoreCase);
-		List<TableBlueprint>                  tables       = [];
+		RowSnapshotSet                     snapshots    = new();
+		IReadOnlyList<TableGenerationPlan> orderedPlans = OrderPlans(request.Plans, plansByKey);
+		BuildContext                       context      = new()
+		{
+			KeyTables     = CreateKeyTables(request.Plans, isScript),
+			Snapshots     = snapshots,
+			LookupFactory = new LookupPoolFactory(_converter, _patternTranslator, snapshots, isScript),
+			IsScript      = isScript
+		};
+		List<TableBlueprint>               tables       = [];
 
 		foreach (TableGenerationPlan plan in orderedPlans)
 		{
-			List<RowSetBlueprint> rowSets    = [];
-			List<ExistingKeyPool> tablePools = [];
+			List<RowSetBlueprint> rowSets = [];
 
-			_ = keyTables.TryGetValue(plan.Table.Key, out GeneratedKeyTable? keys);
+			_ = context.KeyTables.TryGetValue(plan.Table.Key, out GeneratedKeyTable? keys);
 
 			foreach (RowSetPlan rowSet in plan.RowSets)
 			{
-				rowSets.Add(BuildRowSet(rowSet, keys, keyTables, pools, tablePools, isScript));
+				rowSets.Add(BuildRowSet(plan.Table, rowSet, keys, context));
 			}
 
 			tables.Add(new TableBlueprint
 			{
-				Table            = plan.Table,
-				RowSets          = rowSets,
-				Keys             = keys,
-				ExistingKeyPools = tablePools
+				Table   = plan.Table,
+				RowSets = rowSets,
+				Keys    = keys
 			});
 		}
 
 		return new GenerationBlueprint
 		{
 			Tables             = tables,
-			ExistingKeyPools   = [.. pools.Values],
+			Operations         = OrderOperations(tables),
+			ExistingKeyPools   = [.. context.Pools.Values],
+			Snapshots          = snapshots.Snapshots,
 			TablesToClear      = TableDependencySorter.SortForDeletion(request.TablesToClear),
 			ResetIdentitySeeds = request.ResetIdentitySeeds,
 			PostGeneration     = request.PostGeneration is { Statements.Count: > 0 } ? request.PostGeneration : null
@@ -67,9 +77,79 @@ internal sealed class GenerationBlueprintBuilder
 	public static string DescribeLocation(TableModel table, RowSetPlan? rowSet = null, long? rowIndex = null, ColumnModel? column = null)
 		=> GenerationLocation.Describe(table, rowSet?.Name, rowIndex, column?.Name);
 
+	/// <summary>
+	/// Tables that insert rows come first, referenced tables before the tables that reference them (only insert sets
+	/// count, because update sets do not create keys); tables with only update sets follow in request order.
+	/// </summary>
+	private static IReadOnlyList<TableGenerationPlan> OrderPlans(
+		IReadOnlyList<TableGenerationPlan>      plans,
+		Dictionary<string, TableGenerationPlan> plansByKey
+	)
+	{
+		List<TableGenerationPlan> insertPlans =
+		[
+			.. plans
+				.Where(plan => plan.RowSets.Any(rowSet => !rowSet.IsUpdate))
+				.Select(plan => new TableGenerationPlan { Table = plan.Table, RowSets = [.. plan.RowSets.Where(rowSet => !rowSet.IsUpdate)] })
+		];
+
+		List<TableGenerationPlan> ordered     = [.. TableDependencySorter.SortForInsertion(insertPlans).Select(plan => plansByKey[plan.Table.Key])];
+		HashSet<string>           orderedKeys = new(ordered.Select(plan => plan.Table.Key), StringComparer.OrdinalIgnoreCase);
+
+		ordered.AddRange(plans.Where(plan => !orderedKeys.Contains(plan.Table.Key)));
+
+		return ordered;
+	}
+
+	/// <summary>
+	/// Runs the row sets step by step; within a step the insert sets run first (in table order), then the update sets.
+	/// </summary>
+	private static List<GenerationOperation> OrderOperations(List<TableBlueprint> tables)
+	{
+		List<int>                 steps      = [.. tables.SelectMany(table => table.RowSets).Select(rowSet => rowSet.Plan.Step).Distinct().Order()];
+		List<GenerationOperation> operations = [];
+
+		foreach (int step in steps)
+		{
+			foreach (bool isUpdate in (bool[])[false, true])
+			{
+				foreach (TableBlueprint table in tables)
+				{
+					operations.AddRange(
+						table.RowSets
+							.Where(rowSet => rowSet.Plan.Step == step && rowSet.Plan.IsUpdate == isUpdate)
+							.Select(rowSet => new GenerationOperation { Table = table, RowSet = rowSet })
+					);
+				}
+			}
+		}
+
+		return operations;
+	}
+
+	/// <summary>
+	/// The first step in which each table inserts rows, by table key.
+	/// </summary>
+	private static Dictionary<string, int> FindFirstInsertSteps(IReadOnlyList<TableGenerationPlan> plans)
+	{
+		Dictionary<string, int> steps = new(StringComparer.OrdinalIgnoreCase);
+
+		foreach (TableGenerationPlan plan in plans)
+		{
+			List<int> insertSteps = [.. plan.RowSets.Where(rowSet => !rowSet.IsUpdate).Select(rowSet => rowSet.Step)];
+
+			if (insertSteps.Count > 0)
+			{
+				steps[plan.Table.Key] = insertSteps.Min();
+			}
+		}
+
+		return steps;
+	}
+
 	private static Dictionary<string, TableGenerationPlan> IndexPlans(IReadOnlyList<TableGenerationPlan> plans)
 	{
-		Dictionary<string, TableGenerationPlan> plansByKey = new Dictionary<string, TableGenerationPlan>(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, TableGenerationPlan> plansByKey = new(StringComparer.OrdinalIgnoreCase);
 
 		foreach (TableGenerationPlan plan in plans)
 		{
@@ -85,7 +165,11 @@ internal sealed class GenerationBlueprintBuilder
 		return plansByKey;
 	}
 
-	private void ValidatePlan(TableGenerationPlan plan, Dictionary<string, TableGenerationPlan> plansByKey)
+	private void ValidatePlan(
+		TableGenerationPlan                     plan,
+		Dictionary<string, TableGenerationPlan> plansByKey,
+		Dictionary<string, int>                 firstInsertSteps
+	)
 	{
 		if (plan.RowSets.Count == 0)
 		{
@@ -99,7 +183,12 @@ internal sealed class GenerationBlueprintBuilder
 				throw new DataGenerationException("Each row set must generate at least one row.", DescribeLocation(plan.Table, rowSet));
 			}
 
-			HashSet<string> columnNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			if (FindRowSetProblem(plan.Table, rowSet) is string rowSetProblem)
+			{
+				throw new DataGenerationException(rowSetProblem, DescribeLocation(plan.Table, rowSet));
+			}
+
+			HashSet<string> columnNames = new(StringComparer.OrdinalIgnoreCase);
 
 			foreach (ColumnRule rule in rowSet.Rules)
 			{
@@ -111,7 +200,7 @@ internal sealed class GenerationBlueprintBuilder
 					);
 				}
 
-				string? problem = FindRuleProblem(rule, plansByKey) ?? FindReferenceProblem(rule, rowSet.Rules);
+				string? problem = FindRuleProblem(rule, rowSet, plansByKey, firstInsertSteps) ?? FindReferenceProblem(rule, rowSet.Rules);
 
 				if (problem is not null)
 				{
@@ -130,6 +219,28 @@ internal sealed class GenerationBlueprintBuilder
 				);
 			}
 		}
+	}
+
+	private static string? FindRowSetProblem(TableModel table, RowSetPlan rowSet)
+	{
+		if (rowSet.Step < RowSetPlan.FIRST_STEP)
+		{
+			return $"The step must be {RowSetPlan.FIRST_STEP} or higher.";
+		}
+
+		if (!rowSet.IsUpdate)
+		{
+			return null;
+		}
+
+		if (rowSet.Rules.All(rule => rule.GenerationMode == ValueGenerationMode.KeepCurrent))
+		{
+			return "The update set does not change any column. Choose another mode than 'Keep current value' for at least one column.";
+		}
+
+		return rowSet.UpdateScope != RowScope.Any && !table.Columns.Any(column => column.IsPrimaryKey)
+			? "Only tables with a primary key can limit an update set to generated or existing rows. Use 'Any rows' and a condition instead."
+			: null;
 	}
 
 	private string? FindReferenceProblem(ColumnRule rule, IReadOnlyList<ColumnRule> rules)
@@ -153,6 +264,12 @@ internal sealed class GenerationBlueprintBuilder
 				return "The column cannot use its own value. Choose another column.";
 			}
 
+			if (referencedRule.GenerationMode == ValueGenerationMode.KeepCurrent)
+			{
+				return $"The column uses the value of [{columnName}], but that column keeps its current value, which is not known "
+					+ $"in advance. Choose another column, or another mode for [{columnName}].";
+			}
+
 			if (referencedRule.GenerationMode == ValueGenerationMode.DatabaseGenerated)
 			{
 				return $"The column uses the value of [{columnName}], but SQL Server generates that value while inserting the row, "
@@ -170,7 +287,7 @@ internal sealed class GenerationBlueprintBuilder
 	/// </summary>
 	private int[] SortByReferences(IReadOnlyList<ColumnRule> rules, out List<string> cycle)
 	{
-		Dictionary<string, int> indexesByName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, int> indexesByName = new(StringComparer.OrdinalIgnoreCase);
 
 		for (int index = 0; index < rules.Count; ++index)
 		{
@@ -200,8 +317,8 @@ internal sealed class GenerationBlueprintBuilder
 			}
 		}
 
-		Queue<int> ready = new Queue<int>(Enumerable.Range(0, rules.Count).Where(index => remainingReferences[index] == 0));
-		List<int>  order = new List<int>(rules.Count);
+		Queue<int> ready = new(Enumerable.Range(0, rules.Count).Where(index => remainingReferences[index] == 0));
+		List<int>  order = new(rules.Count);
 
 		while (ready.Count > 0)
 		{
@@ -241,11 +358,31 @@ internal sealed class GenerationBlueprintBuilder
 		return cycle;
 	}
 
-	private string? FindRuleProblem(ColumnRule rule, Dictionary<string, TableGenerationPlan> plansByKey)
+	private string? FindRuleProblem(
+		ColumnRule                              rule,
+		RowSetPlan                              rowSet,
+		Dictionary<string, TableGenerationPlan> plansByKey,
+		Dictionary<string, int>                 firstInsertSteps
+	)
 	{
 		ColumnModel column         = rule.Column;
 		bool        isDatabaseOnly = column.IsIdentity || column.IsComputed || _converter.GetCategory(column) == SqlTypeCategory.RowVersion;
 		bool        isDatabaseRule = rule.GenerationMode == ValueGenerationMode.DatabaseGenerated;
+
+		if (rule.GenerationMode == ValueGenerationMode.KeepCurrent)
+		{
+			return rowSet.IsUpdate ? null : "'Keep current value' can only be used in update sets.";
+		}
+
+		if (rowSet.IsUpdate && (isDatabaseOnly || column.IsPrimaryKey))
+		{
+			return "Update sets cannot change primary key columns or columns that SQL Server generates. Use 'Keep current value'.";
+		}
+
+		if (rowSet.IsUpdate && isDatabaseRule)
+		{
+			return "'Database generated' can only be used in insert sets. Use 'Keep current value' to leave the column unchanged.";
+		}
 
 		if (isDatabaseOnly && !isDatabaseRule)
 		{
@@ -260,6 +397,11 @@ internal sealed class GenerationBlueprintBuilder
 		if (rule.GenerationMode == ValueGenerationMode.Null && !column.IsNullable)
 		{
 			return "The column does not allow NULL values.";
+		}
+
+		if (rule.GenerationMode == ValueGenerationMode.TableLookup)
+		{
+			return FindLookupProblem(rule, rowSet, firstInsertSteps);
 		}
 
 		if (rule.GenerationMode is not (ValueGenerationMode.GeneratedForeignKey or ValueGenerationMode.ExistingForeignKey))
@@ -285,6 +427,13 @@ internal sealed class GenerationBlueprintBuilder
 				+ "but that table is not included. Include it, or use 'Existing key' to pick keys that already exist.";
 		}
 
+		if (!InsertsBy(firstInsertSteps, reference.ReferencedTableKey, rowSet.Step))
+		{
+			return $"'Generated key' takes values from rows generated for {referencedPlan.Table.DisplayName}, but no insert set of "
+				+ $"that table runs in step {rowSet.Step} or earlier. Move an insert set of that table to an earlier step, "
+				+ "or use 'Existing key'.";
+		}
+
 		bool referencedColumnExists = referencedPlan.Table.Columns.Any(
 			item => string.Equals(item.Name, reference.ReferencedColumn, StringComparison.OrdinalIgnoreCase)
 		);
@@ -294,9 +443,28 @@ internal sealed class GenerationBlueprintBuilder
 			: $"The referenced column [{reference.ReferencedColumn}] does not exist in {referencedPlan.Table.DisplayName}.";
 	}
 
+	private static string? FindLookupProblem(ColumnRule rule, RowSetPlan rowSet, Dictionary<string, int> firstInsertSteps)
+	{
+		if (rule.Lookup is not ColumnLookup lookup)
+		{
+			return "Enter which table column the values come from, e.g. dbo.Shirt.ShirtID.";
+		}
+
+		if (lookup.Scope == RowScope.Generated && !InsertsBy(firstInsertSteps, lookup.SourceTable.Key, rowSet.Step))
+		{
+			return $"'Value from table' uses rows generated for {lookup.SourceTable.DisplayName}, but no insert set of that table "
+				+ $"runs in step {rowSet.Step} or earlier. Move an insert set of that table to an earlier step, or use FROM ANY.";
+		}
+
+		return null;
+	}
+
+	private static bool InsertsBy(Dictionary<string, int> firstInsertSteps, string tableKey, int step)
+		=> firstInsertSteps.TryGetValue(tableKey, out int insertStep) && insertStep <= step;
+
 	private static Dictionary<string, GeneratedKeyTable> CreateKeyTables(IReadOnlyList<TableGenerationPlan> plans, bool isScript)
 	{
-		Dictionary<string, List<string>> columnNamesByTable = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, List<string>> columnNamesByTable = new(StringComparer.OrdinalIgnoreCase);
 
 		foreach (ColumnRule rule in plans.SelectMany(plan => plan.RowSets).SelectMany(rowSet => rowSet.Rules))
 		{
@@ -319,7 +487,7 @@ internal sealed class GenerationBlueprintBuilder
 			}
 		}
 
-		Dictionary<string, GeneratedKeyTable> keyTables = new Dictionary<string, GeneratedKeyTable>(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, GeneratedKeyTable> keyTables = new(StringComparer.OrdinalIgnoreCase);
 		int                                   number    = 0;
 
 		foreach (TableGenerationPlan plan in plans)
@@ -333,7 +501,8 @@ internal sealed class GenerationBlueprintBuilder
 
 			++number;
 
-			bool    needsOutput        = isScript && plan.RowSets.Any(rowSet => columns.Any(column => IsProducedByDatabase(rowSet, column)));
+			bool    needsOutput        = isScript
+				&& plan.RowSets.Any(rowSet => !rowSet.IsUpdate && columns.Any(column => IsProducedByDatabase(rowSet, column)));
 			string? outputVariableName = needsOutput ? $"@dg_keys_{number}" : null;
 
 			keyTables[plan.Table.Key] = new GeneratedKeyTable(plan.Table, columns, outputVariableName);
@@ -342,26 +511,37 @@ internal sealed class GenerationBlueprintBuilder
 		return keyTables;
 	}
 
-	private RowSetBlueprint BuildRowSet(
-		RowSetPlan                            rowSet,
-		GeneratedKeyTable?                    keys,
-		Dictionary<string, GeneratedKeyTable> keyTables,
-		Dictionary<string, ExistingKeyPool>   pools,
-		List<ExistingKeyPool>                 tablePools,
-		bool                                  isScript
-	)
+	/// <summary>
+	/// Builds the value sources of a row set. Insert sets fill every column SQL Server does not generate; update sets
+	/// change every column that does not keep its current value.
+	/// </summary>
+	private RowSetBlueprint BuildRowSet(TableModel table, RowSetPlan rowSet, GeneratedKeyTable? keys, BuildContext context)
 	{
-		List<ColumnRule> insertRules = [.. rowSet.Rules.Where(rule => rule.GenerationMode != ValueGenerationMode.DatabaseGenerated)];
+		List<ColumnRule>      valueRules  =
+		[
+			.. rowSet.Rules.Where(rule => rule.GenerationMode is not (ValueGenerationMode.DatabaseGenerated or ValueGenerationMode.KeepCurrent))
+		];
+		List<ExistingKeyPool> rowSetPools = [];
+		List<LookupPool>      lookupPools = [];
 
-		Dictionary<ColumnRule, ValueSource> existingSources = CreateExistingKeySources(insertRules, pools, tablePools, isScript, out int existingGroupCount);
-		Dictionary<string, int>             generatedGroups = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+		Dictionary<ColumnRule, ValueSource> existingSources = CreateExistingKeySources(valueRules, context.Pools, rowSetPools, context.IsScript, out int existingGroupCount);
+		Dictionary<string, int>             generatedGroups = new(StringComparer.OrdinalIgnoreCase);
 		List<ValueSource>                   sources         = [];
 
-		foreach (ColumnRule rule in insertRules)
+		foreach (ColumnRule rule in valueRules)
 		{
 			if (existingSources.TryGetValue(rule, out ValueSource? existingSource))
 			{
 				sources.Add(existingSource);
+				continue;
+			}
+
+			if (rule.GenerationMode == ValueGenerationMode.TableLookup)
+			{
+				LookupPool lookupPool = context.LookupFactory.Create(table, rowSet, rule);
+
+				lookupPools.Add(lookupPool);
+				sources.Add(new ValueSource { Rule = rule, Kind = ValueSourceKind.Lookup, Lookup = lookupPool });
 				continue;
 			}
 
@@ -373,7 +553,7 @@ internal sealed class GenerationBlueprintBuilder
 				continue;
 			}
 
-			GeneratedKeyTable parentKeys = keyTables[reference.ReferencedTableKey];
+			GeneratedKeyTable parentKeys = context.KeyTables[reference.ReferencedTableKey];
 
 			if (!generatedGroups.TryGetValue(reference.Name, out int groupIndex))
 			{
@@ -391,11 +571,11 @@ internal sealed class GenerationBlueprintBuilder
 			});
 		}
 
-		List<int> keySourceIndexes = keys is null
+		List<int> keySourceIndexes = keys is null || rowSet.IsUpdate
 			? []
 			: [.. keys.Columns.Select(column => sources.FindIndex(source => IsSameColumn(source.Rule.Column, column)))];
 
-		Dictionary<string, int> sourceIndexesByName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, int> sourceIndexesByName = new(StringComparer.OrdinalIgnoreCase);
 
 		for (int index = 0; index < sources.Count; ++index)
 		{
@@ -409,22 +589,41 @@ internal sealed class GenerationBlueprintBuilder
 			KeySourceIndexes       = keySourceIndexes,
 			GeneratedKeyGroupCount = generatedGroups.Count,
 			ExistingKeyGroupCount  = existingGroupCount,
-			EvaluationOrder        = SortByReferences(insertRules, out _),
-			SourceIndexesByName    = sourceIndexesByName
+			EvaluationOrder        = SortByReferences(valueRules, out _),
+			SourceIndexesByName    = sourceIndexesByName,
+			ExistingKeyPools       = rowSetPools,
+			LookupPools            = lookupPools,
+			Update                 = rowSet.IsUpdate ? CreateUpdate(table, rowSet, sources, context) : null
 		};
 	}
 
+	private RowSetUpdate CreateUpdate(TableModel table, RowSetPlan rowSet, List<ValueSource> sources, BuildContext context)
+	{
+		string? scopeCondition = null;
+
+		if (rowSet.UpdateScope != RowScope.Any)
+		{
+			List<string> keyColumns = [.. table.Columns.Where(column => column.IsPrimaryKey).Select(column => column.Name)];
+
+			scopeCondition = context.Snapshots.Get(table, keyColumns).BuildScopeCondition(rowSet.UpdateScope, RowSetUpdate.TARGET_ALIAS);
+		}
+
+		++context.UpdateCount;
+
+		return new RowSetUpdate(context.UpdateCount, table, rowSet, [.. sources.Select(source => source.Rule.Column)], scopeCondition, _converter);
+	}
+
 	private Dictionary<ColumnRule, ValueSource> CreateExistingKeySources(
-		List<ColumnRule>                    insertRules,
+		List<ColumnRule>                    valueRules,
 		Dictionary<string, ExistingKeyPool> pools,
-		List<ExistingKeyPool>               tablePools,
+		List<ExistingKeyPool>               rowSetPools,
 		bool                                isScript,
 		out int                             groupCount
 	)
 	{
-		Dictionary<string, List<ColumnRule>> groups = new Dictionary<string, List<ColumnRule>>(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, List<ColumnRule>> groups = new(StringComparer.OrdinalIgnoreCase);
 
-		foreach (ColumnRule rule in insertRules)
+		foreach (ColumnRule rule in valueRules)
 		{
 			ForeignKeyModel? reference = rule.Reference;
 
@@ -442,7 +641,7 @@ internal sealed class GenerationBlueprintBuilder
 			groupRules.Add(rule);
 		}
 
-		Dictionary<ColumnRule, ValueSource> sources    = new Dictionary<ColumnRule, ValueSource>();
+		Dictionary<ColumnRule, ValueSource> sources    = [];
 		int                                 groupIndex = 0;
 
 		foreach (List<ColumnRule> groupRules in groups.Values)
@@ -458,9 +657,9 @@ internal sealed class GenerationBlueprintBuilder
 				pools.Add(signature, pool);
 			}
 
-			if (!tablePools.Contains(pool))
+			if (!rowSetPools.Contains(pool))
 			{
-				tablePools.Add(pool);
+				rowSetPools.Add(pool);
 			}
 
 			for (int index = 0; index < groupRules.Count; ++index)
@@ -492,4 +691,17 @@ internal sealed class GenerationBlueprintBuilder
 
 	private static bool IsSameColumn(ColumnModel first, ColumnModel second)
 		=> ReferenceEquals(first, second) || string.Equals(first.Name, second.Name, StringComparison.OrdinalIgnoreCase);
+
+	/// <summary>
+	/// What the row sets of one request share while they are built.
+	/// </summary>
+	private sealed class BuildContext
+	{
+		public required Dictionary<string, GeneratedKeyTable> KeyTables     { get; init; }
+		public Dictionary<string, ExistingKeyPool>            Pools         { get; } = new(StringComparer.OrdinalIgnoreCase);
+		public required RowSnapshotSet                        Snapshots     { get; init; }
+		public required LookupPoolFactory                     LookupFactory { get; init; }
+		public required bool                                  IsScript      { get; init; }
+		public int                                            UpdateCount   { get; set; }
+	}
 }

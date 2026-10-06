@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 
 namespace DataGenerator.Services;
@@ -17,9 +18,9 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 	private const string  DATE_TIME_FORMAT    = "yyyy-MM-dd HH:mm:ss";
 
 	private static readonly CultureInfo INVARIANT              = CultureInfo.InvariantCulture;
-	private static readonly DateTime    DEFAULT_DATE           = new DateTime(1900, 1, 1);
-	private static readonly DateTime    DATETIME_MINIMUM       = new DateTime(1753, 1, 1);
-	private static readonly DateTime    SMALL_DATETIME_MAXIMUM = new DateTime(2079, 6, 6, 23, 59, 0);
+	private static readonly DateTime    DEFAULT_DATE           = new(1900, 1, 1);
+	private static readonly DateTime    DATETIME_MINIMUM       = new(1753, 1, 1);
+	private static readonly DateTime    SMALL_DATETIME_MAXIMUM = new(2079, 6, 6, 23, 59, 0);
 	private static readonly string[]    TRUE_WORDS             = ["true", "yes", "y", "on"];
 
 	private readonly ISqlValueConverter _converter;
@@ -205,16 +206,24 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		switch (sqlType)
 		{
 			case "date":
+			{
 				return dateTimeValue.Date;
+			}
 
 			case "smalldatetime":
+			{
 				return new DateTime(dateTimeValue.Year, dateTimeValue.Month, dateTimeValue.Day, dateTimeValue.Hour, dateTimeValue.Minute, 0);
+			}
 
 			case "datetimeoffset":
+			{
 				return new DateTimeOffset(DateTime.SpecifyKind(dateTimeValue, DateTimeKind.Unspecified), TimeSpan.Zero);
+			}
 
 			default:
+			{
 				return dateTimeValue;
+			}
 		}
 	}
 
@@ -240,13 +249,19 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		switch (value)
 		{
 			case TimeSpan timeValue when timeValue >= TimeSpan.Zero && timeValue < TimeSpan.FromDays(1):
+			{
 				return timeValue;
+			}
 
 			case DateTime dateTimeValue:
+			{
 				return dateTimeValue.TimeOfDay;
+			}
 
 			case DateTimeOffset offsetValue:
+			{
 				return offsetValue.TimeOfDay;
+			}
 		}
 
 		return _converter.TryConvertText(target, ToText(value), out object? converted, out _) && converted is not null
@@ -303,28 +318,40 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		switch (value)
 		{
 			case byte or sbyte or short or ushort or int or uint or long or ulong or decimal:
+			{
 				number = Convert.ToDecimal(value, INVARIANT);
 				return true;
+			}
 
 			case double doubleValue when double.IsFinite(doubleValue):
+			{
 				number = (decimal)Math.Clamp(doubleValue, (double)decimal.MinValue, (double)decimal.MaxValue);
 				return true;
+			}
 
 			case float singleValue when float.IsFinite(singleValue):
+			{
 				number = (decimal)Math.Clamp(singleValue, (double)decimal.MinValue, (double)decimal.MaxValue);
 				return true;
+			}
 
 			case bool booleanValue:
+			{
 				number = booleanValue ? 1 : 0;
 				return true;
+			}
 
 			case string text when decimal.TryParse(text.Trim(), NumberStyles.Number | NumberStyles.AllowExponent, INVARIANT, out decimal parsed):
+			{
 				number = parsed;
 				return true;
+			}
 
 			default:
+			{
 				number = 0;
 				return false;
+			}
 		}
 	}
 
@@ -334,7 +361,7 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 	/// </summary>
 	private static decimal ParseDigits(string text, bool allowDecimalPoint)
 	{
-		StringBuilder builder         = new StringBuilder();
+		StringBuilder builder         = new();
 		bool          hasDecimalPoint = false;
 
 		foreach (char character in text)

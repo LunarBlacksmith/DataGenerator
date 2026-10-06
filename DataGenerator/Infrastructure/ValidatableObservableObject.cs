@@ -11,7 +11,7 @@ public abstract class ValidatableObservableObject : ObservableObject, INotifyDat
 {
 	private static readonly string[] NO_ERRORS = [];
 
-	private readonly Dictionary<string, string> _errors = new Dictionary<string, string>(StringComparer.Ordinal);
+	private readonly Dictionary<string, string> _errors = new(StringComparer.Ordinal);
 
 	public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
 

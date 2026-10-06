@@ -16,6 +16,7 @@ public sealed class SavedColumnSetting
 	public string              RegexPattern      { get; set; } = string.Empty;
 	public string              PatternExpression { get; set; } = string.Empty;
 	public string              SourceColumnName  { get; set; } = string.Empty;
+	public string              LookupExpression  { get; set; } = string.Empty;
 
 	/// <summary>
 	/// The schema.table of the column the setting was saved from, or <see langword="null"/> when it applies to a column
@@ -59,13 +60,14 @@ public sealed class SavedColumnSetting
 		return GenerationMode == other.GenerationMode
 			&& GenerationMode switch
 			{
-				ValueGenerationMode.Fixed      => string.Equals(FixedValue, other.FixedValue, StringComparison.Ordinal),
-				ValueGenerationMode.Sequence   => string.Equals(SequenceStart.Trim(), other.SequenceStart.Trim(), StringComparison.Ordinal)
+				ValueGenerationMode.Fixed       => string.Equals(FixedValue, other.FixedValue, StringComparison.Ordinal),
+				ValueGenerationMode.Sequence    => string.Equals(SequenceStart.Trim(), other.SequenceStart.Trim(), StringComparison.Ordinal)
 					&& string.Equals(SequenceStep.Trim(), other.SequenceStep.Trim(), StringComparison.Ordinal),
-				ValueGenerationMode.Regex      => string.Equals(RegexPattern, other.RegexPattern, StringComparison.Ordinal),
-				ValueGenerationMode.Pattern    => string.Equals(PatternExpression, other.PatternExpression, StringComparison.Ordinal),
-				ValueGenerationMode.CopyColumn => string.Equals(SourceColumnName.Trim(), other.SourceColumnName.Trim(), StringComparison.OrdinalIgnoreCase),
-				_                              => true
+				ValueGenerationMode.Regex       => string.Equals(RegexPattern, other.RegexPattern, StringComparison.Ordinal),
+				ValueGenerationMode.Pattern     => string.Equals(PatternExpression, other.PatternExpression, StringComparison.Ordinal),
+				ValueGenerationMode.CopyColumn  => string.Equals(SourceColumnName.Trim(), other.SourceColumnName.Trim(), StringComparison.OrdinalIgnoreCase),
+				ValueGenerationMode.TableLookup => string.Equals(LookupExpression.Trim(), other.LookupExpression.Trim(), StringComparison.OrdinalIgnoreCase),
+				_                               => true
 			};
 	}
 

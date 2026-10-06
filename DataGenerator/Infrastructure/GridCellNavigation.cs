@@ -1,0 +1,292 @@
+﻿using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
+
+namespace DataGenerator.Infrastructure;
+
+/// <summary>
+/// Moves the keyboard focus between the text boxes and drop-downs in the cells of a <see cref="DataGrid"/> with the
+/// arrow keys, like a spreadsheet: ← and → go to the box to the left or right in the same row (from a text box only
+/// when the caret is at its start or end, or all of its text is selected), ↑ and ↓ go to the box of the same column
+/// in the row above or below. Rows without a box in that column are skipped. Alt+↓ or F4 still opens a drop-down.
+/// </summary>
+public static class GridCellNavigation
+{
+	public static readonly DependencyProperty IS_ENABLED_PROPERTY =
+		DependencyProperty.RegisterAttached(
+			"IsEnabled",
+			typeof(bool),
+			typeof(GridCellNavigation),
+			new FrameworkPropertyMetadata(false, OnIsEnabledChanged)
+		);
+
+	public static bool GetIsEnabled(DependencyObject element) => (bool)element.GetValue(IS_ENABLED_PROPERTY);
+	public static void SetIsEnabled(DependencyObject element, bool value) => element.SetValue(IS_ENABLED_PROPERTY, value);
+
+	private static void OnIsEnabledChanged(DependencyObject element, DependencyPropertyChangedEventArgs e)
+	{
+		if (element is not DataGrid dataGrid)
+		{
+			return;
+		}
+
+		dataGrid.PreviewKeyDown -= OnPreviewKeyDown;
+
+		if ((bool)e.NewValue)
+		{
+			dataGrid.PreviewKeyDown += OnPreviewKeyDown;
+		}
+	}
+
+	private static void OnPreviewKeyDown(object sender, KeyEventArgs e)
+	{
+		if (	e.Handled
+				|| sender is not DataGrid dataGrid
+				|| Keyboard.Modifiers != ModifierKeys.None
+				|| e.Key is not (Key.Left or Key.Right or Key.Up or Key.Down)
+				|| e.OriginalSource is not Control source
+				|| !IsEditor(source)
+				|| FindVisualAncestor<DataGridCell>(source) is not DataGridCell cell
+				|| FindVisualAncestor<DataGridRow>(cell) is not DataGridRow row
+				|| !ReferenceEquals(ItemsControl.ItemsControlFromItemContainer(row), dataGrid)
+				|| !ShouldNavigate(source, e.Key)
+		)
+		{
+			return;
+		}
+
+		Control? target = e.Key switch
+		{
+			Key.Left  => FindBesideInRow(row, source, -1),
+			Key.Right => FindBesideInRow(row, source, 1),
+			Key.Up    => FindInNeighbouringRow(dataGrid, row, cell, source, -1),
+			_         => FindInNeighbouringRow(dataGrid, row, cell, source, 1)
+		};
+
+		// Without a box in that direction the focus stays where it is, rather than moving to a cell without an editor.
+		if (target is not null)
+		{
+			MoveFocus(target);
+		}
+
+		e.Handled = true;
+	}
+
+	private static bool IsEditor(Control control)
+		=> control switch
+		{
+			TextBox textBox   => !textBox.IsReadOnly && !textBox.AcceptsReturn,
+			ComboBox comboBox => !comboBox.IsEditable && !comboBox.IsDropDownOpen,
+			_                 => false
+		};
+
+	private static bool IsAvailable(Control control)
+		=> control.IsVisible && control.IsEnabled && control.Focusable && IsEditor(control);
+
+	/// <summary>
+	/// In a text box ← and → move the caret until it reaches the start or end of the text, and ↑ and ↓ leave the
+	/// suggestion list of a pattern alone.
+	/// </summary>
+	private static bool ShouldNavigate(Control source, Key key)
+	{
+		if (source is not TextBox textBox)
+		{
+			return true;
+		}
+
+		if (PatternAutoComplete.IsSuggesting(textBox))
+		{
+			return false;
+		}
+
+		bool isAllSelected = textBox.SelectionLength > 0 && textBox.SelectionLength == textBox.Text.Length;
+
+		return key switch
+		{
+			Key.Left  => isAllSelected || (textBox.SelectionLength == 0 && textBox.CaretIndex == 0),
+			Key.Right => isAllSelected || (textBox.SelectionLength == 0 && textBox.CaretIndex == textBox.Text.Length),
+			_         => true
+		};
+	}
+
+	private static Control? FindBesideInRow(DataGridRow row, Control source, int direction)
+	{
+		List<Control> editors = GetEditors(row);
+		int           index   = editors.IndexOf(source);
+		int           target  = index + direction;
+
+		return index >= 0 && target >= 0 && target < editors.Count ? editors[target] : null;
+	}
+
+	/// <summary>
+	/// The box at the same position of the same column in the nearest row above or below that has one.
+	/// </summary>
+	private static Control? FindInNeighbouringRow(DataGrid dataGrid, DataGridRow row, DataGridCell cell, Control source, int direction)
+	{
+		List<Control> cellEditors = GetEditors(cell);
+		int           slot        = Math.Max(0, cellEditors.IndexOf(source));
+		int           rowIndex    = dataGrid.ItemContainerGenerator.IndexFromContainer(row);
+
+		if (rowIndex < 0 || cell.Column is not DataGridColumn column)
+		{
+			return null;
+		}
+
+		for (int index = rowIndex + direction; index >= 0 && index < dataGrid.Items.Count; index += direction)
+		{
+			if (	GetRow(dataGrid, index) is not DataGridRow targetRow
+					|| column.GetCellContent(targetRow) is not FrameworkElement content
+					|| FindVisualAncestor<DataGridCell>(content) is not DataGridCell targetCell
+			)
+			{
+				continue;
+			}
+
+			List<Control> editors = GetEditors(targetCell);
+
+			if (editors.Count > 0)
+			{
+				return editors[Math.Min(slot, editors.Count - 1)];
+			}
+		}
+
+		return null;
+	}
+
+	/// <summary>
+	/// The row container of an item, scrolling it into view first when the grid has not created it yet.
+	/// </summary>
+	private static DataGridRow? GetRow(DataGrid dataGrid, int index)
+	{
+		if (dataGrid.ItemContainerGenerator.ContainerFromIndex(index) is DataGridRow row)
+		{
+			return row;
+		}
+
+		dataGrid.ScrollIntoView(dataGrid.Items[index]);
+		dataGrid.UpdateLayout();
+		return dataGrid.ItemContainerGenerator.ContainerFromIndex(index) as DataGridRow;
+	}
+
+	/// <summary>
+	/// The available boxes inside an element in visual order: column by column, then left to right within a cell.
+	/// </summary>
+	private static List<Control> GetEditors(DependencyObject root)
+	{
+		List<Control> editors = [];
+
+		if (root is DataGridRow row)
+		{
+			DataGridCellsPresenter? presenter = FindVisualDescendant<DataGridCellsPresenter>(row);
+
+			if (presenter is null)
+			{
+				return editors;
+			}
+
+			List<DataGridCell> cells = [];
+
+			CollectCells(presenter, cells);
+
+			foreach (DataGridCell cell in cells.OrderBy(cell => cell.Column?.DisplayIndex ?? int.MaxValue))
+			{
+				editors.AddRange(GetEditors(cell));
+			}
+
+			return editors;
+		}
+
+		CollectEditors(root, editors);
+		return [.. editors.Where(IsAvailable)];
+	}
+
+	private static void CollectCells(DependencyObject parent, List<DataGridCell> found)
+	{
+		int childCount = VisualTreeHelper.GetChildrenCount(parent);
+
+		for (int index = 0; index < childCount; ++index)
+		{
+			DependencyObject child = VisualTreeHelper.GetChild(parent, index);
+
+			if (child is DataGridCell cell)
+			{
+				found.Add(cell);
+				continue;
+			}
+
+			CollectCells(child, found);
+		}
+	}
+
+	private static void CollectEditors(DependencyObject parent, List<Control> found)
+	{
+		int childCount = VisualTreeHelper.GetChildrenCount(parent);
+
+		for (int index = 0; index < childCount; ++index)
+		{
+			DependencyObject child = VisualTreeHelper.GetChild(parent, index);
+
+			// The parts inside a text box or drop-down (such as the text box of a drop-down's template) are not boxes of their own.
+			if (child is TextBox or ComboBox)
+			{
+				found.Add((Control)child);
+				continue;
+			}
+
+			CollectEditors(child, found);
+		}
+	}
+
+	private static T? FindVisualDescendant<T>(DependencyObject parent) where T : DependencyObject
+	{
+		int childCount = VisualTreeHelper.GetChildrenCount(parent);
+
+		for (int index = 0; index < childCount; ++index)
+		{
+			DependencyObject child = VisualTreeHelper.GetChild(parent, index);
+
+			if (child is T match)
+			{
+				return match;
+			}
+
+			if (FindVisualDescendant<T>(child) is T descendant)
+			{
+				return descendant;
+			}
+		}
+
+		return null;
+	}
+
+	// Only the visual tree is followed, so boxes inside pop-ups (which are not visual children of the cell) are ignored.
+	private static T? FindVisualAncestor<T>(DependencyObject element) where T : DependencyObject
+	{
+		DependencyObject? current = element is Visual ? VisualTreeHelper.GetParent(element) : null;
+
+		while (current is not null)
+		{
+			if (current is T match)
+			{
+				return match;
+			}
+
+			current = VisualTreeHelper.GetParent(current);
+		}
+
+		return null;
+	}
+
+	private static void MoveFocus(Control target)
+	{
+		target.BringIntoView();
+		_ = target.Focus();
+
+		if (target is TextBox textBox)
+		{
+			textBox.SelectAll();
+		}
+	}
+}

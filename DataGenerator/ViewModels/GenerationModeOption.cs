@@ -10,6 +10,11 @@ public sealed class GenerationModeOption
 	public static readonly IReadOnlyList<GenerationModeOption> ALL_OPTIONS =
 	[
 		new GenerationModeOption(
+			ValueGenerationMode.KeepCurrent,
+			"Keep current value",
+			"Update sets only: the column is not changed; the row keeps the value it already has."
+		),
+		new GenerationModeOption(
 			ValueGenerationMode.Random,
 			"Random",
 			"A random value that suits the column's SQL type."
@@ -38,6 +43,12 @@ public sealed class GenerationModeOption
 			ValueGenerationMode.CopyColumn,
 			"Copy of column",
 			"The value of another column of the same row, converted to this column's type (e.g. text copied into a number column keeps only its digits)."
+		),
+		new GenerationModeOption(
+			ValueGenerationMode.TableLookup,
+			"Value from table",
+			"A value of a column of any loaded table (or this one), taken from the rows already in the database and/or the rows "
+			+ "generated earlier in this run, e.g. dbo.Shirt.ShirtID UNIQUE FROM GENERATED. Click ▾ to build it."
 		),
 		new GenerationModeOption(
 			ValueGenerationMode.GeneratedForeignKey,

@@ -21,6 +21,66 @@ public static class PatternLanguageReference
 			"RAND_NUM(0, 99, 2) → 07"
 		),
 		Function(
+			"NUM",
+			"NUM(min, max, digits)",
+			"Random whole number with every parameter optional: NUM() is 0 to 999,999,999, NUM(digits=5) is 00000 to 99999 and NUM(1, 50) is the same as RAND_NUM(1, 50). Add GREATER THAN, LESS THAN, AT LEAST or AT MOST to narrow it.",
+			"NUM(digits=5) GREATER THAN 50 → 08214"
+		),
+		Function(
+			"ROW",
+			"ROW(digits)",
+			"The number of the row within its row set (1, 2, 3, …). digits pads it with leading zeros (no padding by default).",
+			"'ITEM-' THEN ROW(4) → ITEM-0001"
+		),
+		Function(
+			"CYCLE",
+			"CYCLE(a, b, …)",
+			"Takes the listed values in turn: the first row gets a, the second b, and so on, starting again after the last value.",
+			"CYCLE('S', 'M', 'L') → S, M, L, S, …"
+		),
+		Function(
+			"FIRST",
+			"FIRST(value) or FIRST(n, v1, …, vn, else='…')",
+			"The value for the first row of the row set, or one value for each of the first n rows (a single value is used for all n). Other rows get else (empty by default).",
+			"FIRST(2, 'A', 'B', else='-') → A, B, -, -, …"
+		),
+		Function(
+			"LAST",
+			"LAST(value) or LAST(n, v1, …, vn, else='…')",
+			"The value for the last row of the row set, or one value for each of the last n rows, in order (a single value is used for all n). Other rows get else (empty by default).",
+			"LAST(2, 'Y', 'Z', else='-') → …, -, Y, Z"
+		),
+		Function(
+			"UPPER",
+			"UPPER(text)",
+			"The text in capital letters. Most useful with COL(...) or another function.",
+			"UPPER(COL(Colour)) → RED"
+		),
+		Function(
+			"LOWER",
+			"LOWER(text)",
+			"The text in small letters. Most useful with COL(...) or another function.",
+			"LOWER(COL(Colour)) → red"
+		),
+		Function(
+			"LEFT",
+			"LEFT(text, length)",
+			"The first length characters of the text (all of it when it is shorter).",
+			"LEFT(COL(Colour), 3) → Red"
+		),
+		Function(
+			"RIGHT",
+			"RIGHT(text, length)",
+			"The last length characters of the text (all of it when it is shorter).",
+			"RIGHT(COL(Code), 2) → 42"
+		),
+		Function(
+			"PAD",
+			"PAD(text, length, character)",
+			"Puts character (default 0) in front of the text until it is length characters long.",
+			"PAD(COL(Number), 6) → 000042"
+		),
+		Function(
 			"RAND_DECIMAL",
 			"RAND_DECIMAL(min, max, decimals)",
 			"Random number with the given decimal places (default 2).",
@@ -101,6 +161,30 @@ public static class PatternLanguageReference
 			"A REPEATED n TIMES",
 			"The optional word after the count of REPEATED.",
 			"X REPEATED 2 TO 4 TIMES"
+		),
+		Keyword(
+			"GREATER THAN",
+			"NUM(…) GREATER THAN n",
+			"Only numbers above n. Works with NUM and RAND_NUM, and can be combined, e.g. GREATER THAN 10 LESS THAN 20.",
+			"NUM(digits=3) GREATER THAN 50"
+		),
+		Keyword(
+			"LESS THAN",
+			"NUM(…) LESS THAN n",
+			"Only numbers below n. Works with NUM and RAND_NUM.",
+			"RAND_NUM(0, 999) LESS THAN 100"
+		),
+		Keyword(
+			"AT LEAST",
+			"NUM(…) AT LEAST n",
+			"Only numbers of n or more. Works with NUM and RAND_NUM.",
+			"NUM(digits=4) AT LEAST 1000"
+		),
+		Keyword(
+			"AT MOST",
+			"NUM(…) AT MOST n",
+			"Only numbers of n or less. Works with NUM and RAND_NUM.",
+			"NUM() AT MOST 500"
 		)
 	];
 

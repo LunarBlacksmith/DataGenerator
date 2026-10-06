@@ -1,4 +1,6 @@
-﻿namespace DataGenerator.Services;
+﻿using DataGenerator.Services;
+
+namespace DataGenerator.Interfaces;
 
 /// <summary>
 /// Suggests the functions and keywords of the pattern language that complete the word being typed.

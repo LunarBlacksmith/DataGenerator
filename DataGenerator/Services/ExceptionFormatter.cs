@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Windows.Markup;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 using Microsoft.Data.SqlClient;
 
@@ -72,15 +73,21 @@ public sealed class ExceptionFormatter : IExceptionFormatter
 			switch (current)
 			{
 				case AggregateException { InnerExceptions.Count: 1 } aggregate:
+				{
 					current = aggregate.InnerExceptions[0];
 					continue;
+				}
 
 				case TargetInvocationException { InnerException: Exception innerException }:
+				{
 					current = innerException;
 					continue;
+				}
 
 				default:
+				{
 					return current;
+				}
 			}
 		}
 	}
@@ -101,7 +108,7 @@ public sealed class ExceptionFormatter : IExceptionFormatter
 
 	private static string BuildSummary(Exception primary, List<Exception> chain, SqlException? sqlException)
 	{
-		StringBuilder builder = new StringBuilder(primary.Message);
+		StringBuilder builder = new(primary.Message);
 
 		foreach (Exception inner in chain.Skip(1))
 		{
@@ -121,7 +128,7 @@ public sealed class ExceptionFormatter : IExceptionFormatter
 
 	private static string DescribeSqlLocation(SqlException sqlException)
 	{
-		StringBuilder builder = new StringBuilder($"SQL Server: error {sqlException.Number}");
+		StringBuilder builder = new($"SQL Server: error {sqlException.Number}");
 
 		if (!string.IsNullOrWhiteSpace(sqlException.Procedure))
 		{
@@ -148,7 +155,7 @@ public sealed class ExceptionFormatter : IExceptionFormatter
 	{
 		for (int index = chain.Count - 1; index >= 0; --index)
 		{
-			StackTrace stackTrace = new StackTrace(chain[index], true);
+			StackTrace stackTrace = new(chain[index], true);
 
 			foreach (StackFrame frame in stackTrace.GetFrames())
 			{
@@ -171,7 +178,7 @@ public sealed class ExceptionFormatter : IExceptionFormatter
 	{
 		for (int index = chain.Count - 1; index >= 0; --index)
 		{
-			StackTrace stackTrace = new StackTrace(chain[index], true);
+			StackTrace stackTrace = new(chain[index], true);
 
 			foreach (StackFrame frame in stackTrace.GetFrames())
 			{

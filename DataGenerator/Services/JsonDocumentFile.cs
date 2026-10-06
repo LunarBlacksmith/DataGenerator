@@ -15,7 +15,7 @@ internal static class JsonDocumentFile
 	private const string TEMPORARY_EXTENSION  = ".tmp";
 	private const string UNREADABLE_FILE_NAME = "{0}.unreadable-{1:yyyyMMdd-HHmmss}.json";
 
-	private static readonly JsonSerializerOptions SERIALIZER_OPTIONS = new JsonSerializerOptions
+	private static readonly JsonSerializerOptions SERIALIZER_OPTIONS = new()
 	{
 		AllowTrailingCommas         = true,
 		Encoder                     = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,

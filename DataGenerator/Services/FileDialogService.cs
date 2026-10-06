@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using DataGenerator.Interfaces;
 
 namespace DataGenerator.Services;
 

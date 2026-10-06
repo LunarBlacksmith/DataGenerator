@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Text;
+using DataGenerator.Interfaces;
 
 namespace DataGenerator.Services.Patterns;
 
@@ -7,7 +8,7 @@ public sealed class PatternValueGenerator : IPatternValueGenerator
 {
 	private const int MAXIMUM_CACHE_SIZE = 256;
 
-	private readonly ConcurrentDictionary<string, ParsedPattern> _cache = new ConcurrentDictionary<string, ParsedPattern>(StringComparer.Ordinal);
+	private readonly ConcurrentDictionary<string, ParsedPattern> _cache = new(StringComparer.Ordinal);
 	private readonly TimeProvider                                _timeProvider;
 
 	public PatternValueGenerator()
@@ -21,14 +22,14 @@ public sealed class PatternValueGenerator : IPatternValueGenerator
 		_timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 	}
 
-	public string Generate(string expression, long rowIndex) => Generate(expression, rowIndex, null);
+	public string Generate(string expression, long rowIndex) => Generate(expression, rowIndex, null, null);
 
-	public string Generate(string expression, long rowIndex, Func<string, string>? columnValues)
+	public string Generate(string expression, long rowIndex, long? rowCount, Func<string, string>? columnValues)
 	{
 		ParsedPattern pattern = GetOrParse(expression);
-		StringBuilder builder = new StringBuilder();
+		StringBuilder builder = new();
 
-		pattern.Node.Append(builder, new PatternContext(rowIndex, Random.Shared, _timeProvider, columnValues));
+		pattern.Node.Append(builder, new PatternContext(rowIndex, rowCount, Random.Shared, _timeProvider, columnValues));
 		return builder.ToString();
 	}
 
@@ -73,7 +74,7 @@ public sealed class PatternValueGenerator : IPatternValueGenerator
 
 		node.CollectColumnReferences(columnReferences);
 
-		ParsedPattern pattern = new ParsedPattern(node, columnReferences);
+		ParsedPattern pattern = new(node, columnReferences);
 
 		if (_cache.Count >= MAXIMUM_CACHE_SIZE)
 		{

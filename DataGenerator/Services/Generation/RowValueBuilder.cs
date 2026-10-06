@@ -1,4 +1,5 @@
-﻿using DataGenerator.Models;
+﻿using DataGenerator.Interfaces;
+using DataGenerator.Models;
 
 namespace DataGenerator.Services.Generation;
 
@@ -20,7 +21,7 @@ internal sealed class RowValueBuilder
 		object?[]      values           = new object?[rowSet.Sources.Count];
 		int[]          generatedChoices = CreateChoices(rowSet.GeneratedKeyGroupCount);
 		int[]          existingChoices  = CreateChoices(rowSet.ExistingKeyGroupCount);
-		RowValueLookup lookup           = new RowValueLookup(rowSet, values);
+		RowValueLookup lookup           = new(rowSet, values);
 
 		foreach (int index in rowSet.EvaluationOrder)
 		{
@@ -32,7 +33,8 @@ internal sealed class RowValueBuilder
 				{
 					ValueSourceKind.GeneratedKey => GetGeneratedKey(source, generatedChoices),
 					ValueSourceKind.ExistingKey  => GetExistingKey(source, existingChoices),
-					_                            => _valueGenerator.Generate(source.Rule, rowIndex, lookup)
+					ValueSourceKind.Lookup       => source.Lookup!.GetValue(rowIndex, Random.Shared),
+					_                            => _valueGenerator.Generate(source.Rule, rowIndex, rowSet.Plan.RowCount, lookup)
 				};
 
 				lookup.MarkGenerated(index);
@@ -112,16 +114,11 @@ internal sealed class RowValueBuilder
 		public void MarkGenerated(int index) => _isGenerated[index] = true;
 
 		public object? GetValue(string columnName)
-		{
-			if (!_rowSet.SourceIndexesByName.TryGetValue(columnName, out int index))
-			{
-				throw new InvalidOperationException($"Column [{columnName}] is not inserted by this row set, so its value cannot be used.");
-			}
-
-			return _isGenerated[index]
-				? _values[index]
-				: throw new InvalidOperationException($"The value of column [{columnName}] has not been generated yet.");
-		}
+			=> !_rowSet.SourceIndexesByName.TryGetValue(columnName, out int index)
+					? throw new InvalidOperationException($"Column [{columnName}] is not inserted by this row set, so its value cannot be used.")
+					: _isGenerated[index]
+						? _values[index]
+						: throw new InvalidOperationException($"The value of column [{columnName}] has not been generated yet.");
 	}
 
 	private static object? GetExistingKey(ValueSource source, int[] choices)

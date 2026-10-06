@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using DataGenerator.Models;
 
-namespace DataGenerator.Services;
+namespace DataGenerator.Interfaces;
 
 /// <summary>
 /// Converts between user text, CLR values and SQL Server literals for a specific column type.

@@ -53,6 +53,21 @@
 		</Style>
 
 		<Style
+			x:Key      ="PopupHeaderTextStyle"
+			TargetType ="TextBlock"
+			BasedOn    ="{StaticResource SecondaryTextStyle}">
+			<Setter
+				Property ="Margin"
+				Value    ="8,6,8,2" />
+			<Setter
+				Property ="FontWeight"
+				Value    ="SemiBold" />
+			<Setter
+				Property ="TextTrimming"
+				Value    ="CharacterEllipsis" />
+		</Style>
+
+		<Style
 			x:Key      ="CellTextBoxStyle"
 			TargetType ="TextBox"
 			BasedOn    ="{StaticResource {x:Type TextBox}}">
@@ -364,6 +379,252 @@
 			</Grid>
 		</DataTemplate>
 
+		<!-- Value from table: the expression can be typed, or built from lists in the pop-up that ▾ opens -->
+		<DataTemplate
+			x:Key    ="TableLookupSettingsTemplate"
+			DataType ="{x:Type viewModels:ColumnRuleViewModel}">
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition
+						Width="*" />
+					<ColumnDefinition
+						Width="Auto" />
+				</Grid.ColumnDefinitions>
+
+				<Grid
+					Grid.Column ="0"
+					Background  ="Transparent"
+					ToolTip     ="{StaticResource TableLookupHint}">
+					<TextBox
+						Style ="{StaticResource CellCodeTextBoxStyle}"
+						Text  ="{Binding	LookupExpression,
+												Mode=TwoWay,
+												UpdateSourceTrigger=PropertyChanged}" />
+				</Grid>
+
+				<ToggleButton
+					x:Name      ="LookupBuilderButton"
+					Grid.Column ="1"
+					Margin      ="4,0,0,0"
+					IsChecked   ="{Binding	IsLookupBuilderOpen,
+													Mode=TwoWay,
+													UpdateSourceTrigger=PropertyChanged}"
+					ToolTip     ="{StaticResource LookupBuilderButtonHint}"
+					infrastructure:ButtonIcon.Glyph ="&#xE70D;">
+					<ToggleButton.Style>
+						<Style
+							TargetType ="ToggleButton"
+							BasedOn    ="{StaticResource IconToggleButtonStyle}">
+							<Style.Triggers>
+								<!-- While the pop-up is open a click on the button only closes it (instead of closing and reopening it) -->
+								<DataTrigger
+									Binding ="{Binding IsLookupBuilderOpen}"
+									Value   ="True">
+									<Setter
+										Property ="IsHitTestVisible"
+										Value    ="False" />
+								</DataTrigger>
+							</Style.Triggers>
+						</Style>
+					</ToggleButton.Style>
+				</ToggleButton>
+
+				<Popup
+					AllowsTransparency ="True"
+					IsOpen             ="{Binding	IsLookupBuilderOpen,
+															Mode=TwoWay,
+															UpdateSourceTrigger=PropertyChanged}"
+					Placement          ="Bottom"
+					PlacementTarget    ="{Binding ElementName=LookupBuilderButton}"
+					PopupAnimation     ="Fade"
+					StaysOpen          ="False">
+					<Border
+						x:Name ="LookupBuilderBorder"
+						Style  ="{StaticResource PopupMenuBorderStyle}">
+						<Grid
+							Width       ="400"
+							Margin      ="0,0,0,6"
+							DataContext ="{Binding LookupBuilder}">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition
+									Width="Auto" />
+								<ColumnDefinition
+									Width="*" />
+							</Grid.ColumnDefinitions>
+
+							<Grid.RowDefinitions>
+								<RowDefinition
+									Height="Auto" />
+								<RowDefinition
+									Height="Auto" />
+								<RowDefinition
+									Height="Auto" />
+								<RowDefinition
+									Height="Auto" />
+								<RowDefinition
+									Height="Auto" />
+								<RowDefinition
+									Height="Auto" />
+								<RowDefinition
+									Height="Auto" />
+								<RowDefinition
+									Height="Auto" />
+								<RowDefinition
+									Height="Auto" />
+							</Grid.RowDefinitions>
+
+							<TextBlock
+								Grid.Row        ="0"
+								Grid.ColumnSpan ="2"
+								Style           ="{StaticResource PopupHeaderTextStyle}"
+								Text            ="{Binding	DataContext.Name,
+																	ElementName=LookupBuilderBorder,
+																	StringFormat='Value from table · {0}'}" />
+
+							<Label
+								Grid.Row    ="1"
+								Grid.Column ="0"
+								Margin      ="4,2"
+								Content     ="Table:"
+								ToolTip     ="{StaticResource LookupTableHint}" />
+
+							<ComboBox
+								Grid.Row     ="1"
+								Grid.Column  ="1"
+								Margin       ="4,2,8,2"
+								ItemsSource  ="{Binding Tables}"
+								SelectedItem ="{Binding	SelectedTableOption,
+																Mode=TwoWay,
+																UpdateSourceTrigger=PropertyChanged}"
+								ToolTip      ="{StaticResource LookupTableHint}" />
+
+							<Label
+								Grid.Row    ="2"
+								Grid.Column ="0"
+								Margin      ="4,2"
+								Content     ="Column:"
+								ToolTip     ="{StaticResource LookupColumnHint}" />
+
+							<ComboBox
+								Grid.Row          ="2"
+								Grid.Column       ="1"
+								Margin            ="4,2,8,2"
+								DisplayMemberPath ="Name"
+								ItemsSource       ="{Binding Columns}"
+								SelectedItem      ="{Binding	SelectedColumn,
+																		Mode=TwoWay,
+																		UpdateSourceTrigger=PropertyChanged}"
+								ToolTip           ="{StaticResource LookupColumnHint}" />
+
+							<Label
+								Grid.Row    ="3"
+								Grid.Column ="0"
+								Margin      ="4,2"
+								Content     ="Rows:"
+								ToolTip     ="{StaticResource LookupScopeHint}" />
+
+							<ComboBox
+								Grid.Row          ="3"
+								Grid.Column       ="1"
+								Margin            ="4,2,8,2"
+								DisplayMemberPath ="DisplayName"
+								ItemsSource       ="{Binding ScopeOptions}"
+								SelectedItem      ="{Binding	SelectedScope,
+																		Mode=TwoWay,
+																		UpdateSourceTrigger=PropertyChanged}"
+								ToolTip           ="{Binding SelectedScope.Description}" />
+
+							<CheckBox
+								Grid.Row    ="4"
+								Grid.Column ="1"
+								Margin      ="4,4,8,2"
+								Content     ="Unique (each value is used at most once)"
+								IsChecked   ="{Binding	IsUnique,
+																Mode=TwoWay,
+																UpdateSourceTrigger=PropertyChanged}"
+								ToolTip     ="{StaticResource LookupUniqueHint}" />
+
+							<Label
+								Grid.Row    ="5"
+								Grid.Column ="0"
+								Margin      ="4,2"
+								Content     ="Filter:"
+								ToolTip     ="{StaticResource LookupFilterHint}" />
+
+							<ComboBox
+								Grid.Row          ="5"
+								Grid.Column       ="1"
+								Margin            ="4,2,8,2"
+								DisplayMemberPath ="DisplayName"
+								ItemsSource       ="{Binding FilterOptions}"
+								SelectedItem      ="{Binding	SelectedFilter,
+																		Mode=TwoWay,
+																		UpdateSourceTrigger=PropertyChanged}"
+								ToolTip           ="{Binding SelectedFilter.Description}" />
+
+							<Grid
+								Grid.Row    ="6"
+								Grid.Column ="1"
+								Margin      ="4,2,8,2"
+								Background  ="Transparent"
+								ToolTip     ="{Binding SelectedFilter.Description}"
+								Visibility  ="{Binding	HasFilter,
+																Converter={StaticResource BooleanToVisibilityConverter}}">
+								<StackPanel>
+									<TextBox
+										FontFamily ="{StaticResource CodeFontFamily}"
+										Text       ="{Binding	FilterText,
+																		Mode=TwoWay,
+																		UpdateSourceTrigger=PropertyChanged}" />
+
+									<!-- What to type for the chosen filter, e.g. that s is the source table -->
+									<TextBlock
+										MaxWidth            ="360"
+										Margin              ="2,2,0,0"
+										HorizontalAlignment ="Left"
+										Style               ="{StaticResource SecondaryTextStyle}"
+										FontSize            ="11"
+										Text                ="{Binding SelectedFilter.Description}"
+										TextWrapping        ="Wrap" />
+								</StackPanel>
+							</Grid>
+
+							<StackPanel
+								Grid.Row        ="7"
+								Grid.ColumnSpan ="2"
+								Margin          ="8,6,8,0">
+								<TextBlock
+									Style        ="{StaticResource SecondaryTextStyle}"
+									FontFamily   ="{StaticResource CodeFontFamily}"
+									Text         ="{Binding Expression}"
+									TextWrapping ="Wrap"
+									ToolTip      ="{StaticResource LookupExpressionPreviewHint}" />
+
+								<TextBlock
+									Margin       ="0,4,0,0"
+									Foreground   ="{DynamicResource ErrorBrush}"
+									Text         ="{Binding ErrorMessage}"
+									TextWrapping ="Wrap"
+									Visibility   ="{Binding	HasError,
+																	Converter={StaticResource BooleanToVisibilityConverter}}" />
+							</StackPanel>
+
+							<Button
+								Grid.Row            ="8"
+								Grid.ColumnSpan     ="2"
+								Margin              ="8,8,8,0"
+								HorizontalAlignment ="Right"
+								Command             ="{Binding	DataContext.ApplyLookupBuilderCommand,
+																			ElementName=LookupBuilderBorder}"
+								Content             ="Apply"
+								IsDefault           ="True"
+								ToolTip             ="{StaticResource LookupApplyHint}" />
+						</Grid>
+					</Border>
+				</Popup>
+			</Grid>
+		</DataTemplate>
+
 		<DataTemplate
 			x:Key    ="SummarySettingsTemplate"
 			DataType ="{x:Type viewModels:ColumnRuleViewModel}">
@@ -426,6 +687,14 @@
 					<Setter
 						Property ="ContentTemplate"
 						Value    ="{StaticResource CopyColumnSettingsTemplate}" />
+				</DataTrigger>
+
+				<DataTrigger
+					Binding ="{Binding GenerationMode}"
+					Value   ="{x:Static models:ValueGenerationMode.TableLookup}">
+					<Setter
+						Property ="ContentTemplate"
+						Value    ="{StaticResource TableLookupSettingsTemplate}" />
 				</DataTrigger>
 			</Style.Triggers>
 		</Style>
@@ -560,20 +829,6 @@
 			</Style.Triggers>
 		</Style>
 
-		<Style
-			x:Key      ="PopupHeaderTextStyle"
-			TargetType ="TextBlock"
-			BasedOn    ="{StaticResource SecondaryTextStyle}">
-			<Setter
-				Property ="Margin"
-				Value    ="8,6,8,2" />
-			<Setter
-				Property ="FontWeight"
-				Value    ="SemiBold" />
-			<Setter
-				Property ="TextTrimming"
-				Value    ="CharacterEllipsis" />
-		</Style>
 	</UserControl.Resources>
 
 	<GroupBox
@@ -653,6 +908,13 @@
 
 						<Button
 							Style   ="{StaticResource ToolbarButtonStyle}"
+							Command ="{Binding AddUpdateSetCommand}"
+							Content ="Add _update set"
+							ToolTip ="{StaticResource AddUpdateSetHint}"
+							infrastructure:ButtonIcon.Glyph ="&#xE70F;" />
+
+						<Button
+							Style   ="{StaticResource ToolbarButtonStyle}"
 							Command ="{Binding DuplicateRowSetCommand}"
 							Content ="_Duplicate"
 							ToolTip ="{StaticResource DuplicateRowSetHint}"
@@ -680,6 +942,29 @@
 							DataType="{x:Type viewModels:RowSetViewModel}">
 							<StackPanel
 								Orientation="Horizontal">
+								<Border
+									Margin     ="0,0,5,0"
+									Style      ="{StaticResource BadgeStyle}"
+									Background ="{DynamicResource RowSetBadgeBrush}"
+									ToolTip    ="{StaticResource RowSetStepBadgeHint}"
+									Visibility ="{Binding	IsLaterStep,
+																	Converter={StaticResource BooleanToVisibilityConverter}}">
+									<TextBlock
+										Style      ="{StaticResource BadgeTextStyle}"
+										Foreground ="{DynamicResource RowSetBadgeTextBrush}"
+										Text       ="{Binding StepText}" />
+								</Border>
+
+								<TextBlock
+									Margin            ="0,0,5,0"
+									VerticalAlignment ="Center"
+									FontFamily        ="Segoe MDL2 Assets"
+									FontSize          ="11"
+									Text              ="&#xE70F;"
+									ToolTip           ="{StaticResource UpdateSetBadgeHint}"
+									Visibility        ="{Binding	IsUpdate,
+																			Converter={StaticResource BooleanToVisibilityConverter}}" />
+
 								<TextBlock
 									VerticalAlignment ="Center"
 									Text              ="{Binding HeaderText}" />
@@ -699,6 +984,8 @@
 							DataType="{x:Type viewModels:RowSetViewModel}">
 							<Grid>
 								<Grid.RowDefinitions>
+									<RowDefinition
+										Height="Auto" />
 									<RowDefinition
 										Height="Auto" />
 									<RowDefinition
@@ -728,7 +1015,7 @@
 
 									<Label
 										Margin  ="8,0,0,0"
-										Content ="_Rows:"
+										Content ="{Binding RowCountLabel}"
 										Target  ="{Binding ElementName=RowSetRowCountInput}"
 										ToolTip ="{StaticResource RowSetRowCountHint}" />
 
@@ -740,6 +1027,25 @@
 											Width                      ="100"
 											HorizontalContentAlignment ="Right"
 											Text                       ="{Binding	RowCount,
+																								Mode=TwoWay,
+																								UpdateSourceTrigger=PropertyChanged}"
+											infrastructure:TextInputFilter.Kind ="Integer" />
+									</Grid>
+
+									<Label
+										Margin  ="8,0,0,0"
+										Content ="S_tep:"
+										Target  ="{Binding ElementName=RowSetStepInput}"
+										ToolTip ="{StaticResource RowSetStepHint}" />
+
+									<Grid
+										Background ="Transparent"
+										ToolTip    ="{StaticResource RowSetStepHint}">
+										<TextBox
+											x:Name                     ="RowSetStepInput"
+											Width                      ="40"
+											HorizontalContentAlignment ="Right"
+											Text                       ="{Binding	Step,
 																								Mode=TwoWay,
 																								UpdateSourceTrigger=PropertyChanged}"
 											infrastructure:TextInputFilter.Kind ="Integer" />
@@ -1009,9 +1315,155 @@
 									</Border>
 								</WrapPanel>
 
-								<!-- Changes several selected columns at once -->
+								<!-- Update sets only: which existing rows are changed -->
 								<Border
 									Grid.Row     ="1"
+									Margin       ="0,2,0,2"
+									Padding      ="4,3"
+									Background   ="{DynamicResource HeaderStripBrush}"
+									CornerRadius ="4"
+									Visibility   ="{Binding	IsUpdate,
+																	Converter={StaticResource BooleanToVisibilityConverter}}">
+									<Grid>
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition
+												Width="Auto" />
+											<ColumnDefinition
+												Width="Auto" />
+											<ColumnDefinition
+												Width="Auto" />
+											<ColumnDefinition
+												Width="*" />
+											<ColumnDefinition
+												Width="Auto" />
+										</Grid.ColumnDefinitions>
+
+										<Grid.RowDefinitions>
+											<RowDefinition
+												Height="Auto" />
+											<RowDefinition
+												Height="Auto" />
+											<RowDefinition
+												Height="Auto" />
+										</Grid.RowDefinitions>
+
+										<Label
+											Grid.Column ="0"
+											Content     ="Change:"
+											Target      ="{Binding ElementName=UpdateScopeInput}"
+											ToolTip     ="{StaticResource UpdateScopeHint}" />
+
+										<ComboBox
+											x:Name            ="UpdateScopeInput"
+											Grid.Column       ="1"
+											Width             ="160"
+											DisplayMemberPath ="DisplayName"
+											ItemsSource       ="{Binding UpdateScopeOptions}"
+											SelectedValue     ="{Binding	UpdateScope,
+																					Mode=TwoWay,
+																					UpdateSourceTrigger=PropertyChanged}"
+											SelectedValuePath ="Value"
+											ToolTip           ="{StaticResource UpdateScopeHint}" />
+
+										<Label
+											Grid.Column ="2"
+											Margin      ="8,0,0,0"
+											Content     ="_Where:"
+											Target      ="{Binding ElementName=UpdateConditionInput}"
+											ToolTip     ="{StaticResource UpdateConditionHint}" />
+
+										<Grid
+											Grid.Column ="3"
+											Background  ="Transparent"
+											ToolTip     ="{StaticResource UpdateConditionHint}">
+											<TextBox
+												x:Name     ="UpdateConditionInput"
+												FontFamily ="{StaticResource CodeFontFamily}"
+												Text       ="{Binding	UpdateCondition,
+																				Mode=TwoWay,
+																				UpdateSourceTrigger=PropertyChanged}" />
+
+											<TextBlock
+												Margin            ="6,0"
+												VerticalAlignment ="Center"
+												FontStyle         ="Italic"
+												IsHitTestVisible  ="False"
+												Text              ="Optional, e.g. t.[Size] = 'XL' AND t.[ShirtParentID] IS NULL">
+												<TextBlock.Style>
+													<Style
+														TargetType ="TextBlock"
+														BasedOn    ="{StaticResource SecondaryTextStyle}">
+														<Setter
+															Property ="Visibility"
+															Value    ="Collapsed" />
+
+														<Style.Triggers>
+															<DataTrigger
+																Binding ="{Binding UpdateCondition}"
+																Value   ="">
+																<Setter
+																	Property ="Visibility"
+																	Value    ="Visible" />
+															</DataTrigger>
+														</Style.Triggers>
+													</Style>
+												</TextBlock.Style>
+											</TextBlock>
+										</Grid>
+
+										<CheckBox
+											Grid.Column ="4"
+											Margin      ="10,0,4,0"
+											Content     ="Fail if fewer rows match"
+											IsChecked   ="{Binding	RequireAllRows,
+																			Mode=TwoWay,
+																			UpdateSourceTrigger=PropertyChanged}"
+											ToolTip     ="{StaticResource RequireAllRowsHint}" />
+
+										<!-- How to write the Where condition, always in view -->
+										<TextBlock
+											Grid.Row     ="1"
+											Grid.Column  ="3"
+											Margin       ="2,2,0,0"
+											Style        ="{StaticResource SecondaryTextStyle}"
+											FontSize     ="11"
+											TextWrapping ="Wrap"
+											ToolTip      ="{StaticResource UpdateConditionHint}">
+											<Run
+												FontFamily ="{StaticResource CodeFontFamily}"
+												FontWeight ="SemiBold"
+												Text       ="t" />
+											<Run
+												Text=" = this table (the rows being changed); write a column as " />
+											<Run
+												FontFamily ="{StaticResource CodeFontFamily}"
+												Text       ="t.[ColumnName]" />
+											<Run
+												Text=". Hover for more examples." />
+										</TextBlock>
+
+										<StackPanel
+											Grid.Row        ="2"
+											Grid.ColumnSpan ="5"
+											Margin          ="4,3,0,0"
+											Orientation     ="Horizontal"
+											Visibility      ="{Binding	HasUpdateProblem,
+																					Converter={StaticResource BooleanToVisibilityConverter}}">
+											<TextBlock
+												Margin ="0,0,5,0"
+												Style  ="{StaticResource WarningIconStyle}" />
+
+											<TextBlock
+												VerticalAlignment ="Center"
+												Foreground        ="{DynamicResource WarningBrush}"
+												Text              ="{Binding UpdateProblem}" />
+										</StackPanel>
+									</Grid>
+								</Border>
+
+								<!-- Changes several selected columns at once -->
+								<Border
+									Grid.Row     ="2"
 									Margin       ="0,2,0,2"
 									Padding      ="4,2"
 									Background   ="{DynamicResource HeaderStripBrush}"
@@ -1154,15 +1606,18 @@
 									</StackPanel>
 								</Border>
 
+								<!-- The row set's own problems (e.g. an update set that changes nothing) are shown above the grid, so the grid draws no red error border -->
 								<!-- Each grid row has a BindingGroup that makes bindings without an explicit UpdateSourceTrigger wait for a row commit, so every editor in the cells sets UpdateSourceTrigger=PropertyChanged -->
 								<DataGrid
-									Grid.Row          ="2"
+									Grid.Row          ="3"
 									Margin            ="0,2,0,0"
 									ColumnHeaderStyle ="{StaticResource RuleGridColumnHeaderStyle}"
 									ItemsSource       ="{Binding ColumnRules}"
 									RowStyle          ="{StaticResource ColumnRuleRowStyle}"
 									SelectionMode     ="Extended"
 									ToolTip           ="{StaticResource ColumnRulesGridHint}"
+									Validation.ErrorTemplate ="{x:Null}"
+									infrastructure:GridCellNavigation.IsEnabled ="True"
 									infrastructure:MultiSelection.SelectedItems ="{Binding BulkEdit.SelectedRules}">
 									<DataGrid.Columns>
 										<DataGridTemplateColumn

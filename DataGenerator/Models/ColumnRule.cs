@@ -17,5 +17,16 @@ public sealed class ColumnRule
 	/// The column of the same row whose value is copied in <see cref="ValueGenerationMode.CopyColumn"/> mode.
 	/// </summary>
 	public string                       SourceColumnName  { get; init; } = string.Empty;
+
+	/// <summary>
+	/// The "Value from table" expression as typed, e.g. dbo.Shirt.ShirtID UNIQUE.
+	/// </summary>
+	public string                       LookupExpression  { get; init; } = string.Empty;
+
+	/// <summary>
+	/// The resolved <see cref="LookupExpression"/> in <see cref="ValueGenerationMode.TableLookup"/> mode; null when it
+	/// could not be resolved.
+	/// </summary>
+	public ColumnLookup?                Lookup            { get; init; }
 	public ForeignKeyModel?             Reference         { get; init; }
 }

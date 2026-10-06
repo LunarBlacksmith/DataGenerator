@@ -1,6 +1,6 @@
 ﻿using DataGenerator.Models;
 
-namespace DataGenerator.Services;
+namespace DataGenerator.Interfaces;
 
 /// <summary>
 /// Reads and writes the user's preferences.

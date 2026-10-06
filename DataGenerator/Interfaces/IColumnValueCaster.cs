@@ -1,6 +1,6 @@
 ﻿using DataGenerator.Models;
 
-namespace DataGenerator.Services;
+namespace DataGenerator.Interfaces;
 
 /// <summary>
 /// Converts the value of one column into a value that another column can store, without failing on type differences,

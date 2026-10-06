@@ -14,11 +14,18 @@ internal static class SqlSyntax
 		=> $"{QuoteIdentifier(databaseName)}.{QuoteIdentifier(schemaName)}.{QuoteIdentifier(tableName)}";
 
 	/// <summary>
+	/// Puts a condition typed by the user in parentheses. A line break is added before the closing parenthesis when the
+	/// condition contains a -- comment, so the comment cannot hide the rest of the statement.
+	/// </summary>
+	public static string WrapCondition(string condition)
+		=> condition.Contains("--", StringComparison.Ordinal) ? $"({condition}{Environment.NewLine})" : $"({condition})";
+
+	/// <summary>
 	/// Makes text safe to embed in a single-line <c>--</c> comment.
 	/// </summary>
 	public static string ToCommentText(string text)
 	{
-		StringBuilder builder = new StringBuilder(text.Length);
+		StringBuilder builder = new(text.Length);
 
 		foreach (char character in text)
 		{

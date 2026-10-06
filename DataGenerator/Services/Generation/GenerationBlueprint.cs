@@ -6,7 +6,8 @@ internal enum ValueSourceKind
 {
 	Rule         = 0,
 	GeneratedKey = 1,
-	ExistingKey  = 2
+	ExistingKey  = 2,
+	Lookup       = 3
 }
 
 /// <summary>
@@ -18,6 +19,7 @@ internal sealed class ValueSource
 	public required ValueSourceKind    Kind        { get; init; }
 	public GeneratedKeyTable?          KeyTable    { get; init; }
 	public ExistingKeyPool?            Pool        { get; init; }
+	public LookupPool?                 Lookup      { get; init; }
 
 	/// <summary>
 	/// Column index within <see cref="KeyTable"/> or <see cref="Pool"/>.
@@ -35,7 +37,7 @@ internal sealed class RowSetBlueprint
 	public required RowSetPlan                 Plan                   { get; init; }
 
 	/// <summary>
-	/// One entry per inserted column, in INSERT column order. Empty when the row uses DEFAULT VALUES.
+	/// One entry per inserted (or, in update sets, changed) column, in column order. Empty when the row uses DEFAULT VALUES.
 	/// </summary>
 	public required IReadOnlyList<ValueSource> Sources                { get; init; }
 
@@ -58,6 +60,32 @@ internal sealed class RowSetBlueprint
 	/// The index into <see cref="Sources"/> of every inserted column, by column name.
 	/// </summary>
 	public required IReadOnlyDictionary<string, int> SourceIndexesByName { get; init; }
+
+	/// <summary>
+	/// "Existing key" samples used by this row set; each is loaded once, before the first row set that uses it.
+	/// </summary>
+	public required IReadOnlyList<ExistingKeyPool> ExistingKeyPools    { get; init; }
+
+	/// <summary>
+	/// "Value from table" values, loaded right before the rows of this row set are generated.
+	/// </summary>
+	public required IReadOnlyList<LookupPool>      LookupPools         { get; init; }
+
+	/// <summary>
+	/// The staging table and UPDATE statement of an update set; null for insert sets.
+	/// </summary>
+	public RowSetUpdate?                           Update              { get; init; }
+
+	public bool IsUpdate => Update is not null;
+}
+
+/// <summary>
+/// One row set of one table, in the order the row sets run.
+/// </summary>
+internal sealed class GenerationOperation
+{
+	public required TableBlueprint  Table  { get; init; }
+	public required RowSetBlueprint RowSet { get; init; }
 }
 
 internal sealed class TableBlueprint
@@ -71,31 +99,50 @@ internal sealed class TableBlueprint
 	public GeneratedKeyTable?                      Keys             { get; init; }
 
 	/// <summary>
-	/// "Existing key" samples that must be loaded before the first row of this table is inserted.
+	/// The number of inserted rows; rows changed by update sets are counted by <see cref="UpdatedRowCount"/>.
 	/// </summary>
-	public required IReadOnlyList<ExistingKeyPool> ExistingKeyPools { get; init; }
+	public long TotalRowCount   => RowSets.Where(rowSet => !rowSet.IsUpdate).Sum(rowSet => (long)rowSet.Plan.RowCount);
 
-	public long TotalRowCount => RowSets.Sum(rowSet => (long)rowSet.Plan.RowCount);
+	public long UpdatedRowCount => RowSets.Where(rowSet => rowSet.IsUpdate).Sum(rowSet => (long)rowSet.Plan.RowCount);
 }
 
 internal sealed class GenerationBlueprint
 {
-	public required IReadOnlyList<TableBlueprint>  Tables             { get; init; }
-	public required IReadOnlyList<ExistingKeyPool> ExistingKeyPools   { get; init; }
+	public required IReadOnlyList<TableBlueprint>      Tables             { get; init; }
+
+	/// <summary>
+	/// Every row set in the order it runs: step by step, and within a step the insert sets (referenced tables first)
+	/// before the update sets.
+	/// </summary>
+	public required IReadOnlyList<GenerationOperation> Operations         { get; init; }
+	public required IReadOnlyList<ExistingKeyPool>     ExistingKeyPools   { get; init; }
+
+	/// <summary>
+	/// Copies of tables taken before anything is inserted, for the "Generated rows" and "Existing rows" scopes.
+	/// </summary>
+	public required IReadOnlyList<RowSnapshot>         Snapshots          { get; init; }
 
 	/// <summary>
 	/// Tables to empty before inserting, ordered so that dependent tables are cleared first.
 	/// </summary>
-	public required IReadOnlyList<TableModel>      TablesToClear      { get; init; }
+	public required IReadOnlyList<TableModel>          TablesToClear      { get; init; }
 
-	public required bool                           ResetIdentitySeeds { get; init; }
+	public required bool                               ResetIdentitySeeds { get; init; }
 
 	/// <summary>
 	/// Stored procedures or SQL run after the inserts and before the commit; null when there are none.
 	/// </summary>
-	public PostGenerationScript?                   PostGeneration     { get; init; }
+	public PostGenerationScript?                       PostGeneration     { get; init; }
 
-	public long TotalRowCount => Tables.Sum(table => table.TotalRowCount);
+	public long TotalRowCount   => Tables.Sum(table => table.TotalRowCount);
 
-	public int RowSetCount => Tables.Sum(table => table.RowSets.Count);
+	public long UpdatedRowCount => Tables.Sum(table => table.UpdatedRowCount);
+
+	public int RowSetCount      => Operations.Count;
+
+	public int StepCount        => Operations.Select(operation => operation.RowSet.Plan.Step).Distinct().Count();
+
+	public IEnumerable<LookupPool>   LookupPools => Operations.SelectMany(operation => operation.RowSet.LookupPools);
+
+	public IEnumerable<RowSetUpdate> Updates     => Operations.Select(operation => operation.RowSet.Update).OfType<RowSetUpdate>();
 }

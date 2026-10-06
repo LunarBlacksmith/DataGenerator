@@ -77,7 +77,7 @@ internal static class PatternLexer
 	{
 		char          quote    = expression[index];
 		int           position = index + 1;
-		StringBuilder builder  = new StringBuilder();
+		StringBuilder builder  = new();
 
 		++index;
 

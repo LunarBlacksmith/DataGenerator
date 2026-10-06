@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 using DataGenerator.Services.Generation;
 
@@ -11,12 +12,18 @@ public sealed class DataGenerationService : IDataGenerationService
 {
 	private readonly ISqlValueConverter    _converter;
 	private readonly IColumnValueGenerator _columnValueGenerator;
+	private readonly IPatternSqlTranslator _patternTranslator;
 	private readonly RowValueBuilder       _rowValueBuilder;
 
-	public DataGenerationService(ISqlValueConverter converter, IColumnValueGenerator columnValueGenerator)
+	public DataGenerationService(
+		ISqlValueConverter    converter,
+		IColumnValueGenerator columnValueGenerator,
+		IPatternSqlTranslator patternTranslator
+	)
 	{
-		_converter            = converter ?? throw new ArgumentNullException(nameof(converter));
+		_converter            = converter            ?? throw new ArgumentNullException(nameof(converter));
 		_columnValueGenerator = columnValueGenerator ?? throw new ArgumentNullException(nameof(columnValueGenerator));
+		_patternTranslator    = patternTranslator    ?? throw new ArgumentNullException(nameof(patternTranslator));
 		_rowValueBuilder      = new RowValueBuilder(columnValueGenerator);
 	}
 
@@ -29,11 +36,14 @@ public sealed class DataGenerationService : IDataGenerationService
 		ArgumentNullException.ThrowIfNull(request);
 		ValidateRequest(request);
 
-		GenerationProgress  generationProgress = new GenerationProgress(progress);
-		GenerationBlueprint blueprint          = new GenerationBlueprintBuilder(_converter, _columnValueGenerator).Build(request);
+		GenerationProgress  generationProgress = new(progress);
+		GenerationBlueprint blueprint          = new GenerationBlueprintBuilder(_converter, _columnValueGenerator, _patternTranslator).Build(request);
+		string              updatedRows        = blueprint.UpdatedRowCount > 0 ? $" and {blueprint.UpdatedRowCount:N0} updated row(s)" : string.Empty;
+		string              steps              = blueprint.StepCount > 1 ? $" in {blueprint.StepCount:N0} steps" : string.Empty;
 
 		generationProgress.Report(
-			$"Preparing {blueprint.TotalRowCount:N0} row(s) in {blueprint.RowSetCount:N0} row set(s) for {blueprint.Tables.Count:N0} table(s)…"
+			$"Preparing {blueprint.TotalRowCount:N0} new row(s){updatedRows} in {blueprint.RowSetCount:N0} row set(s) "
+			+ $"for {blueprint.Tables.Count:N0} table(s){steps}…"
 		);
 
 		if (request.Mode == GenerationMode.SqlFile)
@@ -58,7 +68,9 @@ public sealed class DataGenerationService : IDataGenerationService
 			cancellationToken
 		);
 
-		generationProgress.Report($"Inserted {blueprint.TotalRowCount:N0} row(s) and committed the transaction.");
+		string changedRows = blueprint.UpdatedRowCount > 0 ? $", changed {blueprint.UpdatedRowCount:N0} row(s)" : string.Empty;
+
+		generationProgress.Report($"Inserted {blueprint.TotalRowCount:N0} row(s){changedRows} and committed the transaction.");
 	}
 
 	private static void ValidateRequest(GenerationRequest request)

@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using DataGenerator.Infrastructure;
+using DataGenerator.Interfaces;
 using DataGenerator.Services;
 
 namespace DataGenerator.ViewModels;
@@ -116,7 +117,7 @@ public sealed class PatternHelpViewModel : ObservableObject
 			for (int rowIndex = 0; rowIndex < SAMPLE_COUNT; ++rowIndex)
 			{
 				// The try-it box has no row, so COL(name) shows the column's name in brackets.
-				Samples.Add(new PatternSample(rowIndex + 1, _patternGenerator.Generate(_expression, rowIndex, columnName => $"[{columnName}]")));
+				Samples.Add(new PatternSample(rowIndex + 1, _patternGenerator.Generate(_expression, rowIndex, SAMPLE_COUNT, columnName => $"[{columnName}]")));
 			}
 
 			ErrorMessage = string.Empty;

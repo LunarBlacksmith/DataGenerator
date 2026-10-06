@@ -21,10 +21,12 @@ The sequence moves on by one for every row; the random parts are picked again fo
 - [Building blocks](#building-blocks)
 - [Combining parts](#combining-parts)
 - [Precedence and parentheses](#precedence-and-parentheses)
+- [Narrowing numbers](#narrowing-numbers)
 - [Function arguments](#function-arguments)
 - [Functions](#functions)
 - [Column types](#column-types)
 - [Row numbers and row sets](#row-numbers-and-row-sets)
+- [Finding existing values with a pattern](#finding-existing-values-with-a-pattern)
 - [Limits](#limits)
 - [Errors](#errors)
 - [Examples](#examples)
@@ -106,6 +108,22 @@ So:
 This matches how the pattern reads aloud: "P followed by X or Y" means P, then either X or Y.
 When in doubt, put parentheses around the parts that belong together.
 
+## Narrowing numbers
+
+`GREATER THAN`, `LESS THAN`, `AT LEAST` and `AT MOST` narrow the numbers of a `NUM(...)` or `RAND_NUM(...)` that comes straight before them.
+They can be combined, and they bind more tightly than `REPEATED`, `OR` and `FOLLOWED BY`:
+
+| Pattern                                             | Means                                        | Example values      |
+| --------------------------------------------------- | -------------------------------------------- | ------------------- |
+| `NUM(digits=5) GREATER THAN 50`                     | 51 to 99999, padded to 5 digits              | `00051`, `48213`    |
+| `RAND_NUM(0, 999) LESS THAN 100`                    | 0 to 99                                      | `7`, `93`           |
+| `NUM(digits=3) AT LEAST 100 AT MOST 199`            | 100 to 199                                   | `100`, `157`        |
+| `S THEN (NUM(digits=5) GREATER THAN 50) THEN (1 OR 2)` | `S`, a number above 50, then `1` or `2`   | `S048211`, `S000522` |
+
+- The number after the keyword is a whole number and may be negative (`GREATER THAN -10`).
+- A comparison that leaves no numbers, e.g. `NUM(digits=2) GREATER THAN 99`, is reported as an error.
+- The words `GREATER`, `LESS`, `THAN`, `AT`, `LEAST` and `MOST` are only keywords straight after a number function, so they can still be used as text elsewhere.
+
 ## Function arguments
 
 Arguments are separated by commas. A function can take:
@@ -182,6 +200,23 @@ A random whole number from the range, including both ends.
 | `RAND_NUM(1, 500)`    | `45`, `364`, `91` |
 | `RAND_NUM(0, 99, 2)`  | `07`, `45`, `73`  |
 | `RAND_NUM(-50 TO 50)` | `6`, `-37`, `28`  |
+
+### NUM(min, max, digits)
+
+A random whole number like `RAND_NUM`, but every argument is optional, which makes it handy for "any number of n digits".
+It can be narrowed with [GREATER THAN and the other comparisons](#narrowing-numbers).
+
+| Argument | Required | Default       | Notes                                                                                     |
+| -------- | -------- | ------------- | ----------------------------------------------------------------------------------------- |
+| `range`  | No       | See `digits`  | Whole numbers, e.g. `1, 50` or `1-50`. With a range, `NUM` is the same as `RAND_NUM`.     |
+| `digits` | No       | No padding    | Without a range, the number has up to this many digits and is zero-padded to that width. |
+
+| Pattern                         | Range               | Example values     |
+| ------------------------------- | ------------------- | ------------------ |
+| `NUM()`                         | 0 to 999,999,999    | `48213977`, `5121` |
+| `NUM(digits=5)`                 | 0 to 99999, 5 wide  | `00412`, `73001`   |
+| `NUM(1, 50)`                    | 1 to 50             | `7`, `42`          |
+| `NUM(digits=5) GREATER THAN 50` | 51 to 99999, 5 wide | `00051`, `48213`   |
 
 ### RAND_DECIMAL(range, decimals)
 
@@ -278,6 +313,56 @@ This works like `OR`, but any text can be listed without operators.
 | `ONE_OF('XS', 'S', 'M', 'L', 'XL')` | `XS`, `L`, `M`         |
 | `ONE_OF(Red, Green, Blue)`          | `Blue`, `Green`, `Red` |
 
+### CYCLE(value, value, …)
+
+Takes the listed values in turn instead of at random: the first row gets the first value, the second row the second value, and so on, starting again after the last value.
+
+| Pattern                         | Rows 1 to 5                 |
+| ------------------------------- | --------------------------- |
+| `CYCLE('S', 'M', 'L')`          | `S`, `M`, `L`, `S`, `M`     |
+| `'Bin ' + CYCLE(A, B) + ROW(3)` | `Bin A001`, `Bin B002`, …   |
+
+### ROW(digits)
+
+The number of the row within its row set: 1 for the first row, 2 for the second and so on. Unlike `SEQ` it has no range and never wraps.
+
+| Argument | Required | Default    | Notes                                   |
+| -------- | -------- | ---------- | --------------------------------------- |
+| `digits` | No       | No padding | Zero-pads the number to this width.     |
+
+`'ITEM-' + ROW(4)` produces `ITEM-0001`, `ITEM-0002`, …
+
+### FIRST(value) and FIRST(n, value, …)
+
+A value for the first row, or for each of the first `n` rows, of the row set. Every other row gets the `else` value, which is empty unless given.
+
+| Form                          | Meaning                                                           |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `FIRST(value)`                | `value` for the first row.                                        |
+| `FIRST(n, value)`             | `value` for each of the first `n` rows.                           |
+| `FIRST(n, v1, v2, …, vn)`     | `v1` for the first row, `v2` for the second, … (one value per row). |
+| `…, else=value`               | The value of every other row. Optional, empty by default.         |
+
+| Pattern                        | Rows 1 to 5 of 5           |
+| ------------------------------ | -------------------------- |
+| `FIRST('HEAD', else='-')`      | `HEAD`, `-`, `-`, `-`, `-` |
+| `FIRST(2, 'A', 'B', else='-')` | `A`, `B`, `-`, `-`, `-`    |
+| `'Row' + FIRST(3, '*')`        | `Row*`, `Row*`, `Row*`, `Row`, `Row` |
+
+### LAST(value) and LAST(n, value, …)
+
+The same as `FIRST`, counted from the end of the row set: a value for the last row, or one value for each of the last `n` rows in order, so the last listed value belongs to the very last row.
+Every other row gets the `else` value (empty by default). In an update set, the rows are the rows being changed.
+
+| Pattern                         | Rows 1 to 5 of 5           |
+| ------------------------------- | -------------------------- |
+| `LAST('END', else='-')`         | `-`, `-`, `-`, `-`, `END`  |
+| `LAST(2, 'Y', 'Z', else='-')`   | `-`, `-`, `-`, `Y`, `Z`    |
+| `LAST(3, 1, else=0)`            | `0`, `0`, `1`, `1`, `1`    |
+
+- `n` is 1 to 1,000. With more than one value, the first one must be the plain number `n`, and there must be exactly `n` values or a single value for all of them.
+- The **Try a pattern** box of the reference window has no row count, so it always shows the `else` value for `LAST`.
+
 ### GUID(case)
 
 A new random GUID for every row, 36 characters including hyphens.
@@ -310,6 +395,20 @@ The value of another column of the same row. `COLUMN(name)` means the same.
 - The **Try a pattern** box of the reference window has no row, so it shows `COL(Colour)` as `[Colour]`.
 
 To copy another column's value exactly, without a pattern, set the **Generation mode** to **Copy of column** and pick the column in the **Settings** cell.
+
+### Text functions: UPPER, LOWER, LEFT, RIGHT and PAD
+
+These change a piece of text, most usefully the value of `COL(...)` or of another function.
+
+| Function                        | Produces                                                                      | Example (`Colour` is `Red`, `Number` is `42`) |
+| ------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------- |
+| `UPPER(text)`                   | The text in capital letters.                                                  | `UPPER(COL(Colour))` → `RED`                  |
+| `LOWER(text)`                   | The text in small letters.                                                    | `LOWER(COL(Colour))` → `red`                  |
+| `LEFT(text, length)`            | The first `length` characters (all of the text when it is shorter).           | `LEFT(COL(Colour), 2)` → `Re`                 |
+| `RIGHT(text, length)`           | The last `length` characters (all of the text when it is shorter).            | `RIGHT(COL(Colour), 2)` → `ed`                |
+| `PAD(text, length, character)`  | The text with `character` (default `0`) in front until it is `length` long.   | `PAD(COL(Number), 6)` → `000042`              |
+
+`length` is 0 to 1,000 and `character` must be a single character, e.g. `PAD(COL(Number), 6, ' ')`.
 
 ## Column types
 
@@ -350,7 +449,21 @@ When a pattern uses `COL(...)`, or the column uses the **Copy of column** mode, 
 - `SEQ` counts by row number. Row numbers start again for each **row set**, so every row set starts its sequence at `start`.
   To carry on numbering in a second row set, give it a later `start`. For example, if the first set has 10 rows using `SEQ(1-9999)`, use `SEQ(1-9999, start=11)` in the second set.
 - Random parts are picked independently for every row, so the same value can come up more than once.
-  For a primary key or unique column, include a `SEQ(...)` or `GUID()` so every value is different.
+  For a primary key or unique column, include a `SEQ(...)`, `ROW()` or `GUID()` so every value is different.
+- `ROW`, `CYCLE`, `FIRST` and `LAST` also count by row number within the row set. `LAST` uses the row count of the row set
+  (for an update set, the number of rows being changed).
+
+## Finding existing values with a pattern
+
+A pattern can also describe values to *look for*, in the `WHERE` part of a **Value from table** lookup or of an update set,
+e.g. `Shirt.ShirtCode WHERE S THEN (NUM(digits=5) GREATER THAN 50) THEN (1 OR 2)`. The pattern is then turned into a SQL
+condition that matches every value the pattern could produce. See [Steps, update sets and lookups](StepsUpdatesAndLookups.md).
+
+- Only parts whose values can be recognised may be used: text, `OR`, `REPEATED`, `SEQ`, `NUM`, `RAND_NUM` (with comparisons),
+  `RAND_DIGITS`, `RAND_LETTERS`, `RAND_ALPHANUM`, `ONE_OF`, `CYCLE`, `FIRST`, `LAST` and `GUID`. Dates, decimals, `TODAY`, `ROW`, `COL` and
+  the text functions cannot be used, and an error says so.
+- Matching ignores letter case, as SQL Server usually does.
+- A pattern with a very large number of possible shapes (for example many `OR`s inside a `REPEATED`) is reported as too complex; use a `REGEX` or `SQL` filter instead.
 
 ## Limits
 
@@ -360,7 +473,10 @@ When a pattern uses `COL(...)`, or the column uses the **Copy of column** mode, 
 | `RAND_LETTERS`, `RAND_DIGITS`, `RAND_ALPHANUM` length | 0 to 1,000                          |
 | `digits`                                              | 0 to 19                             |
 | `decimals`                                            | 0 to 10                             |
-| Whole numbers in `SEQ` and `RAND_NUM`                 | -10<sup>18</sup> to 10<sup>18</sup> |
+| Whole numbers in `SEQ`, `NUM` and `RAND_NUM`          | -10<sup>18</sup> to 10<sup>18</sup> |
+| `NUM` `digits` without a range                        | 0 to 18                             |
+| `FIRST` and `LAST` row count                          | 1 to 1,000                          |
+| `LEFT`, `RIGHT` and `PAD` length                      | 0 to 1,000                          |
 | One generated value                                   | 100,000 characters                  |
 
 ## Errors
@@ -387,6 +503,8 @@ Common problems:
 | `TODAY('dd/MM/yyyy')`               | The first value is the time, `NOW` or `ANY`. Put the format second, `TODAY(NOW, 'dd/MM/yyyy')`, or name it: `TODAY(format='dd/MM/yyyy')`. |
 | `RAND_NUM(1-RAND_NUM(2, 5))`        | A range cannot contain a function. Write the ends as two arguments: `RAND_NUM(1, RAND_NUM(2, 5))`.                                        |
 | `COL(Colour)` on `Colour` itself    | A column cannot use its own value, and columns cannot use each other in a loop. Pick another column.                                      |
+| `ONE_OF(A, B) GREATER THAN 5`       | Comparisons only follow `NUM(...)` or `RAND_NUM(...)`: `NUM(0, 99) GREATER THAN 5`.                                                        |
+| `LAST(2, 'A', 'B', 'C')`            | Two rows need two values (or one for both): `LAST(2, 'B', 'C')` or `LAST(3, 'A', 'B', 'C')`.                                              |
 
 ## Examples
 
@@ -402,6 +520,10 @@ Common problems:
 | Created today     | `TODAY(ANY)`                                                                       | `2025-03-14 17:03:52`, `2025-03-14 02:18:30` |
 | Due from today    | `RAND_DATE(TODAY(format='yyyy-MM-dd'), '2030-12-31')`                              | `2027-08-19`, `2025-11-02`                   |
 | Based on a column | `COL(Colour) THEN '-' THEN SEQ(1-999)`                                             | `Red-001`, `Blue-002`                        |
+| Short colour code | `UPPER(LEFT(COL(Colour), 3)) + PAD(ROW(), 4)`                                      | `RED0001`, `BLU0002`                         |
+| Rotating sizes    | `CYCLE('S', 'M', 'L')`                                                             | `S`, `M`, `L`, `S`                           |
+| Closing row       | `'Line ' + ROW() + LAST(' (final)')`                                               | `Line 1`, …, `Line 10 (final)`               |
+| Number above 50   | `S THEN (NUM(digits=5) GREATER THAN 50) THEN (1 OR 2)`                             | `S048211`, `S000522`                         |
 | E-mail address    | `RAND_LETTERS(5-8, LOWER) + '.' + RAND_LETTERS(6, LOWER) + '@example.com'`         | `sogxi.blqmdj@example.com`                   |
 | Australian mobile | `'04' FOLLOWED BY RAND_DIGITS(8)`                                                  | `0406793209`, `0465689056`                   |
 | Licence plate     | `RAND_LETTERS(3) + '-' + (RAND_DIGITS(1) OR RAND_LETTERS(1)) REPEATED 3 TIMES`     | `PDS-5E7`, `JZZ-QDN`                         |
@@ -414,7 +536,8 @@ For reference, the full syntax in EBNF. Keywords and function names are case-ins
 pattern       = concatenation ;
 concatenation = choice , { ( "FOLLOWED" , "BY" | "THEN" | "+" ) , choice } ;
 choice        = repetition , { ( "OR" | "|" ) , repetition } ;
-repetition    = primary , { "REPEATED" , count , [ ( "TO" | "-" | ".." ) , count ] , [ "TIMES" ] } ;
+repetition    = comparison , { "REPEATED" , count , [ ( "TO" | "-" | ".." ) , count ] , [ "TIMES" ] } ;
+comparison    = primary , { ( "GREATER" , "THAN" | "LESS" , "THAN" | "AT" , "LEAST" | "AT" , "MOST" ) , [ "-" ] , count } ;  (* after NUM or RAND_NUM only *)
 primary       = quoted-text | number | word | function | "(" , concatenation , ")" ;
 function      = word , "(" , [ argument , { "," , argument } ] , ")" ;
 argument      = [ word , ( "=" | ":" ) ] , value ;

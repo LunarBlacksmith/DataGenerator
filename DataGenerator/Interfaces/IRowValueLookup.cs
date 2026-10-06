@@ -1,4 +1,4 @@
-﻿namespace DataGenerator.Services;
+﻿namespace DataGenerator.Interfaces;
 
 /// <summary>
 /// Gives access to the values already generated for the other columns of the row being built.

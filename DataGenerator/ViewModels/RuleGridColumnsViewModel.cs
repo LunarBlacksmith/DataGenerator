@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using DataGenerator.Infrastructure;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
-using DataGenerator.Services;
 
 namespace DataGenerator.ViewModels;
 
@@ -29,7 +29,7 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 		_dialogService    = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 		_isMenuOpen       = false;
 
-		HashSet<string> hiddenColumns = new HashSet<string>(_preferencesStore.Load().HiddenRuleGridColumns, StringComparer.OrdinalIgnoreCase);
+		HashSet<string> hiddenColumns = new(_preferencesStore.Load().HiddenRuleGridColumns, StringComparer.OrdinalIgnoreCase);
 
 		Keys = CreateOption(
 			KEYS_COLUMN,

@@ -1,4 +1,6 @@
-﻿namespace DataGenerator.Services;
+﻿using DataGenerator.Interfaces;
+
+namespace DataGenerator.Services;
 
 public sealed class PatternCompletionProvider : IPatternCompletionProvider
 {

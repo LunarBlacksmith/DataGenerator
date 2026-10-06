@@ -1,6 +1,6 @@
 ﻿using DataGenerator.Models;
 
-namespace DataGenerator.Services;
+namespace DataGenerator.Interfaces;
 
 public interface IPostGenerationSqlParser
 {

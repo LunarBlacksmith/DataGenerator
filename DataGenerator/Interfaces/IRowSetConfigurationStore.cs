@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using DataGenerator.Models;
 
-namespace DataGenerator.Services;
+namespace DataGenerator.Interfaces;
 
 /// <summary>
 /// Reads and writes saved set configurations: the user's own list and files exported to share with others.

@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text;
 using DataGenerator.Infrastructure;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 using DataGenerator.Services;
 
@@ -19,6 +20,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	private static readonly CultureInfo INVARIANT = CultureInfo.InvariantCulture;
 
 	private readonly ColumnRuleServices _services;
+	private readonly bool               _isUpdate;
 
 	private ValueGenerationMode               _generationMode;
 	private string                            _fixedValue        = string.Empty;
@@ -27,7 +29,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	private string                            _regexPattern      = string.Empty;
 	private string                            _patternExpression = string.Empty;
 	private string                            _sourceColumnName  = string.Empty;
+	private string                            _lookupExpression  = string.Empty;
+	private ColumnLookup?                     _lookup;
+	private LookupBuilderViewModel?           _lookupBuilder;
+	private bool                              _isLookupBuilderOpen;
 	private IReadOnlyList<ColumnRuleViewModel> _siblingRules       = [];
+	private Func<int>?                        _rowCountProvider;
 	private bool                              _isGeneratingSample;
 	private string?                           _previewText;
 	private bool                              _previewIsError;
@@ -36,17 +43,21 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	private bool                              _isSavedSettingsMenuOpen;
 	private IReadOnlyList<SavedSettingOption> _savedSettingOptions = [];
 
+	/// <param name="isUpdate">Whether the rule belongs to an update set, which changes rows that are already in the table.</param>
 	public ColumnRuleViewModel(
-		string             tableName,
+		TableModel         table,
 		ColumnModel        column,
 		ForeignKeyModel?   reference,
 		bool               isSelfReference,
+		bool               isUpdate,
 		ColumnRuleServices services
 	)
 	{
-		TableName       = tableName ?? throw new ArgumentNullException(nameof(tableName));
+		Table           = table ?? throw new ArgumentNullException(nameof(table));
+		TableName       = table.DisplayName;
 		Column          = column ?? throw new ArgumentNullException(nameof(column));
 		_services       = services ?? throw new ArgumentNullException(nameof(services));
+		_isUpdate       = isUpdate;
 		Reference       = reference;
 		IsSelfReference = isSelfReference;
 		Category        = _services.Converter.GetCategory(column);
@@ -59,6 +70,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		SaveSettingsCommand        = new RelayCommand(_ => SaveSettings(), _ => CanChangeMode && !HasErrors);
 		ApplySavedSettingCommand   = new RelayCommand(ApplySavedSetting);
 		ManageSavedSettingsCommand = new RelayCommand(_ => ManageSavedSettings());
+		ApplyLookupBuilderCommand  = new RelayCommand(_ => ApplyLookupBuilder(), _ => _lookupBuilder?.CanApply == true);
 
 		Validate();
 	}
@@ -68,10 +80,14 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	/// </summary>
 	public event EventHandler? SettingsChanged;
 
+	public TableModel Table { get; }
+
 	/// <summary>
 	/// The schema.table the column belongs to.
 	/// </summary>
 	public string TableName { get; }
+
+	public bool IsUpdate => _isUpdate;
 
 	public ColumnModel                         Column              { get; }
 	public ForeignKeyModel?                    Reference           { get; }
@@ -84,6 +100,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	public RelayCommand SaveSettingsCommand        { get; }
 	public RelayCommand ApplySavedSettingCommand   { get; }
 	public RelayCommand ManageSavedSettingsCommand { get; }
+	public RelayCommand ApplyLookupBuilderCommand  { get; }
 
 	public string Name              => Column.Name;
 	public string SqlTypeDisplay    => _services.Converter.GetDisplayType(Column);
@@ -220,6 +237,52 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
+	/// The column whose values the Value from table mode uses, e.g. dbo.Shirt.ShirtID UNIQUE FROM GENERATED.
+	/// </summary>
+	public string LookupExpression
+	{
+		get => _lookupExpression;
+		set
+		{
+			if (SetProperty(ref _lookupExpression, value ?? string.Empty))
+			{
+				OnSettingsChanged();
+			}
+		}
+	}
+
+	/// <summary>
+	/// The pop-up that builds <see cref="LookupExpression"/> from lists of the loaded tables and columns.
+	/// </summary>
+	public LookupBuilderViewModel? LookupBuilder
+	{
+		get => _lookupBuilder;
+		private set => SetProperty(ref _lookupBuilder, value);
+	}
+
+	public bool IsLookupBuilderOpen
+	{
+		get => _isLookupBuilderOpen;
+		set
+		{
+			if (value && !_isLookupBuilderOpen)
+			{
+				LookupBuilder = new LookupBuilderViewModel(
+					_services.TableCatalog.Tables,
+					Table,
+					Column,
+					_lookup,
+					_services.LookupParser,
+					ApplyLookupBuilderCommand.NotifyCanExecuteChanged
+				);
+				ApplyLookupBuilderCommand.NotifyCanExecuteChanged();
+			}
+
+			_ = SetProperty(ref _isLookupBuilderOpen, value);
+		}
+	}
+
+	/// <summary>
 	/// The other columns of the row set, which the Copy of column mode can copy.
 	/// </summary>
 	public IReadOnlyList<string> CopySourceOptions
@@ -240,6 +303,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		ValueGenerationMode.Null                => "NULL in every row",
 		ValueGenerationMode.GeneratedForeignKey => $"Random key of the {DescribeReferencedTable()} rows generated in this run",
 		ValueGenerationMode.ExistingForeignKey  => $"Random key that already exists in {DescribeReferencedTable()}",
+		ValueGenerationMode.KeepCurrent         => DescribeKeptValue(),
 		_                                       => string.Empty
 	};
 
@@ -263,12 +327,13 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	/// </summary>
 	public string? ValidationError => _generationMode switch
 	{
-		ValueGenerationMode.Fixed      => GetError(nameof(FixedValue)),
-		ValueGenerationMode.Sequence   => GetError(nameof(SequenceStartText)) ?? GetError(nameof(SequenceStepText)),
-		ValueGenerationMode.Regex      => GetError(nameof(RegexPattern)),
-		ValueGenerationMode.Pattern    => GetError(nameof(PatternExpression)),
-		ValueGenerationMode.CopyColumn => GetError(nameof(SourceColumnName)),
-		_                              => null
+		ValueGenerationMode.Fixed       => GetError(nameof(FixedValue)),
+		ValueGenerationMode.Sequence    => GetError(nameof(SequenceStartText)) ?? GetError(nameof(SequenceStepText)),
+		ValueGenerationMode.Regex       => GetError(nameof(RegexPattern)),
+		ValueGenerationMode.Pattern     => GetError(nameof(PatternExpression)),
+		ValueGenerationMode.CopyColumn  => GetError(nameof(SourceColumnName)),
+		ValueGenerationMode.TableLookup => GetError(nameof(LookupExpression)),
+		_                               => null
 	};
 
 	/// <summary>
@@ -337,7 +402,8 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		or ValueGenerationMode.Sequence
 		or ValueGenerationMode.Regex
 		or ValueGenerationMode.Pattern
-		or ValueGenerationMode.CopyColumn;
+		or ValueGenerationMode.CopyColumn
+		or ValueGenerationMode.TableLookup;
 
 	/// <summary>
 	/// Why the column cannot use a mode, or <see langword="null"/> when it can.
@@ -351,11 +417,16 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 		if (!CanChangeMode)
 		{
-			return $"{DescribeDatabaseGeneratedValue()}, so its mode cannot be changed";
+			return _isUpdate && !IsGeneratedOnlyBySqlServer()
+				? "it is part of the primary key, which update sets do not change"
+				: $"{DescribeDatabaseGeneratedValue()}, so its mode cannot be changed";
 		}
 
 		return mode switch
 		{
+			ValueGenerationMode.KeepCurrent         => "only update sets can keep the current value",
+			ValueGenerationMode.DatabaseGenerated when _isUpdate
+			                                        => "update sets cannot ask SQL Server for a value",
 			ValueGenerationMode.Null                => "it does not allow NULL",
 			ValueGenerationMode.ExistingForeignKey  => "it does not refer to another table",
 			ValueGenerationMode.GeneratedForeignKey => Reference is null
@@ -368,7 +439,8 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 	/// <summary>
 	/// Puts a value into the Settings cell of the current mode: the fixed value, the regular expression, the pattern, the
-	/// copied column, or the sequence start (optionally followed by a semicolon and the step, e.g. 100; 5). When the
+	/// copied column, the table column (Value from table), or the sequence start (optionally followed by a semicolon and
+	/// the step, e.g. 100; 5). When the
 	/// value is not valid for the column, its settings are put back as they were and the problem is returned.
 	/// </summary>
 	public bool TrySetSettingValue(string value, out string? problem)
@@ -387,10 +459,13 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		switch (_generationMode)
 		{
 			case ValueGenerationMode.Fixed:
+			{
 				FixedValue = value;
 				break;
+			}
 
 			case ValueGenerationMode.Sequence:
+			{
 				string[] parts = value.Split(SEQUENCE_SEPARATOR, 2);
 
 				SequenceStartText = parts[0].Trim();
@@ -401,18 +476,31 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 				}
 
 				break;
+			}
 
 			case ValueGenerationMode.Regex:
+			{
 				RegexPattern = value;
 				break;
+			}
 
 			case ValueGenerationMode.Pattern:
+			{
 				PatternExpression = value;
 				break;
+			}
 
 			case ValueGenerationMode.CopyColumn:
+			{
 				SourceColumnName = FindSiblingRule(value)?.Name ?? value.Trim();
 				break;
+			}
+
+			case ValueGenerationMode.TableLookup:
+			{
+				LookupExpression = value.Trim();
+				break;
+			}
 		}
 
 		problem = ValidationError;
@@ -479,25 +567,41 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			switch (setting.GenerationMode)
 			{
 				case ValueGenerationMode.Fixed:
+				{
 					FixedValue = setting.FixedValue;
 					break;
+				}
 
 				case ValueGenerationMode.Sequence:
+				{
 					SequenceStartText = setting.SequenceStart;
 					SequenceStepText  = setting.SequenceStep;
 					break;
+				}
 
 				case ValueGenerationMode.Regex:
+				{
 					RegexPattern = setting.RegexPattern;
 					break;
+				}
 
 				case ValueGenerationMode.Pattern:
+				{
 					PatternExpression = setting.PatternExpression;
 					break;
+				}
 
 				case ValueGenerationMode.CopyColumn:
+				{
 					SourceColumnName = setting.SourceColumnName;
 					break;
+				}
+
+				case ValueGenerationMode.TableLookup:
+				{
+					LookupExpression = setting.LookupExpression;
+					break;
+				}
 			}
 
 			GenerationMode = setting.GenerationMode;
@@ -550,6 +654,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		RegexPattern      = _generationMode == ValueGenerationMode.Regex ? _regexPattern : string.Empty,
 		PatternExpression = _generationMode == ValueGenerationMode.Pattern ? _patternExpression : string.Empty,
 		SourceColumnName  = _generationMode == ValueGenerationMode.CopyColumn ? _sourceColumnName.Trim() : string.Empty,
+		LookupExpression  = _generationMode == ValueGenerationMode.TableLookup ? _lookupExpression.Trim() : string.Empty,
 		TableName         = TableName,
 		ColumnName        = Column.Name
 	};
@@ -564,6 +669,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		RegexPattern      = source.RegexPattern;
 		PatternExpression = source.PatternExpression;
 		SourceColumnName  = source.SourceColumnName;
+		LookupExpression  = source.LookupExpression;
 		GenerationMode    = source.GenerationMode;
 
 		AppliedSettingName = source.AppliedSettingName;
@@ -586,15 +692,19 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		RegexPattern      = _regexPattern,
 		PatternExpression = _patternExpression,
 		SourceColumnName  = _sourceColumnName.Trim(),
+		LookupExpression  = _lookupExpression.Trim(),
+		Lookup            = _generationMode == ValueGenerationMode.TableLookup ? _lookup : null,
 		Reference         = Reference
 	};
 
 	/// <summary>
-	/// Gives the rule access to the other columns of its row set, for the Copy of column mode and COL(...) in patterns.
+	/// Gives the rule access to the other columns of its row set, for the Copy of column mode and COL(...) in patterns,
+	/// and to its row count, for LAST(...) in patterns.
 	/// </summary>
-	public void AttachToRowSet(IReadOnlyList<ColumnRuleViewModel> rowSetRules)
+	public void AttachToRowSet(IReadOnlyList<ColumnRuleViewModel> rowSetRules, Func<int> rowCountProvider)
 	{
-		_siblingRules = rowSetRules ?? throw new ArgumentNullException(nameof(rowSetRules));
+		_siblingRules     = rowSetRules ?? throw new ArgumentNullException(nameof(rowSetRules));
+		_rowCountProvider = rowCountProvider ?? throw new ArgumentNullException(nameof(rowCountProvider));
 		OnPropertyChanged(nameof(CopySourceOptions));
 		Validate();
 		RefreshPreview();
@@ -643,7 +753,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	{
 		IsSavedSettingsMenuOpen = false;
 
-		SaveColumnSettingViewModel dialog = new SaveColumnSettingViewModel(CaptureSetting(), _services.SavedSettings, _appliedSettingName);
+		SaveColumnSettingViewModel dialog = new(CaptureSetting(), _services.SavedSettings, _appliedSettingName);
 
 		if (_services.SavedSettingsWindows.ShowSaveDialog(dialog))
 		{
@@ -679,6 +789,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		RegexPattern      = _regexPattern,
 		PatternExpression = _patternExpression,
 		SourceColumnName  = _sourceColumnName,
+		LookupExpression  = _lookupExpression,
 		TableName         = TableName,
 		ColumnName        = Column.Name
 	};
@@ -695,6 +806,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			RegexPattern      = values.RegexPattern;
 			PatternExpression = values.PatternExpression;
 			SourceColumnName  = values.SourceColumnName;
+			LookupExpression  = values.LookupExpression;
 			GenerationMode    = values.GenerationMode;
 		}
 		finally
@@ -711,7 +823,46 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		SetError(nameof(RegexPattern), _generationMode == ValueGenerationMode.Regex ? ValidateRegexPattern() : null);
 		SetError(nameof(PatternExpression), _generationMode == ValueGenerationMode.Pattern ? ValidatePatternExpression() : null);
 		SetError(nameof(SourceColumnName), _generationMode == ValueGenerationMode.CopyColumn ? ValidateSourceColumn() : null);
+		SetError(nameof(LookupExpression), _generationMode == ValueGenerationMode.TableLookup ? ValidateLookupExpression() : null);
 		OnPropertyChanged(nameof(ValidationError));
+	}
+
+	private string? ValidateLookupExpression()
+	{
+		_lookup = null;
+
+		if (!_services.LookupParser.TryParse(_lookupExpression, Table, out ColumnLookup? lookup, out string errorMessage))
+		{
+			return errorMessage;
+		}
+
+		if (_services.Converter.GetCategory(lookup!.SourceColumn) is SqlTypeCategory.Unsupported or SqlTypeCategory.RowVersion)
+		{
+			return $"The values of {lookup.SourceDisplayName} ({_services.Converter.GetDisplayType(lookup.SourceColumn)}) cannot be copied. Choose another column.";
+		}
+
+		if (	lookup.IsUnique
+				&& ReferenceEquals(lookup.SourceTable, Table)
+				&& string.Equals(lookup.SourceColumn.Name, Column.Name, StringComparison.OrdinalIgnoreCase)
+		)
+		{
+			return "UNIQUE leaves out the values the column already has, so a column cannot take unique values from itself. "
+				+ "Remove UNIQUE or choose another column.";
+		}
+
+		_lookup = lookup;
+		return null;
+	}
+
+	private void ApplyLookupBuilder()
+	{
+		if (_lookupBuilder?.CanApply != true)
+		{
+			return;
+		}
+
+		LookupExpression    = _lookupBuilder.Expression;
+		IsLookupBuilderOpen = false;
 	}
 
 	private string? ValidateSourceColumn()
@@ -738,6 +889,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			if (ReferenceEquals(referencedRule, this))
 			{
 				return "A column cannot use its own value. Choose another column.";
+			}
+
+			if (referencedRule.GenerationMode == ValueGenerationMode.KeepCurrent)
+			{
+				return $"[{referencedRule.Name}] keeps its current value, which is not known when the new values are generated. "
+					+ $"Choose another column, or give [{referencedRule.Name}] a new value.";
 			}
 
 			if (referencedRule.GenerationMode == ValueGenerationMode.DatabaseGenerated)
@@ -817,14 +974,25 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		switch (_generationMode)
 		{
 			case ValueGenerationMode.DatabaseGenerated:
+			{
 				return "(set by SQL Server)";
+			}
 
 			case ValueGenerationMode.Null:
+			{
 				return "NULL";
+			}
 
 			case ValueGenerationMode.GeneratedForeignKey:
 			case ValueGenerationMode.ExistingForeignKey:
+			{
 				return $"(keys of {DescribeReferencedTable()})";
+			}
+
+			case ValueGenerationMode.KeepCurrent:
+			{
+				return "(current value)";
+			}
 		}
 
 		string? validationError = ValidationError;
@@ -835,8 +1003,13 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			return validationError;
 		}
 
+		if (_generationMode == ValueGenerationMode.TableLookup && _lookup is not null)
+		{
+			return $"({(_lookup.IsUnique ? "unique values" : "values")} of {_lookup.SourceDisplayName}, chosen while generating)";
+		}
+
 		int          sampleCount = _generationMode == ValueGenerationMode.Fixed ? 1 : PREVIEW_SAMPLE_COUNT;
-		List<string> samples     = new List<string>(sampleCount);
+		List<string> samples     = new(sampleCount);
 
 		for (int rowIndex = 0; rowIndex < sampleCount; ++rowIndex)
 		{
@@ -898,7 +1071,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 		try
 		{
-			return _services.ValueGenerator.Generate(CreateRule(), rowIndex, new SampleRowValues(this, rowIndex));
+			return _services.ValueGenerator.Generate(
+				CreateRule(),
+				rowIndex,
+				_rowCountProvider?.Invoke() ?? PREVIEW_SAMPLE_COUNT,
+				new SampleRowValues(this, rowIndex)
+			);
 		}
 		finally
 		{
@@ -912,10 +1090,24 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		{
 			case ValueGenerationMode.GeneratedForeignKey:
 			case ValueGenerationMode.ExistingForeignKey:
+			{
 				throw new SampleUnavailableException($"(uses the key in [{Name}], chosen while generating)");
+			}
 
 			case ValueGenerationMode.DatabaseGenerated:
+			{
 				throw new SampleUnavailableException($"(uses [{Name}], set by SQL Server)");
+			}
+
+			case ValueGenerationMode.TableLookup:
+			{
+				throw new SampleUnavailableException($"(uses the value in [{Name}], chosen while generating)");
+			}
+
+			case ValueGenerationMode.KeepCurrent:
+			{
+				throw new SampleUnavailableException($"(uses the current value of [{Name}])");
+			}
 		}
 
 		try
@@ -930,12 +1122,22 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 	private List<GenerationModeOption> CreateAvailableModes()
 	{
+		if (_isUpdate && (IsGeneratedOnlyBySqlServer() || Column.IsPrimaryKey))
+		{
+			return [GenerationModeOption.Get(ValueGenerationMode.KeepCurrent)];
+		}
+
 		if (IsGeneratedOnlyBySqlServer())
 		{
 			return [GenerationModeOption.Get(ValueGenerationMode.DatabaseGenerated)];
 		}
 
 		HashSet<ValueGenerationMode> modes = [ValueGenerationMode.Fixed];
+
+		if (_isUpdate)
+		{
+			_ = modes.Add(ValueGenerationMode.KeepCurrent);
+		}
 
 		if (Category != SqlTypeCategory.Unsupported)
 		{
@@ -956,20 +1158,22 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		if (Category != SqlTypeCategory.Unsupported)
 		{
 			_ = modes.Add(ValueGenerationMode.CopyColumn);
+			_ = modes.Add(ValueGenerationMode.TableLookup);
 		}
 
 		if (Reference is not null)
 		{
 			_ = modes.Add(ValueGenerationMode.ExistingForeignKey);
 
-			// A table cannot take keys from its own rows while they are being inserted.
-			if (!IsSelfReference)
+			// A table cannot take keys from its own rows while they are being inserted, but it can once they are in.
+			if (!IsSelfReference || _isUpdate)
 			{
 				_ = modes.Add(ValueGenerationMode.GeneratedForeignKey);
 			}
 		}
 
-		if (Column.HasDefault)
+		// UPDATE has no column to leave out, so SQL Server cannot supply the value.
+		if (Column.HasDefault && !_isUpdate)
 		{
 			_ = modes.Add(ValueGenerationMode.DatabaseGenerated);
 		}
@@ -984,6 +1188,11 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 	private ValueGenerationMode GetDefaultMode()
 	{
+		if (_isUpdate)
+		{
+			return ValueGenerationMode.KeepCurrent;
+		}
+
 		if (IsGeneratedOnlyBySqlServer())
 		{
 			return ValueGenerationMode.DatabaseGenerated;
@@ -1031,6 +1240,18 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			: "SQL Server uses the column's default value";
 	}
 
+	private string DescribeKeptValue()
+	{
+		if (!_isUpdate || CanChangeMode)
+		{
+			return "Not changed: the row keeps its current value";
+		}
+
+		return IsGeneratedOnlyBySqlServer()
+			? $"Not changed ({DescribeDatabaseGeneratedValue()})"
+			: "Not changed: update sets find their rows by the primary key, so it keeps its value";
+	}
+
 	private string DescribeReferencedTable()
 		=> Reference is null
 			? "the referenced table"
@@ -1038,7 +1259,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 	private string BuildColumnDescription()
 	{
-		StringBuilder builder = new StringBuilder();
+		StringBuilder builder = new();
 
 		_ = builder.Append($"[{Column.Name}]  {SqlTypeDisplay}, {(Column.IsNullable ? "allows NULL" : "NOT NULL")}");
 
@@ -1072,7 +1293,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		}
 		else if (Column.IsForeignTableKey)
 		{
-			_ = builder.AppendLine().Append("Name ends with FTK, but no matching …PK column was found in another table of this database");
+			_ = builder.AppendLine().Append("Name ends with FTK, but no matching key column (…PK, …TK or …_tk) was found in another table of this database");
 		}
 
 		return builder.ToString();

@@ -1,4 +1,4 @@
-﻿namespace DataGenerator.Services;
+﻿namespace DataGenerator.Interfaces;
 
 /// <summary>
 /// Generates text from the plain-English pattern language, for example
@@ -17,7 +17,8 @@ public interface IPatternValueGenerator
 	/// Generates a value whose COL(name) calls are answered by <paramref name="columnValues"/>, which returns the
 	/// value of another column of the same row as text.
 	/// </summary>
-	string Generate(string expression, long rowIndex, Func<string, string>? columnValues);
+	/// <param name="rowCount">The number of rows in the row set, used by LAST(...); <see langword="null"/> when unknown.</param>
+	string Generate(string expression, long rowIndex, long? rowCount, Func<string, string>? columnValues);
 
 	/// <summary>
 	/// The names of the columns used with COL(...) in the expression, or none when the expression is invalid.

@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using DataGenerator.Interfaces;
 using DataGenerator.ViewModels;
 using DataGenerator.Views;
 

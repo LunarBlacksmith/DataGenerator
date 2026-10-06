@@ -21,7 +21,7 @@ public sealed class ForeignKeyModel
 	public required string ReferencedColumn   { get; init; }
 
 	/// <summary>
-	/// True when the relationship was inferred from the "...FTK" / "...PK" column naming convention
+	/// True when the relationship was inferred from the "...FTK" / "...PK", "...TK" or "..._tk" column naming convention
 	/// instead of being declared as a foreign key constraint in SQL Server.
 	/// </summary>
 	public bool IsInferred                    { get; init; }

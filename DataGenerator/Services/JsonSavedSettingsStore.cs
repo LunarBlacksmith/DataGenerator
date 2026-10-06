@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 
 namespace DataGenerator.Services;
@@ -84,7 +85,7 @@ public sealed class JsonSavedSettingsStore : ISavedSettingsStore
 			);
 		}
 
-		List<SavedColumnSetting> settings = new List<SavedColumnSetting>(document.Settings.Count);
+		List<SavedColumnSetting> settings = new(document.Settings.Count);
 
 		for (int index = 0; index < document.Settings.Count; ++index)
 		{

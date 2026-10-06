@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 
 namespace DataGenerator.Services.Generation;
@@ -51,7 +52,7 @@ internal sealed class ExistingKeyPool
 		ISqlValueConverter         converter
 	)
 	{
-		StringBuilder builder = new StringBuilder(reference.ReferencedTableKey);
+		StringBuilder builder = new(reference.ReferencedTableKey);
 
 		for (int index = 0; index < referencedColumns.Count; ++index)
 		{

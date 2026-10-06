@@ -1,6 +1,6 @@
 ﻿using DataGenerator.ViewModels;
 
-namespace DataGenerator.Services;
+namespace DataGenerator.Interfaces;
 
 /// <summary>
 /// Opens the dialogs for saving and managing saved column settings.

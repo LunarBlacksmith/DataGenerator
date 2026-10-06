@@ -8,15 +8,22 @@ internal sealed class PatternContext
 
 	private readonly Func<string, string>? _columnValues;
 
-	public PatternContext(long rowIndex, Random random, TimeProvider timeProvider, Func<string, string>? columnValues = null)
+	public PatternContext(long rowIndex, long? rowCount, Random random, TimeProvider timeProvider, Func<string, string>? columnValues = null)
 	{
 		RowIndex      = rowIndex;
+		RowCount      = rowCount;
 		Random        = random;
 		TimeProvider  = timeProvider;
 		_columnValues = columnValues;
 	}
 
 	public long         RowIndex     { get; }
+
+	/// <summary>
+	/// The number of rows in the row set, or <see langword="null"/> when unknown (e.g. in the pattern reference window).
+	/// LAST(...) only knows which rows are the last ones when the count is known.
+	/// </summary>
+	public long?        RowCount     { get; }
 	public Random       Random       { get; }
 	public TimeProvider TimeProvider { get; }
 
@@ -51,7 +58,28 @@ internal sealed class PatternContext
 
 internal abstract class PatternNode
 {
+	/// <summary>
+	/// The function that created the node, e.g. "RAND_DATE", used in error messages.
+	/// </summary>
+	public string FunctionName { get; set; } = string.Empty;
+
 	public abstract void Append(StringBuilder builder, PatternContext context);
+
+	/// <summary>
+	/// Every shape of value the node can produce, used to recognise matching values that already exist in a table
+	/// (see <see cref="PatternSqlTranslator"/>). Throws <see cref="PatternSyntaxException"/> when the node's values
+	/// cannot be recognised, e.g. random dates.
+	/// </summary>
+	public virtual PatternTemplateSet ExpandTemplates()
+	{
+		string description = FunctionName.Length == 0 ? "This part of the pattern" : $"{FunctionName}(...)";
+
+		throw new PatternSyntaxException(
+			$"{description} cannot be used to find existing values. Patterns that find values may use text, OR, REPEATED, "
+			+ $"SEQ, NUM, RAND_NUM, RAND_DIGITS, RAND_LETTERS, RAND_ALPHANUM, ONE_OF, CYCLE, FIRST, LAST and GUID.",
+			1
+		);
+	}
 
 	/// <summary>
 	/// Adds the names of the columns the node takes values from with COL(...).
@@ -71,6 +99,8 @@ internal sealed class LiteralPatternNode : PatternNode
 	}
 
 	public override void Append(StringBuilder builder, PatternContext context) => _ = builder.Append(_text);
+
+	public override PatternTemplateSet ExpandTemplates() => PatternTemplateSet.FromLiteral(_text);
 }
 
 internal sealed class ConcatenationPatternNode : PatternNode
@@ -97,6 +127,18 @@ internal sealed class ConcatenationPatternNode : PatternNode
 			part.CollectColumnReferences(columnNames);
 		}
 	}
+
+	public override PatternTemplateSet ExpandTemplates()
+	{
+		PatternTemplateSet result = PatternTemplateSet.EMPTY_TEXT;
+
+		foreach (PatternNode part in _parts)
+		{
+			result = result.Then(part.ExpandTemplates());
+		}
+
+		return result;
+	}
 }
 
 internal sealed class ChoicePatternNode : PatternNode
@@ -118,6 +160,9 @@ internal sealed class ChoicePatternNode : PatternNode
 			option.CollectColumnReferences(columnNames);
 		}
 	}
+
+	public override PatternTemplateSet ExpandTemplates()
+		=> PatternTemplateSet.Union([.. _options.Select(option => option.ExpandTemplates())]);
 }
 
 internal sealed class RepetitionPatternNode : PatternNode
@@ -145,4 +190,26 @@ internal sealed class RepetitionPatternNode : PatternNode
 	}
 
 	public override void CollectColumnReferences(ICollection<string> columnNames) => _node.CollectColumnReferences(columnNames);
+
+	public override PatternTemplateSet ExpandTemplates()
+	{
+		PatternTemplateSet       single   = _node.ExpandTemplates();
+		PatternTemplateSet       repeated = PatternTemplateSet.EMPTY_TEXT;
+		List<PatternTemplateSet> counts   = [];
+
+		for (int count = 0; count <= _maximumCount; ++count)
+		{
+			if (count >= _minimumCount)
+			{
+				counts.Add(repeated);
+			}
+
+			if (count < _maximumCount)
+			{
+				repeated = repeated.Then(single);
+			}
+		}
+
+		return PatternTemplateSet.Union(counts);
+	}
 }

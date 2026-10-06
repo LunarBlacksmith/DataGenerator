@@ -12,8 +12,9 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 {
 	public const int DEFAULT_ROW_COUNT = 10;
 
-	private const string ROW_SET_NAME_PREFIX = "Set ";
-	private const string COPY_SUFFIX         = " (copy)";
+	private const string ROW_SET_NAME_PREFIX    = "Set ";
+	private const string UPDATE_SET_NAME_PREFIX = "Update ";
+	private const string COPY_SUFFIX            = " (copy)";
 
 	private readonly ColumnRuleFactory _ruleFactory;
 
@@ -76,7 +77,7 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	}
 
 	/// <summary>
-	/// Rows to generate. With several row sets this is their (read-only) total.
+	/// Rows to generate. With several row sets (or an update set) this is the (read-only) total of the insert sets.
 	/// Editing it also includes the table, because a row count only matters for included tables.
 	/// </summary>
 	public int RowCount
@@ -84,7 +85,7 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		get => RowSets.Count switch
 		{
 			0 => _pendingRowCount,
-			1 => RowSets[0].RowCount,
+			1 => CanEditRowCount ? RowSets[0].RowCount : TotalRowCount,
 			_ => TotalRowCount
 		};
 		set
@@ -99,22 +100,34 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		}
 	}
 
+	/// <summary>
+	/// New rows the insert sets generate. Update sets change existing rows, so they do not add to it.
+	/// </summary>
 	public int TotalRowCount
 		=> RowSets.Count == 0
 			? _pendingRowCount
-			: RowSets.Sum(rowSet => rowSet.RowCount);
+			: RowSets.Where(rowSet => !rowSet.IsUpdate).Sum(rowSet => rowSet.RowCount);
 
-	public bool CanEditRowCount    => RowSets.Count <= 1;
+	public int  UpdateSetCount     => RowSets.Count(rowSet => rowSet.IsUpdate);
+	public bool HasUpdateSets      => RowSets.Any(rowSet => rowSet.IsUpdate);
+	public bool CanEditRowCount    => RowSets.Count == 0 || (RowSets.Count == 1 && !RowSets[0].IsUpdate);
 	public bool HasMultipleRowSets => RowSets.Count > 1;
+	public bool HasRowSetSummary   => HasMultipleRowSets || HasUpdateSets;
 	public bool CanRemoveRowSet    => RowSets.Count > 1 && _selectedRowSet is not null;
 	public int  ColumnCount        => Model.Columns.Count;
 
-	public string RowSetSummary => HasMultipleRowSets ? $"{RowSets.Count} sets" : string.Empty;
+	public string RowSetSummary
+		=> !HasRowSetSummary
+			? string.Empty
+			: UpdateSetCount == 0
+				? $"{RowSets.Count} sets"
+				: $"{RowSets.Count} {(RowSets.Count == 1 ? "set" : "sets")}, {UpdateSetCount} update";
 
 	public string RowCountToolTip
-		=> HasMultipleRowSets
-			? $"Total rows of the {RowSets.Count} row sets. Edit each set's row count in the column rules panel."
-			: "Number of rows to generate for this table (1 to 1,000,000). Changing it also includes the table.";
+		=> CanEditRowCount
+			? "Number of rows to generate for this table (1 to 1,000,000). Changing it also includes the table."
+			: $"New rows of the {RowSets.Count - UpdateSetCount} insert set(s); update sets change existing rows instead. "
+				+ "Edit each set's row count in the column rules panel.";
 
 	public int InvalidRowSetCount => RowSets.Count(rowSet => !rowSet.IsValid);
 
@@ -137,7 +150,26 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	{
 		EnsureRowSets();
 
-		RowSetViewModel rowSet = new RowSetViewModel(GetNextRowSetName(), DEFAULT_ROW_COUNT, _ruleFactory.CreateRules(Model));
+		RowSetViewModel rowSet = new(GetNextRowSetName(), DEFAULT_ROW_COUNT, _ruleFactory.CreateRules(Model));
+
+		AddRowSetCore(rowSet);
+		return rowSet;
+	}
+
+	/// <summary>
+	/// Adds a set that changes rows already in the table (or inserted by an earlier step). It runs in step 2 by default,
+	/// after the insert sets of step 1.
+	/// </summary>
+	public RowSetViewModel AddUpdateSet()
+	{
+		EnsureRowSets();
+
+		RowSetViewModel rowSet = new(
+			GetNextRowSetName(UPDATE_SET_NAME_PREFIX),
+			DEFAULT_ROW_COUNT,
+			_ruleFactory.CreateRules(Model, isUpdate: true),
+			RowSetAction.Update
+		);
 
 		AddRowSetCore(rowSet);
 		return rowSet;
@@ -147,15 +179,21 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	{
 		ArgumentNullException.ThrowIfNull(source);
 
-		IReadOnlyList<ColumnRuleViewModel> rules = _ruleFactory.CreateRules(Model);
+		IReadOnlyList<ColumnRuleViewModel> rules = _ruleFactory.CreateRules(Model, source.IsUpdate);
 
 		for (int index = 0; index < rules.Count; ++index)
 		{
 			rules[index].CopyFrom(source.ColumnRules[index]);
 		}
 
-		RowSetViewModel rowSet = new RowSetViewModel(GetUniqueName(source.Name.Trim() + COPY_SUFFIX), source.RowCount, rules);
+		RowSetViewModel rowSet = new(
+			GetUniqueName(source.Name.Trim() + COPY_SUFFIX),
+			source.RowCount,
+			rules,
+			source.Action
+		);
 
+		rowSet.CopySettingsFrom(source);
 		AddRowSetCore(rowSet);
 		return rowSet;
 	}
@@ -192,7 +230,7 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 			return;
 		}
 
-		foreach (RowSetViewModel rowSet in RowSets)
+		foreach (RowSetViewModel rowSet in RowSets.Where(rowSet => !rowSet.IsUpdate))
 		{
 			rowSet.RowCount = clampedRowCount;
 		}
@@ -222,6 +260,9 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	{
 		OnPropertyChanged(nameof(CanEditRowCount));
 		OnPropertyChanged(nameof(HasMultipleRowSets));
+		OnPropertyChanged(nameof(HasUpdateSets));
+		OnPropertyChanged(nameof(UpdateSetCount));
+		OnPropertyChanged(nameof(HasRowSetSummary));
 		OnPropertyChanged(nameof(CanRemoveRowSet));
 		OnPropertyChanged(nameof(RowSetSummary));
 		OnPropertyChanged(nameof(RowCountToolTip));
@@ -242,16 +283,16 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 
 	private void RaiseGenerationSettingsChanged() => GenerationSettingsChanged?.Invoke(this, EventArgs.Empty);
 
-	private string GetNextRowSetName()
+	private string GetNextRowSetName(string prefix = ROW_SET_NAME_PREFIX)
 	{
-		int number = RowSets.Count + 1;
+		int number = RowSets.Count(rowSet => rowSet.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) + 1;
 
-		while (RowSets.Any(rowSet => string.Equals(rowSet.Name.Trim(), ROW_SET_NAME_PREFIX + number, StringComparison.OrdinalIgnoreCase)))
+		while (RowSets.Any(rowSet => string.Equals(rowSet.Name.Trim(), prefix + number, StringComparison.OrdinalIgnoreCase)))
 		{
 			++number;
 		}
 
-		return ROW_SET_NAME_PREFIX + number;
+		return prefix + number;
 	}
 
 	private string GetUniqueName(string baseName)
@@ -270,7 +311,7 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 
 	private string BuildToolTipText()
 	{
-		StringBuilder builder          = new StringBuilder();
+		StringBuilder builder          = new();
 		int           primaryKeyCount  = Model.Columns.Count(column => column.IsPrimaryKey);
 		int           declaredKeyCount = Model.ForeignKeys.Count(foreignKey => !foreignKey.IsInferred);
 		int           inferredKeyCount = Model.ForeignKeys.Count(foreignKey => foreignKey.IsInferred);

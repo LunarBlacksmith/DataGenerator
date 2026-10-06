@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 
 namespace DataGenerator.Services;
@@ -57,7 +58,7 @@ public sealed class JsonRowSetConfigurationStore : IRowSetConfigurationStore
 			);
 		}
 
-		List<SavedRowSetConfiguration> configurations = new List<SavedRowSetConfiguration>(document.SetConfigurations.Count);
+		List<SavedRowSetConfiguration> configurations = new(document.SetConfigurations.Count);
 
 		for (int index = 0; index < document.SetConfigurations.Count; ++index)
 		{

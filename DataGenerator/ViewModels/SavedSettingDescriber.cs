@@ -19,12 +19,13 @@ public static class SavedSettingDescriber
 
 		return setting.GenerationMode switch
 		{
-			ValueGenerationMode.Fixed      => $"Fixed value: {Shorten(setting.FixedValue.Length == 0 ? "(empty)" : setting.FixedValue)}",
-			ValueGenerationMode.Sequence   => $"Sequence from {setting.SequenceStart.Trim()}, step {setting.SequenceStep.Trim()}",
-			ValueGenerationMode.Regex      => $"Regex: {Shorten(setting.RegexPattern)}",
-			ValueGenerationMode.Pattern    => $"Pattern: {Shorten(setting.PatternExpression)}",
-			ValueGenerationMode.CopyColumn => $"Copy of column [{Shorten(setting.SourceColumnName.Trim())}]",
-			_                              => GenerationModeOption.Get(setting.GenerationMode).DisplayName
+			ValueGenerationMode.Fixed       => $"Fixed value: {Shorten(setting.FixedValue.Length == 0 ? "(empty)" : setting.FixedValue)}",
+			ValueGenerationMode.Sequence    => $"Sequence from {setting.SequenceStart.Trim()}, step {setting.SequenceStep.Trim()}",
+			ValueGenerationMode.Regex       => $"Regex: {Shorten(setting.RegexPattern)}",
+			ValueGenerationMode.Pattern     => $"Pattern: {Shorten(setting.PatternExpression)}",
+			ValueGenerationMode.CopyColumn  => $"Copy of column [{Shorten(setting.SourceColumnName.Trim())}]",
+			ValueGenerationMode.TableLookup => $"Value from table: {Shorten(setting.LookupExpression.Trim())}",
+			_                               => GenerationModeOption.Get(setting.GenerationMode).DisplayName
 		};
 	}
 

@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using DataGenerator.Infrastructure;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
-using DataGenerator.Services;
 
 namespace DataGenerator.ViewModels;
 

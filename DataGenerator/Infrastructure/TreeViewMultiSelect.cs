@@ -122,7 +122,7 @@ public static class TreeViewMultiSelect
 			return;
 		}
 
-		TreeSelectionRequest request = new TreeSelectionRequest(item, mode);
+		TreeSelectionRequest request = new(item, mode);
 
 		if (command.CanExecute(request))
 		{
@@ -143,14 +143,18 @@ public static class TreeViewMultiSelect
 			switch (current)
 			{
 				case TreeViewItem item:
+				{
 					return item;
+				}
 
 				case ButtonBase:
 				case TextBoxBase:
 				case ComboBox:
 				case ScrollBar:
+				{
 					isInsideInteractiveElement = true;
 					break;
+				}
 			}
 		}
 

@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 using Microsoft.Data.SqlClient;
 

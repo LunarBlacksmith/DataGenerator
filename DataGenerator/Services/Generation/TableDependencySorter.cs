@@ -13,8 +13,8 @@ internal static class TableDependencySorter
 	/// </summary>
 	public static IReadOnlyList<TableGenerationPlan> SortForInsertion(IReadOnlyList<TableGenerationPlan> plans)
 	{
-		Dictionary<string, TableGenerationPlan> plansByKey   = new Dictionary<string, TableGenerationPlan>(StringComparer.OrdinalIgnoreCase);
-		Dictionary<string, List<Dependency>>    dependencies = new Dictionary<string, List<Dependency>>(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, TableGenerationPlan> plansByKey   = new(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, List<Dependency>>    dependencies = new(StringComparer.OrdinalIgnoreCase);
 
 		foreach (TableGenerationPlan plan in plans)
 		{
@@ -55,8 +55,8 @@ internal static class TableDependencySorter
 	/// </summary>
 	public static IReadOnlyList<TableModel> SortForDeletion(IReadOnlyList<TableModel> tables)
 	{
-		Dictionary<string, TableModel>       tablesByKey  = new Dictionary<string, TableModel>(StringComparer.OrdinalIgnoreCase);
-		Dictionary<string, List<Dependency>> dependencies = new Dictionary<string, List<Dependency>>(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, TableModel>       tablesByKey  = new(StringComparer.OrdinalIgnoreCase);
+		Dictionary<string, List<Dependency>> dependencies = new(StringComparer.OrdinalIgnoreCase);
 
 		foreach (TableModel table in tables)
 		{
@@ -86,7 +86,7 @@ internal static class TableDependencySorter
 		Dictionary<string, TableGenerationPlan>?   plansByKey
 	)
 	{
-		HashSet<string> visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		HashSet<string> visited = new(StringComparer.OrdinalIgnoreCase);
 		List<string>    path    = [];
 		List<string>    result  = [];
 

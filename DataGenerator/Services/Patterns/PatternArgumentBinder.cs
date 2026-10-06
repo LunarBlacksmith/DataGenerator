@@ -70,7 +70,7 @@ internal sealed class PatternArgumentBinder
 	private readonly string                              _functionName;
 	private readonly int                                 _position;
 	private readonly List<PatternArgument>               _positional = [];
-	private readonly Dictionary<string, PatternArgument> _named      = new Dictionary<string, PatternArgument>(StringComparer.OrdinalIgnoreCase);
+	private readonly Dictionary<string, PatternArgument> _named      = new(StringComparer.OrdinalIgnoreCase);
 	private int                                          _nextPositional;
 
 	public PatternArgumentBinder(string functionName, IReadOnlyList<PatternArgument> arguments, int position)
@@ -199,6 +199,35 @@ internal sealed class PatternArgumentBinder
 
 	public string RequireText(string parameterName, string example)
 		=> OptionalText(parameterName) ?? throw Error($"{parameterName} is required, e.g. {example}.");
+
+	/// <summary>
+	/// An optional value that may be text or a number, used as text.
+	/// </summary>
+	public string? OptionalValue(string parameterName)
+	{
+		PatternArgument? argument =
+			TryTakeNamed(parameterName, out PatternArgument? namedArgument)
+				? namedArgument
+				: TakePositional();
+
+		if (argument is null)
+		{
+			return null;
+		}
+
+		return argument.Kind is PatternArgumentKind.Text or PatternArgumentKind.Number
+			? argument.Text
+			: throw new PatternSyntaxException($"{_functionName}: {parameterName} must be text or a number.", argument.Position);
+	}
+
+	public string RequireValue(string parameterName, string example)
+		=> OptionalValue(parameterName) ?? throw Error($"{parameterName} is required, e.g. {example}.");
+
+	/// <summary>
+	/// Whether a range is given, either positionally or as range=, min= or max=.
+	/// </summary>
+	public bool HasRangeArgument()
+		=> PeekPositional() is not null || _named.ContainsKey("range") || _named.ContainsKey("min") || _named.ContainsKey("max");
 
 	public IReadOnlyList<PatternArgument> TakeRemainingPositional()
 	{

@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using DataGenerator.Services;
+using DataGenerator.Interfaces;
 
 namespace DataGenerator.Infrastructure;
 
@@ -32,6 +32,12 @@ public static class PatternAutoComplete
 
 	public static void SetProvider(DependencyObject element, IPatternCompletionProvider? value)
 		=> element.SetValue(PROVIDER_PROPERTY, value);
+
+	/// <summary>
+	/// Whether suggestions are shown under the text box, so other keyboard handlers leave ↑, ↓ and Tab to them.
+	/// </summary>
+	public static bool IsSuggesting(DependencyObject element)
+		=> element.GetValue(CONTROLLER_PROPERTY) is PatternCompletionController { IsOpen: true };
 
 	private static void OnProviderChanged(DependencyObject element, DependencyPropertyChangedEventArgs e)
 	{

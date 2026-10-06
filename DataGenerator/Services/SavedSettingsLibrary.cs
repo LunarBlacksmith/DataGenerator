@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 
 namespace DataGenerator.Services;
@@ -246,7 +247,7 @@ public sealed class SavedSettingsLibrary
 	/// </summary>
 	public int ApplyAutomaticSettingsToExistingRowSets()
 	{
-		ApplyAutomaticSettingsEventArgs arguments = new ApplyAutomaticSettingsEventArgs();
+		ApplyAutomaticSettingsEventArgs arguments = new();
 		ApplyAutomaticSettingsRequested?.Invoke(this, arguments);
 		return arguments.UpdatedColumnCount;
 	}

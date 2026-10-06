@@ -11,5 +11,7 @@ public enum ValueGenerationMode
 	DatabaseGenerated   = 6,
 	Null                = 7,
 	Pattern             = 8,
-	CopyColumn          = 9
+	CopyColumn          = 9,
+	TableLookup         = 10,
+	KeepCurrent         = 11
 }

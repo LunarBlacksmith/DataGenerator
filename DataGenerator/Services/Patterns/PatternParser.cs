@@ -4,7 +4,8 @@ namespace DataGenerator.Services.Patterns;
 
 /// <summary>
 /// Recursive-descent parser for the pattern language. Precedence from lowest to highest:
-/// concatenation (FOLLOWED BY, THEN, +), choice (OR, |), repetition (REPEATED n [TO m] [TIMES]) and primaries.
+/// concatenation (FOLLOWED BY, THEN, +), choice (OR, |), repetition (REPEATED n [TO m] [TIMES]),
+/// comparison (GREATER THAN, LESS THAN, AT LEAST, AT MOST) and primaries.
 /// </summary>
 internal sealed class PatternParser
 {
@@ -31,7 +32,7 @@ internal sealed class PatternParser
 			throw new PatternSyntaxException("The pattern is empty. Example: 'P' FOLLOWED BY SEQ(1-1000)", 1);
 		}
 
-		PatternParser parser = new PatternParser(PatternLexer.Tokenize(expression));
+		PatternParser parser = new(PatternLexer.Tokenize(expression));
 		PatternNode   node   = parser.ParseConcatenation();
 
 		parser.ExpectEnd();
@@ -97,7 +98,7 @@ internal sealed class PatternParser
 
 	private PatternNode ParseRepetition()
 	{
-		PatternNode node = ParsePrimary();
+		PatternNode node = ParseComparison();
 
 		while (Current.IsKeyword("REPEATED"))
 		{
@@ -131,6 +132,94 @@ internal sealed class PatternParser
 		return node;
 	}
 
+	/// <summary>
+	/// A primary followed by any number of GREATER THAN n, LESS THAN n, AT LEAST n or AT MOST n, which narrow the range
+	/// of NUM(...) or RAND_NUM(...), e.g. NUM(digits=5) GREATER THAN 50.
+	/// </summary>
+	private PatternNode ParseComparison()
+	{
+		PatternNode node = ParsePrimary();
+
+		while (TryReadComparison(out string comparison, out int position))
+		{
+			long bound = ReadComparisonBound(comparison);
+
+			if (node is not RandomNumberPatternNode numberNode)
+			{
+				throw new PatternSyntaxException(
+					$"{comparison} can only follow NUM(...) or RAND_NUM(...), e.g. NUM(digits=5) GREATER THAN 50.",
+					position
+				);
+			}
+
+			(long minimum, long maximum) = comparison switch
+			{
+				"GREATER THAN" => (Math.Max(numberNode.Minimum, bound + 1), numberNode.Maximum),
+				"LESS THAN"    => (numberNode.Minimum, Math.Min(numberNode.Maximum, bound - 1)),
+				"AT LEAST"     => (Math.Max(numberNode.Minimum, bound), numberNode.Maximum),
+				_              => (numberNode.Minimum, Math.Min(numberNode.Maximum, bound))
+			};
+
+			if (minimum > maximum)
+			{
+				throw new PatternSyntaxException(
+					$"{comparison} {bound} leaves no numbers in the range {numberNode.Minimum} to {numberNode.Maximum}.",
+					position
+				);
+			}
+
+			node = numberNode.WithRange(minimum, maximum);
+		}
+
+		return node;
+	}
+
+	private bool TryReadComparison(out string comparison, out int position)
+	{
+		position = Current.Position;
+
+		if ((Current.IsKeyword("GREATER") || Current.IsKeyword("LESS")) && Next.IsKeyword("THAN"))
+		{
+			comparison = $"{Current.Text.ToUpperInvariant()} THAN";
+		}
+		else if (Current.IsKeyword("AT") && (Next.IsKeyword("LEAST") || Next.IsKeyword("MOST")))
+		{
+			comparison = $"AT {Next.Text.ToUpperInvariant()}";
+		}
+		else
+		{
+			comparison = string.Empty;
+			return false;
+		}
+
+		Advance();
+		Advance();
+		return true;
+	}
+
+	private long ReadComparisonBound(string comparison)
+	{
+		bool isNegative = false;
+
+		if (Current.Kind == PatternTokenKind.Minus)
+		{
+			isNegative = true;
+			Advance();
+		}
+
+		PatternToken token = Current;
+
+		if (token.Kind != PatternTokenKind.Number
+			|| !long.TryParse(token.Text, NumberStyles.None, CultureInfo.InvariantCulture, out long bound)
+			|| bound > PatternArgumentBinder.MAXIMUM_MAGNITUDE)
+		{
+			throw new PatternSyntaxException($"Expected a whole number after {comparison}, e.g. {comparison} 50.", token.Position);
+		}
+
+		Advance();
+		return isNegative ? -bound : bound;
+	}
+
 	private int ReadRepetitionCount()
 	{
 		PatternToken token = Current;
@@ -156,6 +245,7 @@ internal sealed class PatternParser
 		switch (token.Kind)
 		{
 			case PatternTokenKind.LeftParenthesis:
+			{
 				Advance();
 				PatternNode inner = ParseConcatenation();
 
@@ -171,13 +261,17 @@ internal sealed class PatternParser
 
 				Advance();
 				return inner;
+			}
 
 			case PatternTokenKind.Text:
 			case PatternTokenKind.Number:
+			{
 				Advance();
 				return new LiteralPatternNode(token.Text);
+			}
 
 			case PatternTokenKind.Word:
+			{
 				if (RESERVED_WORDS.Contains(token.Text, StringComparer.OrdinalIgnoreCase))
 				{
 					throw new PatternSyntaxException(
@@ -191,15 +285,20 @@ internal sealed class PatternParser
 				return Current.Kind == PatternTokenKind.LeftParenthesis
 					? ParseFunction(token)
 					: new LiteralPatternNode(token.Text);
+			}
 
 			case PatternTokenKind.End:
+			{
 				throw new PatternSyntaxException("The pattern ended early. Expected text, a number, a function or '('.", token.Position);
+			}
 
 			default:
+			{
 				throw new PatternSyntaxException(
 					$"Unexpected '{token.Text}'. Expected text, a number, a function or '('. Put symbols in quotes, e.g. '{token.Text}'.",
 					token.Position
 				);
+			}
 		}
 	}
 

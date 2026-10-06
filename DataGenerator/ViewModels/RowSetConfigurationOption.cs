@@ -30,7 +30,7 @@ public sealed class RowSetConfigurationOption
 
 	private static string BuildToolTipText(SavedRowSetConfiguration configuration)
 	{
-		StringBuilder text = new StringBuilder();
+		StringBuilder text = new();
 
 		text.Append("Load into this row set. Saved from ").Append(configuration.TableName).AppendLine(":");
 

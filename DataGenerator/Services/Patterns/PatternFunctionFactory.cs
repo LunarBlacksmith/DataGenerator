@@ -10,10 +10,14 @@ internal static class PatternFunctionFactory
 
 	private static readonly string[] FUNCTION_ALIASES = ["SEQUENCE", "COLUMN"];
 
-	private const int    MAXIMUM_TEXT_LENGTH = 1000;
-	private const int    MAXIMUM_DECIMALS    = 10;
-	private const int    MAXIMUM_DIGITS      = 19;
-	private const int    NO_PADDING          = 0;
+	private const int    MAXIMUM_TEXT_LENGTH    = 1000;
+	private const int    MAXIMUM_DECIMALS       = 10;
+	private const int    MAXIMUM_DIGITS         = 19;
+	private const int    MAXIMUM_NUMBER_DIGITS  = 18;
+	private const int    MAXIMUM_POSITION_ROWS  = 1000;
+	private const int    NO_PADDING             = 0;
+	private const long   DEFAULT_NUMBER_MAXIMUM = 999_999_999;
+	private const string PAD_CHARACTER          = "0";
 	private const string DEFAULT_DATE_FORMAT      = "yyyy-MM-dd";
 	private const string DEFAULT_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 	private const string TIME_NOW                 = "NOW";
@@ -40,12 +44,13 @@ internal static class PatternFunctionFactory
 			return CreateDynamic(nameToken, arguments);
 		}
 
-		PatternArgumentBinder binder = new PatternArgumentBinder(functionName, arguments, nameToken.Position);
+		PatternArgumentBinder binder = new(functionName, arguments, nameToken.Position);
 
-		return functionName switch
+		PatternNode node = functionName switch
 		{
 			"SEQ" or "SEQUENCE" => CreateSequence(binder),
-			"RAND_NUM"          => CreateRandomNumber(binder),
+			"RAND_NUM"          => CreateRandomNumber(binder, "RAND_NUM(0, 99)"),
+			"NUM"               => CreateNumber(binder),
 			"RAND_DECIMAL"      => CreateRandomDecimal(binder),
 			"RAND_LETTERS"      => CreateRandomText(binder, "RAND_LETTERS(5)", includeLetters: true, includeDigits: false),
 			"RAND_DIGITS"       => CreateRandomText(binder, "RAND_DIGITS(4)", includeLetters: false, includeDigits: true),
@@ -53,9 +58,21 @@ internal static class PatternFunctionFactory
 			"RAND_DATE"         => CreateRandomDate(binder),
 			"TODAY"             => CreateToday(binder),
 			"ONE_OF"            => CreateOneOf(binder),
+			"CYCLE"             => CreateCycle(binder),
+			"FIRST"             => CreateRowPosition(binder, functionName, fromEnd: false),
+			"LAST"              => CreateRowPosition(binder, functionName, fromEnd: true),
+			"ROW"               => CreateRowNumber(binder),
+			"UPPER"             => CreateCase(binder, functionName, upperCase: true),
+			"LOWER"             => CreateCase(binder, functionName, upperCase: false),
+			"LEFT"              => CreateTextPart(binder, functionName, fromEnd: false),
+			"RIGHT"             => CreateTextPart(binder, functionName, fromEnd: true),
+			"PAD"               => CreatePad(binder),
 			"GUID"              => CreateGuid(binder),
 			_                   => CreateColumnReference(binder)
 		};
+
+		node.FunctionName = functionName;
+		return node;
 	}
 
 	/// <summary>
@@ -64,7 +81,7 @@ internal static class PatternFunctionFactory
 	/// </summary>
 	private static PatternNode CreateDynamic(PatternToken nameToken, IReadOnlyList<PatternArgument> arguments)
 	{
-		DynamicFunctionPatternNode node              = new DynamicFunctionPatternNode(nameToken, arguments);
+		DynamicFunctionPatternNode node              = new(nameToken, arguments) { FunctionName = nameToken.Text.ToUpperInvariant() };
 		List<string>               referencedColumns = [];
 
 		node.CollectColumnReferences(referencedColumns);
@@ -73,7 +90,7 @@ internal static class PatternFunctionFactory
 		{
 			try
 			{
-				node.Append(new StringBuilder(), new PatternContext(0, new Random(0), TimeProvider.System));
+				node.Append(new StringBuilder(), new PatternContext(0, null, new Random(0), TimeProvider.System));
 			}
 			catch (InvalidOperationException exception)
 			{
@@ -108,9 +125,9 @@ internal static class PatternFunctionFactory
 		return new SequencePatternNode(minimum, maximum, start, step, digits);
 	}
 
-	private static PatternNode CreateRandomNumber(PatternArgumentBinder binder)
+	private static PatternNode CreateRandomNumber(PatternArgumentBinder binder, string example)
 	{
-		(decimal rangeStart, decimal rangeEnd) = binder.RequireRange("RAND_NUM(0, 99)");
+		(decimal rangeStart, decimal rangeEnd) = binder.RequireRange(example);
 
 		long minimum = binder.ToWholeNumber(rangeStart, "the range start");
 		long maximum = binder.ToWholeNumber(rangeEnd, "the range end");
@@ -118,6 +135,139 @@ internal static class PatternFunctionFactory
 
 		binder.EnsureComplete("range", "digits");
 		return new RandomNumberPatternNode(minimum, maximum, digits);
+	}
+
+	/// <summary>
+	/// NUM(min, max, digits) with every parameter optional: without a range, NUM(digits=5) is 00000 to 99999 and NUM()
+	/// is 0 to 999,999,999.
+	/// </summary>
+	private static PatternNode CreateNumber(PatternArgumentBinder binder)
+	{
+		if (binder.HasRangeArgument())
+		{
+			return CreateRandomNumber(binder, "NUM(0, 99)");
+		}
+
+		decimal? requestedDigits = binder.OptionalNumber("digits");
+		int      digits          = requestedDigits.HasValue
+			? binder.ToCount(requestedDigits.Value, "digits", NO_PADDING, MAXIMUM_NUMBER_DIGITS)
+			: NO_PADDING;
+		long     maximum         = digits == NO_PADDING ? DEFAULT_NUMBER_MAXIMUM : (long)PatternTemplateSet.Pow10(digits) - 1;
+
+		binder.EnsureComplete("min", "max", "digits");
+		return new RandomNumberPatternNode(0, maximum, digits);
+	}
+
+	private static PatternNode CreateRowNumber(PatternArgumentBinder binder)
+	{
+		int digits = binder.ToCount(binder.OptionalNumber("digits") ?? NO_PADDING, "digits", NO_PADDING, MAXIMUM_DIGITS);
+
+		binder.EnsureComplete("digits");
+		return new RowNumberPatternNode(digits);
+	}
+
+	private static PatternNode CreateCycle(PatternArgumentBinder binder)
+	{
+		IReadOnlyList<string> values = ReadValues(binder, binder.TakeRemainingPositional());
+
+		if (values.Count == 0)
+		{
+			throw binder.Error("at least one value is required, e.g. CYCLE('A', 'B', 'C').");
+		}
+
+		binder.EnsureComplete("values");
+		return new CyclePatternNode(values);
+	}
+
+	/// <summary>
+	/// FIRST(value) / LAST(value) for the first or last row, or FIRST(n, v1, …, vn) / LAST(n, v1, …, vn) for the first or
+	/// last n rows (one value per row, or one value for all of them). Other rows get else= (empty by default).
+	/// </summary>
+	private static PatternNode CreateRowPosition(PatternArgumentBinder binder, string functionName, bool fromEnd)
+	{
+		IReadOnlyList<PatternArgument> arguments  = binder.TakeRemainingPositional();
+		string                         otherValue = binder.OptionalValue("else") ?? string.Empty;
+
+		binder.EnsureComplete("count", "values", "else");
+
+		if (arguments.Count == 0)
+		{
+			throw binder.Error($"a value is required, e.g. {functionName}('-END') or {functionName}(2, 'A', 'B').");
+		}
+
+		if (arguments.Count == 1)
+		{
+			return new RowPositionPatternNode(fromEnd, ReadValues(binder, arguments), otherValue);
+		}
+
+		if (arguments[0].Kind != PatternArgumentKind.Number || arguments[0].IsEvaluated)
+		{
+			throw binder.Error(
+				$"with more than one value, the first one is the number of rows, e.g. {functionName}(2, 'A', 'B') or {functionName}(3, 'X')."
+			);
+		}
+
+		int                   rowCount = binder.ToCount(arguments[0].Number, "the number of rows", 1, MAXIMUM_POSITION_ROWS);
+		IReadOnlyList<string> values   = ReadValues(binder, [.. arguments.Skip(1)]);
+
+		if (values.Count == 1)
+		{
+			values = [.. Enumerable.Repeat(values[0], rowCount)];
+		}
+		else if (values.Count != rowCount)
+		{
+			throw binder.Error(
+				$"{functionName}({rowCount}, …) needs {rowCount} values (one per row) or a single value for all of them, but {values.Count} were given."
+			);
+		}
+
+		return new RowPositionPatternNode(fromEnd, values, otherValue);
+	}
+
+	private static PatternNode CreateCase(PatternArgumentBinder binder, string functionName, bool upperCase)
+	{
+		string text = binder.RequireValue("text", $"{functionName}(COL(Name))");
+
+		binder.EnsureComplete("text");
+		return new LiteralPatternNode(upperCase ? text.ToUpperInvariant() : text.ToLowerInvariant());
+	}
+
+	private static PatternNode CreateTextPart(PatternArgumentBinder binder, string functionName, bool fromEnd)
+	{
+		string  text   = binder.RequireValue("text", $"{functionName}(COL(Name), 3)");
+		decimal length = binder.OptionalNumber("length") ?? throw binder.Error($"length is required, e.g. {functionName}(COL(Name), 3).");
+		int     count  = Math.Min(binder.ToCount(length, "length", 0, MAXIMUM_TEXT_LENGTH), text.Length);
+
+		binder.EnsureComplete("text", "length");
+		return new LiteralPatternNode(fromEnd ? text[^count..] : text[..count]);
+	}
+
+	private static PatternNode CreatePad(PatternArgumentBinder binder)
+	{
+		string  text      = binder.RequireValue("text", "PAD(COL(Number), 6)");
+		decimal length    = binder.OptionalNumber("length") ?? throw binder.Error("length is required, e.g. PAD(COL(Number), 6).");
+		string  character = binder.OptionalValue("character") ?? PAD_CHARACTER;
+
+		if (character.Length != 1)
+		{
+			throw binder.Error($"character must be a single character, e.g. PAD(COL(Number), 6, '0'), not '{character}'.");
+		}
+
+		binder.EnsureComplete("text", "length", "character");
+		return new LiteralPatternNode(text.PadLeft(binder.ToCount(length, "length", 0, MAXIMUM_TEXT_LENGTH), character[0]));
+	}
+
+	private static IReadOnlyList<string> ReadValues(PatternArgumentBinder binder, IReadOnlyList<PatternArgument> arguments)
+	{
+		foreach (PatternArgument argument in arguments)
+		{
+			if (argument.Kind == PatternArgumentKind.Range)
+			{
+				throw binder.Error($"'{argument.Text}' looks like a range; put it in quotes to use it as text, e.g. '{argument.Text}'.");
+			}
+		}
+
+		return [.. arguments.Select(argument => argument.Text)];
 	}
 
 	private static PatternNode CreateRandomDecimal(PatternArgumentBinder binder)

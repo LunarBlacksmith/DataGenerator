@@ -6,6 +6,7 @@
 	xmlns:mc             ="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:infrastructure ="clr-namespace:DataGenerator.Infrastructure"
 	xmlns:viewModels     ="clr-namespace:DataGenerator.ViewModels"
+	xmlns:views          ="clr-namespace:DataGenerator.Views"
 	mc:Ignorable         ="d"
 	d:DataContext        ="{d:DesignInstance Type=viewModels:MainViewModel}">
 
@@ -31,13 +32,10 @@
 					Height="Auto" />
 				<RowDefinition
 					Height="Auto" />
-				<RowDefinition
-					Height="Auto" />
 			</Grid.RowDefinitions>
 
 			<TextBlock
 				Grid.Row          ="0"
-				Grid.RowSpan      ="2"
 				Grid.Column       ="0"
 				Margin            ="0,2,10,0"
 				VerticalAlignment ="Top"
@@ -46,34 +44,41 @@
 				Foreground        ="{DynamicResource ErrorBrush}"
 				Text              ="&#xE783;" />
 
-			<!-- What happened and where -->
-			<TextBlock
-				Grid.Row          ="0"
-				Grid.Column       ="1"
-				VerticalAlignment ="Center"
-				FontWeight        ="SemiBold"
-				Foreground        ="{DynamicResource ErrorBrush}"
-				Text              ="{Binding ErrorSummary}"
-				TextWrapping      ="Wrap" />
+			<!-- Long messages scroll here, so the panel never squashes the rest of the window -->
+			<ScrollViewer
+				Grid.Row                      ="0"
+				Grid.Column                   ="1"
+				MaxHeight                     ="{x:Static views:ErrorPanel.MAXIMUM_MESSAGE_HEIGHT}"
+				Focusable                     ="False"
+				HorizontalScrollBarVisibility ="Disabled"
+				VerticalScrollBarVisibility   ="Auto"
+				ToolTip                       ="{StaticResource ErrorMessageAreaHint}">
+				<StackPanel
+					Margin="0,0,4,0">
+					<!-- What happened and where -->
+					<TextBlock
+						FontWeight   ="SemiBold"
+						Foreground   ="{DynamicResource ErrorBrush}"
+						Text         ="{Binding ErrorSummary}"
+						TextWrapping ="Wrap" />
 
-			<DockPanel
-				Grid.Row    ="1"
-				Grid.Column ="1"
-				Margin      ="0,4,0,0">
-				<TextBlock
-					DockPanel.Dock ="Left"
-					Margin         ="0,0,6,0"
-					FontWeight     ="SemiBold"
-					Text           ="Where:" />
+					<DockPanel
+						Margin="0,4,0,0">
+						<TextBlock
+							DockPanel.Dock ="Left"
+							Margin         ="0,0,6,0"
+							FontWeight     ="SemiBold"
+							Text           ="Where:" />
 
-				<TextBlock
-					Text         ="{Binding ErrorLocation}"
-					TextWrapping ="Wrap" />
-			</DockPanel>
+						<TextBlock
+							Text         ="{Binding ErrorLocation}"
+							TextWrapping ="Wrap" />
+					</DockPanel>
+				</StackPanel>
+			</ScrollViewer>
 
 			<StackPanel
 				Grid.Row          ="0"
-				Grid.RowSpan      ="2"
 				Grid.Column       ="2"
 				Margin            ="10,0,0,0"
 				VerticalAlignment ="Top"
@@ -93,16 +98,16 @@
 					infrastructure:ButtonIcon.Glyph ="&#xE711;" />
 			</StackPanel>
 
-			<!-- Technical details for support -->
+			<!-- Technical details for support, outside the message area so the details box is never clipped by it -->
 			<Expander
-				Grid.Row        ="2"
+				Grid.Row        ="1"
 				Grid.Column     ="1"
 				Grid.ColumnSpan ="2"
 				Margin          ="0,6,0,0"
 				Header          ="Details"
 				ToolTip         ="{StaticResource ErrorDetailsHint}">
 				<TextBox
-					MaxHeight    ="220"
+					MaxHeight    ="160"
 					Margin       ="0,4,0,0"
 					FontFamily   ="{StaticResource CodeFontFamily}"
 					FontSize     ="12"

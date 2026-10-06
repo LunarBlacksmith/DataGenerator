@@ -1,4 +1,4 @@
-﻿namespace DataGenerator.Services;
+﻿namespace DataGenerator.Interfaces;
 
 public interface IClipboardService
 {

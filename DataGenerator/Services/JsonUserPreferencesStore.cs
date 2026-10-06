@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DataGenerator.Interfaces;
 using DataGenerator.Models;
 
 namespace DataGenerator.Services;
@@ -12,7 +13,7 @@ public sealed class JsonUserPreferencesStore : IUserPreferencesStore
 {
 	private const string TEMPORARY_EXTENSION = ".tmp";
 
-	private static readonly JsonSerializerOptions SERIALIZER_OPTIONS = new JsonSerializerOptions
+	private static readonly JsonSerializerOptions SERIALIZER_OPTIONS = new()
 	{
 		AllowTrailingCommas         = true,
 		PropertyNameCaseInsensitive = true,
