@@ -53,8 +53,7 @@ public sealed class PatternHelpViewModel : ObservableObject
 		new PatternSyntaxHelp("Text", "Single words and numbers can be written as they are. Quote anything with spaces, symbols or keywords.", "P + 'ORDER-' + \"O'Brien\" + 'OR'")
 	];
 
-	public IReadOnlyList<PatternSyntaxHelp> Functions { get; } =
-	[
+	public IReadOnlyList<PatternSyntaxHelp> Functions { get; } = [
 		.. PatternLanguageReference.FUNCTIONS.Select(entry => new PatternSyntaxHelp(entry.Signature, entry.Description, entry.Example)),
 		new PatternSyntaxHelp("Nested functions", "A function can be an argument of another function; it is evaluated for each row first. Ranges need the comma form.", "RAND_DATE(TODAY(format='yyyy-MM-dd'), '2030-12-31')")
 	];

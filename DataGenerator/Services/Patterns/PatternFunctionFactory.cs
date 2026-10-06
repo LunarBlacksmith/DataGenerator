@@ -744,10 +744,8 @@ internal static class PatternFunctionFactory
 	///	Thrown when <paramref name="text"/> is not a valid date.
 	/// </exception>
 	private static DateTime ParseDate(PatternArgumentBinder binder, string text)
-	{
-		return
+		=>
 			DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out DateTime value)
 				? value
 				: throw binder.Error($"'{text}' is not a valid date. Use the form 'yyyy-MM-dd', e.g. '2024-12-31'.");
-	}
 }

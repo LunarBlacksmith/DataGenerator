@@ -542,21 +542,13 @@ internal sealed class RowPositionPatternNode : PatternNode
 	/// </param>
 	public override void Append(StringBuilder builder, PatternContext context)
 	{
-		long position;
-
-		if (!_fromEnd)
-		{
-			position = context.RowIndex;
-		}
-		else if (context.RowCount.HasValue)
-		{
-			// Counted back from the end, so that the last listed value belongs to the last row.
-			position = _values.Count - (context.RowCount.Value - context.RowIndex);
-		}
-		else
-		{
-			position = -1;
-		}
+		// Counted back from the end when the row count is known, so that the last listed value belongs to the last row.
+		long position =
+			!_fromEnd
+				? context.RowIndex
+				: context.RowCount.HasValue
+					? _values.Count - (context.RowCount.Value - context.RowIndex)
+					: -1;
 
 		_ = builder.Append(position >= 0 && position < _values.Count ? _values[(int)position] : _otherValue);
 	}

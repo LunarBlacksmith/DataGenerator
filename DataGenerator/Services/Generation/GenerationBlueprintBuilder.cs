@@ -122,7 +122,12 @@ internal sealed class GenerationBlueprintBuilder
 	/// <returns>
 	///	A display location suitable for user-facing errors.
 	/// </returns>
-	public static string DescribeLocation(TableModel table, RowSetPlan? rowSet = null, long? rowIndex = null, ColumnModel? column = null)
+	public static string DescribeLocation(
+		TableModel   table,
+		RowSetPlan?  rowSet   = null,
+		long?        rowIndex = null,
+		ColumnModel? column   = null
+	)
 		=> GenerationLocation.Describe(table, rowSet?.Name, rowIndex, column?.Name);
 
 	/// <summary>
@@ -143,9 +148,8 @@ internal sealed class GenerationBlueprintBuilder
 		Dictionary<string, TableGenerationPlan> plansByKey
 	)
 	{
-		List<TableGenerationPlan> insertPlans =
-		[
-			.. plans
+		List<TableGenerationPlan> insertPlans = [..
+			plans
 				.Where(plan => plan.RowSets.Any(rowSet => !rowSet.IsUpdate))
 				.Select(plan => new TableGenerationPlan { Table = plan.Table, RowSets = [.. plan.RowSets.Where(rowSet => !rowSet.IsUpdate)] })
 		];
@@ -169,7 +173,13 @@ internal sealed class GenerationBlueprintBuilder
 	/// </returns>
 	private static List<GenerationOperation> OrderOperations(List<TableBlueprint> tables)
 	{
-		List<int>                 steps      = [.. tables.SelectMany(table => table.RowSets).Select(rowSet => rowSet.Plan.Step).Distinct().Order()];
+		List<int>                 steps      = [..
+			tables
+				.SelectMany(table => table.RowSets)
+				.Select(rowSet => rowSet.Plan.Step)
+				.Distinct()
+				.Order()
+		];
 		List<GenerationOperation> operations = [];
 
 		foreach (int step in steps)
@@ -179,7 +189,8 @@ internal sealed class GenerationBlueprintBuilder
 				foreach (TableBlueprint table in tables)
 				{
 					operations.AddRange(
-						table.RowSets
+						table
+							.RowSets
 							.Where(rowSet => rowSet.Plan.Step == step && rowSet.Plan.IsUpdate == isUpdate)
 							.Select(rowSet => new GenerationOperation { Table = table, RowSet = rowSet })
 					);
@@ -205,7 +216,12 @@ internal sealed class GenerationBlueprintBuilder
 
 		foreach (TableGenerationPlan plan in plans)
 		{
-			List<int> insertSteps = [.. plan.RowSets.Where(rowSet => !rowSet.IsUpdate).Select(rowSet => rowSet.Step)];
+			List<int> insertSteps = [..
+				plan
+					.RowSets
+					.Where(rowSet => !rowSet.IsUpdate)
+					.Select(rowSet => rowSet.Step)
+			];
 
 			if (insertSteps.Count > 0)
 			{
@@ -485,7 +501,11 @@ internal sealed class GenerationBlueprintBuilder
 	/// <returns>
 	///	The column names in the cycle, with the first name repeated at the end.
 	/// </returns>
-	private static List<string> FindCycle(IReadOnlyList<ColumnRule> rules, List<int>[] references, int[] remainingReferences)
+	private static List<string> FindCycle(
+		IReadOnlyList<ColumnRule> rules,
+		List<int>[]               references,
+		int[]                     remainingReferences
+	)
 	{
 		// Every unsorted rule still uses another unsorted rule, so following those references must return to a visited rule.
 		List<int> path    = [];
@@ -597,9 +617,17 @@ internal sealed class GenerationBlueprintBuilder
 				+ "or use 'Existing key'.";
 		}
 
-		bool referencedColumnExists = referencedPlan.Table.Columns.Any(
-			item => string.Equals(item.Name, reference.ReferencedColumn, StringComparison.OrdinalIgnoreCase)
-		);
+		bool referencedColumnExists =
+			referencedPlan
+				.Table
+				.Columns
+				.Any(
+					item => string.Equals(
+						item.Name,
+						reference.ReferencedColumn,
+						StringComparison.OrdinalIgnoreCase
+					)
+				);
 
 		return
 			referencedColumnExists
@@ -622,7 +650,11 @@ internal sealed class GenerationBlueprintBuilder
 	/// <returns>
 	///	The validation message, or <see langword="null"/> when the lookup can be used.
 	/// </returns>
-	private static string? FindLookupProblem(ColumnRule rule, RowSetPlan rowSet, Dictionary<string, int> firstInsertSteps)
+	private static string? FindLookupProblem(
+		ColumnRule              rule,
+		RowSetPlan              rowSet,
+		Dictionary<string, int> firstInsertSteps
+	)
 	{
 		if (rule.Lookup is not ColumnLookup lookup)
 		{
@@ -653,7 +685,11 @@ internal sealed class GenerationBlueprintBuilder
 	/// <returns>
 	///	<see langword="true"/> when the table has an insert set at or before the step; otherwise <see langword="false"/>.
 	/// </returns>
-	private static bool InsertsBy(Dictionary<string, int> firstInsertSteps, string tableKey, int step)
+	private static bool InsertsBy(
+		Dictionary<string, int> firstInsertSteps,
+		string                  tableKey,
+		int                     step
+	)
 		=> firstInsertSteps.TryGetValue(tableKey, out int insertStep) && insertStep <= step;
 
 	/// <summary>
@@ -703,7 +739,12 @@ internal sealed class GenerationBlueprintBuilder
 				continue;
 			}
 
-			List<ColumnModel> columns = [.. plan.Table.Columns.Where(column => columnNames.Contains(column.Name, StringComparer.OrdinalIgnoreCase))];
+			List<ColumnModel> columns = [..
+				plan
+					.Table
+					.Columns
+					.Where(column => columnNames.Contains(column.Name, StringComparer.OrdinalIgnoreCase))
+			];
 
 			++number;
 
@@ -738,9 +779,8 @@ internal sealed class GenerationBlueprintBuilder
 	/// </returns>
 	private RowSetBlueprint BuildRowSet(TableModel table, RowSetPlan rowSet, GeneratedKeyTable? keys, BuildContext context)
 	{
-		List<ColumnRule>      valueRules  =
-		[
-			.. rowSet.Rules.Where(rule => rule.GenerationMode is not (ValueGenerationMode.DatabaseGenerated or ValueGenerationMode.KeepCurrent))
+		List<ColumnRule>      valueRules  = [..
+			rowSet.Rules.Where(rule => rule.GenerationMode is not (ValueGenerationMode.DatabaseGenerated or ValueGenerationMode.KeepCurrent))
 		];
 		List<ExistingKeyPool> rowSetPools = [];
 		List<LookupPool>      lookupPools = [];
@@ -843,7 +883,12 @@ internal sealed class GenerationBlueprintBuilder
 
 		if (rowSet.UpdateScope != RowScope.Any)
 		{
-			List<string> keyColumns = [.. table.Columns.Where(column => column.IsPrimaryKey).Select(column => column.Name)];
+			List<string> keyColumns = [..
+				table
+					.Columns
+					.Where(column => column.IsPrimaryKey)
+					.Select(column => column.Name)
+			];
 
 			scopeCondition = context.Snapshots.Get(table, keyColumns).BuildScopeCondition(rowSet.UpdateScope, RowSetUpdate.TARGET_ALIAS);
 		}

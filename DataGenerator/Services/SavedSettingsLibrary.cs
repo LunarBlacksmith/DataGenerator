@@ -94,17 +94,12 @@ public sealed class SavedSettingsLibrary
 	///	The validation message when the name is empty or too long; otherwise <see langword="null"/>.
 	/// </returns>
 	public static string? ValidateName(string? name)
-	{
-		if (string.IsNullOrWhiteSpace(name))
-		{
-			return "Enter a name, e.g. Order numbers.";
-		}
-
-		return
-			name.Trim().Length > MAXIMUM_NAME_LENGTH
-				? $"Use at most {MAXIMUM_NAME_LENGTH} characters."
-				: null;
-	}
+		=>
+			string.IsNullOrWhiteSpace(name)
+				? "Enter a name, e.g. Order numbers."
+				: name.Trim().Length > MAXIMUM_NAME_LENGTH
+					? $"Use at most {MAXIMUM_NAME_LENGTH} characters."
+					: null;
 
 	/// <summary>
 	///	Finds a saved column setting by name, ignoring case and surrounding whitespace.

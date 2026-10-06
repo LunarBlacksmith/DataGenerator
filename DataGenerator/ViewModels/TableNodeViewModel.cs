@@ -471,7 +471,8 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	private string DescribeReferences(bool inferred)
 		=> string.Join(
 				", ",
-				Model.ForeignKeys
+				Model
+					.ForeignKeys
 					.Where(foreignKey => foreignKey.IsInferred == inferred)
 					.Select(foreignKey => $"{foreignKey.ReferencedSchema}.{foreignKey.ReferencedTable}")
 					.Distinct(StringComparer.OrdinalIgnoreCase)

@@ -80,9 +80,9 @@ internal static class TableDependencySorter
 
 		foreach (TableModel table in tablesByKey.Values)
 		{
-			dependencies[table.Key] =
-			[
-				.. table.ForeignKeys
+			dependencies[table.Key] = [..
+				table
+					.ForeignKeys
 					.Where(foreignKey => !foreignKey.IsInferred && tablesByKey.ContainsKey(foreignKey.ReferencedTableKey))
 					.Select(foreignKey => new Dependency(foreignKey.ReferencedTableKey, false, foreignKey.ParentColumn))
 			];
@@ -229,7 +229,11 @@ internal static class TableDependencySorter
 				+ "A row cannot reference rows generated in the same run of its own table; use 'Existing key', 'NULL' or another mode for that column.";
 		}
 
-		IEnumerable<string> cycle = path.Skip(pathIndex).Append(dependency.TargetKey).Select(GetName);
+		IEnumerable<string> cycle =
+			path
+				.Skip(pathIndex)
+				.Append(dependency.TargetKey)
+				.Select(GetName);
 
 		return $"The 'Generated key' rules form a cycle: {string.Join(" → ", cycle)} (column [{dependency.ColumnName}] of {current}). "
 			+ "Change at least one of these columns to 'Existing key', 'NULL' or another mode.";

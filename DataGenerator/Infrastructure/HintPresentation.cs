@@ -122,12 +122,10 @@ public static class HintPresentation
 	///	The text of the hint, or <see langword="null"/> when the hint is not plain text.
 	/// </returns>
 	private static string? GetHintText(object? hint)
-	{
-		return hint switch
+		=> hint switch
 		{
 			string text                               => text,
 			ToolTip { Content: string toolTipText }   => toolTipText,
 			_                                         => null
 		};
-	}
 }

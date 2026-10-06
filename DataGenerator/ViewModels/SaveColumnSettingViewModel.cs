@@ -48,7 +48,9 @@ public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 		_automaticApplication =
 			automatic is null
 				? AutomaticApplicationKind.Never
-				: automatic.AppliesToAnyTable ? AutomaticApplicationKind.EveryColumnWithName : AutomaticApplicationKind.ThisColumn;
+				: automatic.AppliesToAnyTable
+					? AutomaticApplicationKind.EveryColumnWithName
+					: AutomaticApplicationKind.ThisColumn;
 
 		SaveCommand = new RelayCommand(_ => Save(), _ => !HasErrors);
 		ValidateName();

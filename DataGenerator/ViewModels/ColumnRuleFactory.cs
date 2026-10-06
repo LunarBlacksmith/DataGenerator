@@ -80,8 +80,10 @@ public sealed class ColumnRuleFactory
 	///	The matching reference, or <see langword="null"/> when the column has none.
 	/// </returns>
 	private static ForeignKeyModel? FindReference(TableModel table, ColumnModel column)
-		=> table.ForeignKeys
-			.Where(foreignKey => string.Equals(foreignKey.ParentColumn, column.Name, StringComparison.OrdinalIgnoreCase))
-			.OrderBy(foreignKey => foreignKey.IsInferred)
-			.FirstOrDefault();
+		=>
+			table
+				.ForeignKeys
+				.Where(foreignKey => string.Equals(foreignKey.ParentColumn, column.Name, StringComparison.OrdinalIgnoreCase))
+				.OrderBy(foreignKey => foreignKey.IsInferred)
+				.FirstOrDefault();
 }

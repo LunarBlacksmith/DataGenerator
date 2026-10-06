@@ -55,13 +55,14 @@ public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 						continue;
 					}
 
-					KeyCandidate? target = candidates
-						.Where(candidate => !ReferenceEquals(candidate.Table, table))
-						.OrderByDescending(candidate => candidate.Column.IsPrimaryKey)
-						.ThenByDescending(candidate => string.Equals(candidate.Table.SchemaName, table.SchemaName, StringComparison.OrdinalIgnoreCase))
-						.ThenBy(candidate => candidate.Table.SchemaName, StringComparer.OrdinalIgnoreCase)
-						.ThenBy(candidate => candidate.Table.Name, StringComparer.OrdinalIgnoreCase)
-						.FirstOrDefault();
+					KeyCandidate? target =
+						candidates
+							.Where(candidate => !ReferenceEquals(candidate.Table, table))
+							.OrderByDescending(candidate => candidate.Column.IsPrimaryKey)
+							.ThenByDescending(candidate => string.Equals(candidate.Table.SchemaName, table.SchemaName, StringComparison.OrdinalIgnoreCase))
+							.ThenBy(candidate => candidate.Table.SchemaName, StringComparer.OrdinalIgnoreCase)
+							.ThenBy(candidate => candidate.Table.Name, StringComparer.OrdinalIgnoreCase)
+							.FirstOrDefault();
 
 					if (target is null)
 					{

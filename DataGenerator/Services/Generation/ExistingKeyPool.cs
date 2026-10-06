@@ -178,17 +178,12 @@ internal sealed class ExistingKeyPool
 	///	Thrown when direct insertion asks for a value before the pool has been loaded.
 	/// </exception>
 	public int Choose(Random random)
-	{
-		if (UsesScriptVariables)
-		{
-			return random.Next(SCRIPT_CHOICE_RANGE);
-		}
-
-		return
-			_rows is null
-				? throw new InvalidOperationException($"The existing keys of {ReferencedTableName} have not been loaded.")
-				: random.Next(_rows.Count);
-	}
+		=>
+			UsesScriptVariables
+				? random.Next(SCRIPT_CHOICE_RANGE)
+				: _rows is null
+					? throw new InvalidOperationException($"The existing keys of {ReferencedTableName} have not been loaded.")
+					: random.Next(_rows.Count);
 
 	/// <summary>
 	///	Gets one column value from a previously chosen referenced row.

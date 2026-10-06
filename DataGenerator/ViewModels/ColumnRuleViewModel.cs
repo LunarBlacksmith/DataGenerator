@@ -698,12 +698,10 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	{
 		SavedColumnSetting? setting = _services.SavedSettings.FindAutomatic(TableName, Column.Name);
 
-		if (setting is null || (setting.Name == _appliedSettingName && setting.HasSameValues(CaptureSetting())))
-		{
-			return false;
-		}
-
-		return ApplySetting(setting);
+		return
+			setting is null || (setting.Name == _appliedSettingName && setting.HasSameValues(CaptureSetting()))
+				? false
+				: ApplySetting(setting);
 	}
 
 	/// <summary>
@@ -855,9 +853,10 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	///	Loads saved settings whose modes are valid for the column, placing settings saved for the same column first.
 	/// </summary>
 	private void LoadSavedSettingOptions()
-		=> SavedSettingOptions =
-		[
-			.. _services.SavedSettings.Settings
+		=> SavedSettingOptions = [..
+			_services
+				.SavedSettings
+				.Settings
 				.Where(setting => IsModeAvailable(setting.GenerationMode))
 				.Select(setting => new SavedSettingOption(setting, string.Equals(setting.ColumnName, Column.Name, StringComparison.OrdinalIgnoreCase)))
 				.OrderByDescending(option => option.IsSavedForColumn)
@@ -1084,14 +1083,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	///	The validation problem, or <see langword="null"/> when the fixed value is valid.
 	/// </returns>
 	private string? ValidateFixedValue()
-	{
-		if (_fixedValue.Length == 0 && Category != SqlTypeCategory.Text)
-		{
-			return $"Enter {AcceptedInputDescription}.";
-		}
-
-		return _services.Converter.TryConvertText(Column, _fixedValue, out _, out string errorMessage) ? null : errorMessage;
-	}
+		=>
+			_fixedValue.Length == 0 && Category != SqlTypeCategory.Text
+				? $"Enter {AcceptedInputDescription}."
+				: _services.Converter.TryConvertText(Column, _fixedValue, out _, out string errorMessage)
+					? null
+					: errorMessage;
 
 	/// <summary>
 	///	Validates the first value of a sequence and checks that it fits the column type.
@@ -1124,17 +1121,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	///	The validation problem, or <see langword="null"/> when the sequence step is valid.
 	/// </returns>
 	private string? ValidateSequenceStep()
-	{
-		if (!TryParseNumber(_sequenceStepText, out decimal step))
-		{
-			return "Enter the amount added for each row, e.g. 1. Use a negative number to count down.";
-		}
-
-		return
-			Category == SqlTypeCategory.Integer && step != decimal.Truncate(step)
-				? $"{SqlTypeDisplay} only stores whole numbers, so the step must be a whole number."
-				: null;
-	}
+		=>
+			!TryParseNumber(_sequenceStepText, out decimal step)
+				? "Enter the amount added for each row, e.g. 1. Use a negative number to count down."
+				: Category == SqlTypeCategory.Integer && step != decimal.Truncate(step)
+					? $"{SqlTypeDisplay} only stores whole numbers, so the step must be a whole number."
+					: null;
 
 	/// <summary>
 	///	Validates that a regular expression is present and can produce a sample value.
@@ -1155,17 +1147,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	///	The validation problem, or <see langword="null"/> when the pattern is valid.
 	/// </returns>
 	private string? ValidatePatternExpression()
-	{
-		if (string.IsNullOrWhiteSpace(_patternExpression))
-		{
-			return "Enter a pattern, e.g. P FOLLOWED BY SEQ(1-1000) FOLLOWED BY (X OR Y). Click ? for the pattern language reference.";
-		}
-
-		return
-			_services.PatternGenerator.TryValidate(_patternExpression, out string errorMessage)
-				? ValidateReferencedColumns() ?? TryGenerateSample(0, out _)
-				: errorMessage;
-	}
+		=>
+			string.IsNullOrWhiteSpace(_patternExpression)
+				? "Enter a pattern, e.g. P FOLLOWED BY SEQ(1-1000) FOLLOWED BY (X OR Y). Click ? for the pattern language reference."
+				: _services.PatternGenerator.TryValidate(_patternExpression, out string errorMessage)
+					? ValidateReferencedColumns() ?? TryGenerateSample(0, out _)
+					: errorMessage;
 
 	/// <summary>
 	///	Builds the preview text for the selected mode, or records that the preview text is a validation problem.
@@ -1456,7 +1443,9 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		{
 			return
 				IsSelfReference
-					? Column.IsNullable ? ValueGenerationMode.Null : ValueGenerationMode.ExistingForeignKey
+					? Column.IsNullable
+						? ValueGenerationMode.Null
+						: ValueGenerationMode.ExistingForeignKey
 					: ValueGenerationMode.GeneratedForeignKey;
 		}
 
@@ -1473,7 +1462,9 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		return
 			Column.IsNullable
 				? ValueGenerationMode.Null
-				: Column.HasDefault ? ValueGenerationMode.DatabaseGenerated : ValueGenerationMode.Fixed;
+				: Column.HasDefault
+					? ValueGenerationMode.DatabaseGenerated
+					: ValueGenerationMode.Fixed;
 	}
 
 	/// <summary>
@@ -1492,22 +1483,14 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	///	The user-facing explanation for database-generated values.
 	/// </returns>
 	private string DescribeDatabaseGeneratedValue()
-	{
-		if (Column.IsIdentity)
-		{
-			return "Identity column: SQL Server numbers the rows";
-		}
-
-		if (Column.IsComputed)
-		{
-			return "Computed column: SQL Server calculates the value";
-		}
-
-		return
-			Category == SqlTypeCategory.RowVersion
-				? "rowversion column: SQL Server stamps every row"
-				: "SQL Server uses the column's default value";
-	}
+		=>
+			Column.IsIdentity
+				? "Identity column: SQL Server numbers the rows"
+				: Column.IsComputed
+					? "Computed column: SQL Server calculates the value"
+					: Category == SqlTypeCategory.RowVersion
+						? "rowversion column: SQL Server stamps every row"
+						: "SQL Server uses the column's default value";
 
 	/// <summary>
 	///	Describes why an update set leaves the column unchanged.
@@ -1516,17 +1499,12 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	///	The user-facing explanation for keeping the current value.
 	/// </returns>
 	private string DescribeKeptValue()
-	{
-		if (!_isUpdate || CanChangeMode)
-		{
-			return "Not changed: the row keeps its current value";
-		}
-
-		return
-			IsGeneratedOnlyBySqlServer()
-				? $"Not changed ({DescribeDatabaseGeneratedValue()})"
-				: "Not changed: update sets find their rows by the primary key, so it keeps its value";
-	}
+		=>
+			!_isUpdate || CanChangeMode
+				? "Not changed: the row keeps its current value"
+				: IsGeneratedOnlyBySqlServer()
+					? $"Not changed ({DescribeDatabaseGeneratedValue()})"
+					: "Not changed: update sets find their rows by the primary key, so it keeps its value";
 
 	/// <summary>
 	///	Formats the table used by the foreign-key generation modes.

@@ -34,14 +34,12 @@ public sealed class DialogService : IDialogService
 	///	The choice selected by the user, with window close treated as cancel.
 	/// </returns>
 	public DialogChoice AskYesNoCancel(string title, string message)
-	{
-		return Show(message, title, MessageBoxButton.YesNoCancel, MessageBoxImage.Question, MessageBoxResult.Cancel) switch
+		=> Show(message, title, MessageBoxButton.YesNoCancel, MessageBoxImage.Question, MessageBoxResult.Cancel) switch
 		{
 			MessageBoxResult.Yes => DialogChoice.Yes,
 			MessageBoxResult.No  => DialogChoice.No,
 			_                    => DialogChoice.Cancel
 		};
-	}
 
 	/// <summary>
 	///	Shows an error dialog with an OK button.

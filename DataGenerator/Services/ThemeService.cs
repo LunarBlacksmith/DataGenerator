@@ -117,10 +117,8 @@ public sealed class ThemeService : IThemeService
 	///	<see langword="true"/> when the dictionary source points to theme brushes; otherwise <see langword="false"/>.
 	/// </returns>
 	private static bool IsBrushDictionary(ResourceDictionary dictionary)
-	{
-		return dictionary.Source is not null
+		=> dictionary.Source is not null
 			&& dictionary.Source.OriginalString.Contains(BRUSHES_SOURCE_MARKER, StringComparison.OrdinalIgnoreCase);
-	}
 
 	/// <summary>
 	///	Applies the current theme's title-bar colours to a window as it is loaded.

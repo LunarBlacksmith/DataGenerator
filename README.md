@@ -163,4 +163,16 @@ DataGenerator\
 - Prefix increments and decrements (`++i`, `--i`).
 - Curly braces on every body, including single-line `if` statements and `switch` cases.
 - Multi-line conditional expressions put the condition on its own line, with `?` and `:` indented one level further. Nested conditionals indent another level.
+- Short `if (...) { return ...; }` guards followed by a final `return` are written as one waterfall conditional expression. A method whose body is a single `return` uses an expression body (`=>`).
+- LINQ statements with more than two `.` member accesses in the chain put the receiver on its own line and every `.Call` (including the first) on its own line, one level deeper.
+- Multi-line collection expressions are laid out like method calls: `[..` (or `[`) stays on the line of the assignment, and the closing `]` is on its own line at the assignment's indentation.
+
+  ```csharp
+  Tables = [..
+  	model
+  		.Tables
+  		.OrderBy(table => table.SchemaName, StringComparer.OrdinalIgnoreCase)
+  		.Select(table => new TableNodeViewModel(table, this, ruleFactory))
+  ];
+  ```
 - Every method has an XML documentation comment, with `<summary>`, `<param>`, `<returns>` and `<exception>` tags as needed. Tag lines use `/// `, text lines use `///` followed by a tab, and `<para>` blocks separate longer summaries.

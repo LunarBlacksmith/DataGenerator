@@ -755,7 +755,13 @@ public sealed class MainViewModel : ObservableObject
 	private IReadOnlyList<TableModel> GetTablesToClear(IReadOnlyList<TableNodeViewModel> includedTables)
 		=>
 			_cleanupScope == DataCleanupScope.AllTablesInDatabases
-				? [.. includedTables.Select(table => table.Database).Distinct().SelectMany(database => database.Tables).Select(table => table.Model)]
+				? [..
+					includedTables
+						.Select(table => table.Database)
+						.Distinct()
+						.SelectMany(database => database.Tables)
+						.Select(table => table.Model)
+				]
 				: [.. includedTables.Select(table => table.Model)];
 
 	/// <summary>

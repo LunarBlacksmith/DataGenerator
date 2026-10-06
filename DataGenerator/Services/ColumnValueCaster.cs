@@ -354,12 +354,10 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 
 		string text = ToText(value);
 
-		if (DateTime.TryParse(text.Trim(), INVARIANT, DateTimeStyles.AllowWhiteSpaces, out DateTime parsed))
-		{
-			return parsed;
-		}
-
-		return AddDays(ParseDigits(text, allowDecimalPoint: false));
+		return
+			DateTime.TryParse(text.Trim(), INVARIANT, DateTimeStyles.AllowWhiteSpaces, out DateTime parsed)
+				? parsed
+				: AddDays(ParseDigits(text, allowDecimalPoint: false));
 	}
 
 	/// <summary>
@@ -421,13 +419,13 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 
 		string text = ToText(value);
 
-		if (_converter.TryConvertText(target, text, out object? converted, out _) && converted is not null)
-		{
-			return converted;
-		}
-
 		// The same text always gives the same GUID, so copied values stay consistent between rows.
-		return text.Length == 0 ? Guid.Empty : new Guid(MD5.HashData(Encoding.UTF8.GetBytes(text)));
+		return
+			_converter.TryConvertText(target, text, out object? converted, out _) && converted is not null
+				? converted
+				: text.Length == 0
+					? Guid.Empty
+					: new Guid(MD5.HashData(Encoding.UTF8.GetBytes(text)));
 	}
 
 	/// <summary>

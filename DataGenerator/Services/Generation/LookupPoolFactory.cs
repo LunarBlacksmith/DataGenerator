@@ -127,7 +127,13 @@ internal sealed class LookupPoolFactory
 		{
 			// Rows are told apart by their primary key, so a generated row counts even when an older row has the same value.
 			// Without a primary key only the value itself can be compared.
-			List<string> keyColumns = [.. lookup.SourceTable.Columns.Where(column => column.IsPrimaryKey).Select(column => column.Name)];
+			List<string> keyColumns = [..
+				lookup
+					.SourceTable
+					.Columns
+					.Where(column => column.IsPrimaryKey)
+					.Select(column => column.Name)
+			];
 			RowSnapshot  snapshot   = _snapshots.Get(lookup.SourceTable, keyColumns.Count > 0 ? keyColumns : [lookup.SourceColumn.Name]);
 
 			conditions.Add(snapshot.BuildScopeCondition(lookup.Scope, SOURCE_ALIAS)!);

@@ -238,15 +238,12 @@ internal sealed class PatternArgumentBinder
 				? namedArgument
 				: TakePositional();
 
-		if (argument is null)
-		{
-			return null;
-		}
-
 		return
-			argument.Kind == PatternArgumentKind.Number
-				? argument.Number
-				: throw new PatternSyntaxException($"{_functionName}: {parameterName} must be a number.", argument.Position);
+			argument is null
+				? null
+				: argument.Kind == PatternArgumentKind.Number
+					? argument.Number
+					: throw new PatternSyntaxException($"{_functionName}: {parameterName} must be a number.", argument.Position);
 	}
 
 	/// <summary>
@@ -268,15 +265,12 @@ internal sealed class PatternArgumentBinder
 				? namedArgument
 				: TakePositional();
 
-		if (argument is null)
-		{
-			return null;
-		}
-
 		return
-			argument.Kind == PatternArgumentKind.Text || argument.IsEvaluated
-				? argument.Text
-				: throw new PatternSyntaxException($"{_functionName}: {parameterName} must be text, e.g. '{argument.Text}'.", argument.Position);
+			argument is null
+				? null
+				: argument.Kind == PatternArgumentKind.Text || argument.IsEvaluated
+					? argument.Text
+					: throw new PatternSyntaxException($"{_functionName}: {parameterName} must be text, e.g. '{argument.Text}'.", argument.Position);
 	}
 
 	/// <summary>
@@ -316,15 +310,12 @@ internal sealed class PatternArgumentBinder
 				? namedArgument
 				: TakePositional();
 
-		if (argument is null)
-		{
-			return null;
-		}
-
 		return
-			argument.Kind is PatternArgumentKind.Text or PatternArgumentKind.Number
-				? argument.Text
-				: throw new PatternSyntaxException($"{_functionName}: {parameterName} must be text or a number.", argument.Position);
+			argument is null
+				? null
+				: argument.Kind is PatternArgumentKind.Text or PatternArgumentKind.Number
+					? argument.Text
+					: throw new PatternSyntaxException($"{_functionName}: {parameterName} must be text or a number.", argument.Position);
 	}
 
 	/// <summary>
@@ -540,14 +531,12 @@ internal sealed class PatternArgumentBinder
 	///	Thrown when the argument is not a range or number, or when the range is reversed.
 	/// </exception>
 	private (decimal Minimum, decimal Maximum) ToRange(PatternArgument argument, string example)
-	{
-		return argument.Kind switch
+		=> argument.Kind switch
 		{
 			PatternArgumentKind.Range  => ValidateRange(argument.RangeStart, argument.RangeEnd),
 			PatternArgumentKind.Number => (argument.Number, argument.Number),
 			_                          => throw new PatternSyntaxException($"{_functionName}: expected a range, e.g. {example}.", argument.Position)
 		};
-	}
 
 	/// <summary>
 	///	Checks that a range is written from its smallest value to its largest value.

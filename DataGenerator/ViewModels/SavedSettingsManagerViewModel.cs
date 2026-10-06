@@ -172,12 +172,12 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 	{
 		SavedColumnSetting? existing = _library.Find(newName);
 
-		if (existing is not null && !ReferenceEquals(existing, row.Setting))
-		{
-			return $"A saved setting called '{existing.Name}' already exists.";
-		}
-
-		return TryChange(() => _library.Rename(row.Setting.Name, newName)) ? null : "The new name could not be saved.";
+		return
+			existing is not null && !ReferenceEquals(existing, row.Setting)
+				? $"A saved setting called '{existing.Name}' already exists."
+				: TryChange(() => _library.Rename(row.Setting.Name, newName))
+					? null
+					: "The new name could not be saved.";
 	}
 
 	/// <summary>
@@ -190,9 +190,7 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 	///	Whether the setting should be applied to new matching row sets.
 	/// </param>
 	private void SetApplyAutomatically(SavedSettingRowViewModel row, bool applyAutomatically)
-	{
-		_ = TryChange(() => _library.SetApplyAutomatically(row.Setting.Name, applyAutomatically));
-	}
+		=> _ = TryChange(() => _library.SetApplyAutomatically(row.Setting.Name, applyAutomatically));
 
 	/// <summary>
 	///	Deletes the selected saved setting after confirmation.

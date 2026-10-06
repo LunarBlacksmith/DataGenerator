@@ -79,9 +79,8 @@ public sealed class LookupBuilderViewModel : ObservableObject
 		_onChanged   = onChanged ?? throw new ArgumentNullException(nameof(onChanged));
 
 		// Tables of the same database first, so the likely choices are at the top.
-		Tables =
-		[
-			.. (tables.Contains(targetTable) ? tables : tables.Append(targetTable))
+		Tables = [..
+			(tables.Contains(targetTable) ? tables : tables.Append(targetTable))
 				.OrderBy(table => string.Equals(table.DatabaseName, targetTable.DatabaseName, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
 				.ThenBy(table => table.DatabaseName, StringComparer.OrdinalIgnoreCase)
 				.ThenBy(table => table.DisplayName, StringComparer.OrdinalIgnoreCase)
@@ -243,14 +242,12 @@ public sealed class LookupBuilderViewModel : ObservableObject
 
 		Expression = _parser.Format(lookup, _targetTable);
 
-		if (_filterKind != LookupFilterKind.None && _filterText.Trim().Length == 0)
-		{
-			ErrorMessage = "Enter the filter, or choose No filter.";
-		}
-		else
-		{
-			ErrorMessage = _parser.TryParse(Expression, _targetTable, out _, out string errorMessage) ? null : errorMessage;
-		}
+		ErrorMessage =
+			_filterKind != LookupFilterKind.None && _filterText.Trim().Length == 0
+				? "Enter the filter, or choose No filter."
+				: _parser.TryParse(Expression, _targetTable, out _, out string errorMessage)
+					? null
+					: errorMessage;
 
 		_onChanged();
 	}

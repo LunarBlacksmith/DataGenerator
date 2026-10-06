@@ -57,9 +57,8 @@ public sealed class PatternCompletionProvider : IPatternCompletionProvider
 			return null;
 		}
 
-		List<PatternLanguageEntry> entries =
-		[
-			.. ENTRIES.Where(entry => entry.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && !IsAlreadyWritten(text, wordStart, entry))
+		List<PatternLanguageEntry> entries = [..
+			ENTRIES.Where(entry => entry.Name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) && !IsAlreadyWritten(text, wordStart, entry))
 		];
 
 		return entries.Count == 0 ? null : new PatternCompletionResult(wordStart, wordEnd - wordStart, prefix, entries);

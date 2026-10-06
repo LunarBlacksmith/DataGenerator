@@ -312,8 +312,7 @@ internal sealed class SqlScriptWriter
 			hasDeclarations = true;
 		}
 
-		List<string> temporaryTables =
-		[
+		List<string> temporaryTables = [
 			.. blueprint.Snapshots.Select(snapshot => snapshot.BuildDropStatement()),
 			.. blueprint.Updates.Select(update => update.BuildDropStatement())
 		];

@@ -54,15 +54,12 @@ public static class SavedSettingDescriber
 	{
 		ArgumentNullException.ThrowIfNull(setting);
 
-		if (setting.ColumnName is null)
-		{
-			return "(not saved from a column)";
-		}
-
 		return
-			setting.AppliesToAnyTable
-				? $"Every column named {setting.ColumnName}"
-				: $"{setting.ColumnName} in {setting.TableName}";
+			setting.ColumnName is null
+				? "(not saved from a column)"
+				: setting.AppliesToAnyTable
+					? $"Every column named {setting.ColumnName}"
+					: $"{setting.ColumnName} in {setting.TableName}";
 	}
 
 	/// <summary>

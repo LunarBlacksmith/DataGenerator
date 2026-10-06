@@ -87,17 +87,12 @@ public sealed class RowSetConfigurationLibrary
 	///	The validation message when the name is empty or too long; otherwise <see langword="null"/>.
 	/// </returns>
 	public static string? ValidateName(string? name)
-	{
-		if (string.IsNullOrWhiteSpace(name))
-		{
-			return "Enter a name, e.g. Shirts for the demo.";
-		}
-
-		return
-			name.Trim().Length > MAXIMUM_NAME_LENGTH
-				? $"Use at most {MAXIMUM_NAME_LENGTH} characters."
-				: null;
-	}
+		=>
+			string.IsNullOrWhiteSpace(name)
+				? "Enter a name, e.g. Shirts for the demo."
+				: name.Trim().Length > MAXIMUM_NAME_LENGTH
+					? $"Use at most {MAXIMUM_NAME_LENGTH} characters."
+					: null;
 
 	/// <summary>
 	///	Finds a saved row-set configuration by name, ignoring case and surrounding whitespace.

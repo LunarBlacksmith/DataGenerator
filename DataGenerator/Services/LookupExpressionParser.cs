@@ -336,9 +336,8 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 	private TableModel? FindTable(string? databaseName, string? schemaName, string tableName, TableModel targetTable, out string errorMessage)
 	{
 		IEnumerable<TableModel> tables     = _catalog.Tables.Contains(targetTable) ? _catalog.Tables : _catalog.Tables.Append(targetTable);
-		List<TableModel>        candidates =
-		[
-			.. tables.Where(
+		List<TableModel>        candidates = [..
+			tables.Where(
 				table => string.Equals(table.Name, tableName, StringComparison.OrdinalIgnoreCase)
 					&& (schemaName is null || string.Equals(table.SchemaName, schemaName, StringComparison.OrdinalIgnoreCase))
 					&& (databaseName is null || string.Equals(table.DatabaseName, databaseName, StringComparison.OrdinalIgnoreCase))

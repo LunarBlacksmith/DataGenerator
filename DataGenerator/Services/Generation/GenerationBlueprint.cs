@@ -140,7 +140,12 @@ internal sealed class GenerationBlueprint
 
 	public int RowSetCount      => Operations.Count;
 
-	public int StepCount        => Operations.Select(operation => operation.RowSet.Plan.Step).Distinct().Count();
+	public int StepCount
+		=>
+			Operations
+				.Select(operation => operation.RowSet.Plan.Step)
+				.Distinct()
+				.Count();
 
 	public IEnumerable<LookupPool>   LookupPools => Operations.SelectMany(operation => operation.RowSet.LookupPools);
 

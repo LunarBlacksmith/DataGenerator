@@ -117,9 +117,8 @@ public sealed class JsonUserPreferencesStore : IUserPreferencesStore
 			preferences.Theme = null;
 		}
 
-		preferences.HiddenRuleGridColumns =
-		[
-			.. (preferences.HiddenRuleGridColumns ?? [])
+		preferences.HiddenRuleGridColumns = [..
+			(preferences.HiddenRuleGridColumns ?? [])
 				.Where(key => !string.IsNullOrWhiteSpace(key))
 				.Select(key => key.Trim())
 				.Distinct(StringComparer.OrdinalIgnoreCase)

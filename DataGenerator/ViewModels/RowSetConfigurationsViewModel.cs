@@ -189,9 +189,11 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 
 		if (rowSet is not null)
 		{
-			IEnumerable<SavedRowSetConfiguration> configurations = _library.Configurations
-				.OrderBy(configuration => configuration.IsFromTable(TableName) ? 0 : 1)
-				.ThenBy(configuration => configuration.Name, StringComparer.CurrentCultureIgnoreCase);
+			IEnumerable<SavedRowSetConfiguration> configurations =
+				_library
+					.Configurations
+					.OrderBy(configuration => configuration.IsFromTable(TableName) ? 0 : 1)
+					.ThenBy(configuration => configuration.Name, StringComparer.CurrentCultureIgnoreCase);
 
 			foreach (SavedRowSetConfiguration configuration in configurations)
 			{
@@ -448,7 +450,13 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 
 		if (result.Skipped.Count > 0)
 		{
-			string names      = string.Join(", ", result.Skipped.Take(MAXIMUM_NAMED_SKIPS).Select(skip => skip.ColumnName));
+			string names      = string.Join(
+				", ",
+				result
+					.Skipped
+					.Take(MAXIMUM_NAMED_SKIPS)
+					.Select(skip => skip.ColumnName)
+			);
 			int    otherCount = result.Skipped.Count - MAXIMUM_NAMED_SKIPS;
 
 			text +=

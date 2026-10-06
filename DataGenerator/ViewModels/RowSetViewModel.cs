@@ -339,9 +339,9 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 			skipped.Add((rule.Name, problems[rule]));
 		}
 
-		List<string> unknownColumns =
-		[
-			.. configuration.Columns
+		List<string> unknownColumns = [..
+			configuration
+				.Columns
 				.Select(column => column.ColumnName ?? string.Empty)
 				.Where(columnName => columnName.Length > 0 && !HasColumn(columnName))
 		];
