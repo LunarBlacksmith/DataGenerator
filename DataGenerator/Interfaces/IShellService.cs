@@ -18,4 +18,18 @@ public interface IShellService
 	///	Thrown when <paramref name="folderPath"/> does not exist and no selectable file is supplied.
 	/// </exception>
 	void OpenFolder(string folderPath, string? fileToSelect = null);
+
+	/// <summary>
+	///	Opens a web or e-mail link with the user's default application.
+	/// </summary>
+	/// <param name="uri">
+	///	An absolute <c>http</c>, <c>https</c> or <c>mailto</c> link.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="uri"/> is <see langword="null"/>.
+	/// </exception>
+	/// <exception cref="ArgumentException">
+	///	Thrown when <paramref name="uri"/> is relative or uses another scheme, such as <c>file</c>.
+	/// </exception>
+	void OpenLink(Uri uri);
 }

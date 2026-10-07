@@ -11,7 +11,7 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 {
 	#region FIELDS
 	#region PUBLIC
-	public const int MAXIMUM_ROW_COUNT = 1_000_000;
+	public const int MAXIMUM_ROW_COUNT = RowSetPlan.MAXIMUM_ROW_COUNT;
 	public const int MAXIMUM_STEP      = 99;
 	#endregion PUBLIC
 
@@ -294,7 +294,7 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	}
 
 	/// <summary>
-	///	The generation modes and settings of every configurable column, ready to be saved as a set configuration.
+	///	The row count, generation modes and settings of every configurable column, ready to be saved as a set configuration.
 	/// </summary>
 	/// <param name="name">
 	///	The name to save the configuration under.
@@ -310,6 +310,7 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 		Name      = name.Trim(),
 		TableName = tableName,
 		SavedAt   = DateTime.Now,
+		RowCount  = RowCount,
 		Columns   = [..
 			ConfigurableRules
 				.Select(CaptureColumn)
@@ -320,6 +321,9 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	///	Gives every configurable column that the configuration mentions its saved mode and settings. Columns that cannot
 	///	use them keep their settings. Columns that use the values of other columns (Copy of column, Pattern) are set last,
 	///	and any that fail are tried again once more columns are set, so the order of the columns does not matter.
+	///	<para>
+	///		Restores the saved row count when present; older configurations leave the count unchanged.
+	///	</para>
 	/// </summary>
 	/// <param name="configuration">
 	///	The saved configuration to load into this row set.
@@ -330,9 +334,22 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	/// <exception cref="ArgumentNullException">
 	///	Thrown when <paramref name="configuration"/> is <see langword="null"/>.
 	/// </exception>
+	/// <exception cref="ArgumentOutOfRangeException">
+	///	Thrown when the saved row count is outside the supported range.
+	/// </exception>
 	public RowSetConfigurationLoadResult ApplyConfiguration(SavedRowSetConfiguration configuration)
 	{
 		ArgumentNullException.ThrowIfNull(configuration);
+
+		if (configuration.RowCount is < 1 or > MAXIMUM_ROW_COUNT)
+		{
+			throw new ArgumentOutOfRangeException(nameof(configuration), $"The saved row count must be between 1 and {MAXIMUM_ROW_COUNT:N0}.");
+		}
+
+		if (configuration.RowCount is int rowCount)
+		{
+			RowCount = rowCount;
+		}
 
 		List<(ColumnRuleViewModel Rule, SavedColumnSetting Setting)> matches            = [];
 		List<(string ColumnName, string Problem)>                    skipped            = [];

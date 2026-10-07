@@ -18,6 +18,11 @@
 	Foreground            ="{DynamicResource TextBrush}"
 	UseLayoutRounding     ="True"
 	WindowStartupLocation ="CenterScreen">
+	<Window.InputBindings>
+		<KeyBinding
+			Key     ="F1"
+			Command ="{Binding ShowDocumentationCommand}" />
+	</Window.InputBindings>
 
 	<!-- Window layout: the work area on top, the status bar at the bottom -->
 	<Grid>
@@ -105,6 +110,13 @@
 			BorderBrush     ="{DynamicResource StatusBarBorderBrush}"
 			BorderThickness ="0,1,0,0">
 			<DockPanel>
+				<!-- One unobtrusive entry point to the offline guides; F1 works anywhere in the main window -->
+				<Button
+					DockPanel.Dock ="Right"
+					Style          ="{StaticResource IconButtonStyle}"
+					Command        ="{Binding ShowDocumentationCommand}"
+					ToolTip        ="Documentation (F1): read the bundled guides, including SQL WHERE conditions and cross-table references."
+					infrastructure:ButtonIcon.Glyph ="&#xE897;" />
 				<ToggleButton
 					DockPanel.Dock ="Right"
 					Margin         ="10,0,0,0"

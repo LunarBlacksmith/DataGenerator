@@ -94,6 +94,8 @@ internal static class PatternFunctionFactory
 		{
 			"SEQ" or "SEQUENCE" => CreateSequence(binder),
 			"RAND_NUM"          => CreateRandomNumber(binder, "RAND_NUM(0, 99)"),
+			"ODD"               => CreateRandomNumber(binder, "ODD(1, 99)", isOdd: true),
+			"EVEN"              => CreateRandomNumber(binder, "EVEN(0, 100)", isOdd: false),
 			"NUM"               => CreateNumber(binder),
 			"RAND_DECIMAL"      => CreateRandomDecimal(binder),
 			"RAND_LETTERS"      => CreateRandomText(binder, "RAND_LETTERS(5)", includeLetters: true, includeDigits: false),
@@ -204,13 +206,16 @@ internal static class PatternFunctionFactory
 	/// <param name="example">
 	///	An example call used when reporting a missing or malformed range.
 	/// </param>
+	/// <param name="isOdd">
+	///	Restricts values to odd or even numbers; <see langword="null"/> allows both parities.
+	/// </param>
 	/// <returns>
 	///	A random-number node configured with the parsed range and digits.
 	/// </returns>
 	/// <exception cref="PatternSyntaxException">
 	///	Thrown when the range or digits arguments are invalid.
 	/// </exception>
-	private static PatternNode CreateRandomNumber(PatternArgumentBinder binder, string example)
+	private static PatternNode CreateRandomNumber(PatternArgumentBinder binder, string example, bool? isOdd = null)
 	{
 		(decimal rangeStart, decimal rangeEnd) = binder.RequireRange(example);
 
@@ -218,8 +223,13 @@ internal static class PatternFunctionFactory
 		long maximum = binder.ToWholeNumber(rangeEnd, "the range end");
 		int  digits  = ReadDigits(binder, minimum, maximum, NO_PADDING);
 
+		if (isOdd.HasValue && minimum == maximum && (minimum % 2 != 0) != isOdd.Value)
+		{
+			throw binder.Error($"The range {minimum} to {maximum} contains no {(isOdd.Value ? "odd" : "even")} numbers.");
+		}
+
 		binder.EnsureComplete("range", "digits");
-		return new RandomNumberPatternNode(minimum, maximum, digits);
+		return new RandomNumberPatternNode(minimum, maximum, digits, isOdd);
 	}
 
 	/// <summary>

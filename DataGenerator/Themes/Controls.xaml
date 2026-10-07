@@ -199,6 +199,7 @@
 							Template        ="{StaticResource ComboBoxToggleTemplate}" />
 
 						<ContentPresenter
+							x:Name                  ="SelectionContent"
 							Grid.Column             ="0"
 							Margin                  ="{TemplateBinding Padding}"
 							HorizontalAlignment     ="{TemplateBinding HorizontalContentAlignment}"
@@ -208,6 +209,19 @@
 							ContentTemplate         ="{TemplateBinding SelectionBoxItemTemplate}"
 							ContentTemplateSelector ="{TemplateBinding ItemTemplateSelector}"
 							IsHitTestVisible        ="False" />
+
+						<!-- Editable combo boxes keep typing in the same themed input as the selected value -->
+						<TextBox
+							x:Name              ="PART_EditableTextBox"
+							Grid.Column         ="0"
+							Margin              ="{TemplateBinding Padding}"
+							Padding             ="0"
+							Background          ="{TemplateBinding Background}"
+							BorderThickness     ="0"
+							Foreground          ="{TemplateBinding Foreground}"
+							IsReadOnly          ="{TemplateBinding IsReadOnly}"
+							VerticalAlignment   ="Center"
+							Visibility          ="Collapsed" />
 
 						<Popup
 							x:Name             ="PART_Popup"
@@ -239,6 +253,19 @@
 					</Grid>
 
 					<ControlTemplate.Triggers>
+						<Trigger
+							Property ="IsEditable"
+							Value    ="True">
+							<Setter
+								TargetName ="SelectionContent"
+								Property   ="Visibility"
+								Value      ="Collapsed" />
+							<Setter
+								TargetName ="PART_EditableTextBox"
+								Property   ="Visibility"
+								Value      ="Visible" />
+						</Trigger>
+
 						<Trigger
 							Property ="IsKeyboardFocusWithin"
 							Value    ="True">

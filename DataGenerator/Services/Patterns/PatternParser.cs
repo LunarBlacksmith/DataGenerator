@@ -220,7 +220,7 @@ internal sealed class PatternParser
 	}
 
 	/// <summary>
-	///	Parses a primary followed by comparisons that narrow NUM or RAND_NUM ranges.
+	///	Parses a primary followed by comparisons that narrow NUM, RAND_NUM, ODD or EVEN ranges.
 	/// </summary>
 	/// <returns>
 	///	The primary node, or a random-number node narrowed by the parsed comparisons.
@@ -239,7 +239,7 @@ internal sealed class PatternParser
 			if (node is not RandomNumberPatternNode numberNode)
 			{
 				throw new PatternSyntaxException(
-					$"{comparison} can only follow NUM(...) or RAND_NUM(...), e.g. NUM(digits=5) GREATER THAN 50.",
+					$"{comparison} can only follow NUM(...), RAND_NUM(...), ODD(...) or EVEN(...), e.g. NUM(digits=5) GREATER THAN 50.",
 					position
 				);
 			}

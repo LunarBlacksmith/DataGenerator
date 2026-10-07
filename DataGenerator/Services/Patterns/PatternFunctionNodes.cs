@@ -135,7 +135,8 @@ internal sealed class RandomNumberPatternNode : PatternNode
 {
 	#region FIELDS
 	#region PRIVATE
-	private readonly int _digits;
+	private readonly int   _digits;
+	private readonly bool? _isOdd;
 	#endregion PRIVATE
 	#endregion FIELDS
 
@@ -160,11 +161,36 @@ internal sealed class RandomNumberPatternNode : PatternNode
 	/// <param name="digits">
 	///	The padding width for formatted values, or 0 for no padding.
 	/// </param>
-	public RandomNumberPatternNode(long minimum, long maximum, int digits)
+	/// <param name="isOdd">
+	///	The required parity, or <see langword="null"/> to allow all whole numbers.
+	/// </param>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when the range contains no numbers of the required parity.
+	/// </exception>
+	public RandomNumberPatternNode(long minimum, long maximum, int digits, bool? isOdd = null)
 	{
+		if (isOdd.HasValue)
+		{
+			if ((minimum % 2 != 0) != isOdd.Value)
+			{
+				++minimum;
+			}
+
+			if ((maximum % 2 != 0) != isOdd.Value)
+			{
+				--maximum;
+			}
+
+			if (minimum > maximum)
+			{
+				throw new PatternSyntaxException($"The range contains no {(isOdd.Value ? "odd" : "even")} numbers.", 1);
+			}
+		}
+
 		Minimum = minimum;
 		Maximum = maximum;
 		_digits = digits;
+		_isOdd  = isOdd;
 	}
 	#endregion PUBLIC
 	#endregion CONSTRUCTORS
@@ -181,7 +207,14 @@ internal sealed class RandomNumberPatternNode : PatternNode
 	///	The row context that supplies the random source.
 	/// </param>
 	public override void Append(StringBuilder builder, PatternContext context)
-		=> PatternNumberFormatter.AppendPadded(builder, context.Random.NextInt64(Minimum, Maximum + 1), _digits);
+	{
+		long value =
+			_isOdd.HasValue
+				? Minimum + 2 * context.Random.NextInt64((Maximum - Minimum) / 2 + 1)
+				: context.Random.NextInt64(Minimum, Maximum + 1);
+
+		PatternNumberFormatter.AppendPadded(builder, value, _digits);
+	}
 
 	/// <summary>
 	///	Expands the random number into numeric templates covering its possible values.
@@ -192,7 +225,7 @@ internal sealed class RandomNumberPatternNode : PatternNode
 	/// <exception cref="PatternSyntaxException">
 	///	Thrown when the range contains negative numbers, which cannot be translated to SQL pattern matching.
 	/// </exception>
-	public override PatternTemplateSet ExpandTemplates() => PatternTemplateSet.ForNumbers(Minimum, Maximum, _digits, FunctionName);
+	public override PatternTemplateSet ExpandTemplates() => PatternTemplateSet.ForNumbers(Minimum, Maximum, _digits, FunctionName, _isOdd);
 
 	/// <summary>
 	///	Creates the same random-number function limited to a narrower range, e.g. for NUM(...) GREATER THAN 50.
@@ -206,8 +239,11 @@ internal sealed class RandomNumberPatternNode : PatternNode
 	/// <returns>
 	///	A random-number node with the same padding and function name, but the supplied range.
 	/// </returns>
+	/// <exception cref="PatternSyntaxException">
+	///	Thrown when narrowing the range leaves no numbers of the required parity.
+	/// </exception>
 	public RandomNumberPatternNode WithRange(long minimum, long maximum)
-		=> new RandomNumberPatternNode(minimum, maximum, _digits) { FunctionName = FunctionName };
+		=> new RandomNumberPatternNode(minimum, maximum, _digits, _isOdd) { FunctionName = FunctionName };
 	#endregion PUBLIC
 	#endregion METHODS
 }

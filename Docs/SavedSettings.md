@@ -129,30 +129,32 @@ Saved and exported files are indented JSON, so they can be reviewed and compared
 
 ## Set configurations
 
-A set configuration remembers the **Generation mode** and **Settings** of every column of a row set under one name.
+A set configuration remembers the **number of rows**, **Generation mode** and **Settings** of every column of a row set under one name.
 Use it when a whole row set should be generated the same way again, in a later session, in another row set or by a colleague.
 
 | Saved column setting                                        | Set configuration                                                   |
 | ----------------------------------------------------------- | ------------------------------------------------------------------- |
-| One column                                                  | Every column of a row set                                           |
+| One column                                                  | Row count and every column of a row set                             |
 | Saved and applied with the star button in a **Settings** cell | Saved and loaded with **Set configuration** above the grid        |
 | Can be applied automatically                                | Only loaded when you pick it                                        |
 | `SavedColumnSettings.json`                                  | `SavedSetConfigurations.json`                                       |
 
 ### Saving a set configuration
 
-1. Set up the columns of the row set.
-2. Click **Set configuration** above the grid. The name is filled in with the table and row set name; change it if you like.
+1. Set up the columns and number of rows of the row set.
+2. Click **Set configuration** above the grid. **Save as** is filled in with the table and row set name. Type a new name, or open its dropdown and select any saved configuration to overwrite (including one from another table).
 3. Click **Save** or press Enter. Using an existing name asks before replacing it.
 
-The number of rows and the name of the row set are not saved; only the columns are.
+The number of rows is saved along with the columns. The row set's name is not restored when loading a configuration.
 Columns whose values SQL Server always chooses, such as identity columns, are left out; they are never changed by loading a configuration either.
 
 ### Loading a set configuration
 
 Click **Set configuration** in the row set to change, and click a configuration under **Load into this set**.
-The app says how many columns will change and asks first. Then:
+The scrollable list has subtle dividers between configurations to make long lists easier to scan.
+The app says how many columns will change and which row count will be restored, and asks first. Then:
 
+- The saved row count is restored. Older configurations without a row count keep the current set's count.
 - Columns are matched **by name** (casing is ignored). Each matching column gets the saved mode and settings, replacing its own.
 - Columns the configuration does not have keep their settings.
 - A setting that does not suit a column (for example text in a **Fixed** value of an `int` column, or **NULL** for a column that does not allow it) is not applied; the column keeps its settings.
@@ -177,12 +179,13 @@ If the file cannot be read when the app starts, it is renamed to `SavedSetConfig
 
 ```json
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "setConfigurations": [
     {
       "name": "dbo.Shirt – Large shirts",
       "tableName": "dbo.Shirt",
       "savedAt": "2026-10-01T09:30:00+01:00",
+      "rowCount": 10,
       "columns": [
         {
           "name": "Size",
@@ -198,3 +201,5 @@ If the file cannot be read when the app starts, it is renamed to `SavedSetConfig
 
 Each entry of `columns` has the same properties as a saved column setting (see [File format](#file-format)); `columnName` is the column it is loaded into.
 
+`rowCount` must be between 1 and 1,000,000. Files from format version 1 remain readable; an absent or null count means
+the current row count is left unchanged. New exports use version 2 so older app versions do not silently ignore the saved count.

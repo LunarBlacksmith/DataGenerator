@@ -10,4 +10,9 @@ public interface IHelpService
 	///	current expression unchanged.
 	/// </param>
 	void ShowPatternLanguageHelp(string? expression = null);
+
+	/// <summary>
+	///	Shows the bundled documentation reader without requiring an internet connection.
+	/// </summary>
+	void ShowDocumentation();
 }

@@ -44,6 +44,11 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	/// </summary>
 	public ObservableCollection<RowSetConfigurationOption> Options { get; }
 
+	/// <summary>
+	///	All saved names available as overwrite targets, including configurations for other tables.
+	/// </summary>
+	public ObservableCollection<string> SaveNames { get; }
+
 	public bool HasOptions => Options.Count > 0;
 
 	/// <summary>
@@ -139,7 +144,8 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		IFileDialogService         fileDialogService
 	)
 	{
-		Options = [];
+		Options   = [];
+		SaveNames = [];
 
 		_library           = library ?? throw new ArgumentNullException(nameof(library));
 		_dialogService     = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
@@ -196,10 +202,13 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	/// <param name="result">
 	///	The load result reported by the row set.
 	/// </param>
+	/// <param name="rowCount">
+	///	The restored row count, or <see langword="null"/> for an older configuration without a saved count.
+	/// </param>
 	/// <returns>
 	///	The result text and tooltip details to show beside the row set.
 	/// </returns>
-	private static OperationResultText Describe(string name, RowSetConfigurationLoadResult result)
+	private static OperationResultText Describe(string name, RowSetConfigurationLoadResult result, int? rowCount)
 	{
 		List<string> details = [..
 			result
@@ -221,6 +230,11 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 			result.UpdatedCount == 1
 				? $"Loaded '{name}': 1 column updated."
 				: $"Loaded '{name}': {result.UpdatedCount} columns updated.";
+
+		text +=
+			rowCount.HasValue
+				? $" Row count set to {rowCount.Value:N0}."
+				: " Row count unchanged (not saved in this configuration).";
 
 		if (result.Skipped.Count > 0)
 		{
@@ -274,7 +288,21 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	/// </summary>
 	private void RefreshOptions()
 	{
+		string saveName = _newName;
+
 		Options.Clear();
+		SaveNames.Clear();
+
+		foreach (SavedRowSetConfiguration configuration in
+			_library
+				.Configurations
+				.OrderBy(configuration => configuration.Name, StringComparer.CurrentCultureIgnoreCase)
+		)
+		{
+			SaveNames.Add(configuration.Name);
+		}
+
+		NewName = saveName;
 
 		RowSetViewModel? rowSet = RowSet;
 
@@ -290,7 +318,7 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 			{
 				int matchingColumnCount = rowSet.CountMatchingColumns(configuration);
 
-				if (matchingColumnCount > 0)
+				if (matchingColumnCount > 0 || (configuration.RowCount.HasValue && configuration.IsFromTable(TableName)))
 				{
 					Options.Add(new RowSetConfigurationOption(configuration, matchingColumnCount, configuration.IsFromTable(TableName)));
 				}
@@ -304,7 +332,7 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	}
 
 	/// <summary>
-	///	Saves the active row set's configurable column settings under the entered name.
+	///	Saves the active row set's row count and configurable column settings under the entered name.
 	/// </summary>
 	private void Save()
 	{
@@ -324,7 +352,7 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 			&& !_dialogService.Confirm(
 				DIALOG_TITLE,
 				$"A set configuration called '{existing.Name}' already exists (saved from {existing.TableName}).{Environment.NewLine}{Environment.NewLine}"
-					+ $"Replace it with the column settings of '{rowSet.Name.Trim()}'?"
+					+ $"Replace it with the row count and column settings of '{rowSet.Name.Trim()}'?"
 			))
 		{
 			return;
@@ -345,7 +373,7 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 		if (TryChange(() => _library.Save(configuration), "saved"))
 		{
 			rowSet.ConfigurationResult = new OperationResultText(
-				$"Saved the settings of all {configuration.Columns.Count} columns as the set configuration '{name}'.",
+				$"Saved {rowSet.RowCount:N0} rows and the settings of all {configuration.Columns.Count} columns as the set configuration '{name}'.",
 				null,
 				false
 			);
@@ -381,6 +409,10 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 			+ $"{Environment.NewLine}{Environment.NewLine}This replaces the generation mode and settings of {scope}."
 			+ (keptCount > 0 ? $" The other {keptCount} keep their settings." : string.Empty)
 			+ (
+				configuration.RowCount.HasValue
+					? $" The row count will be set to {configuration.RowCount.Value:N0}."
+					: " This older configuration has no saved row count, so the current count is kept.")
+			+ (
 				option.IsFromActiveTable
 					? string.Empty
 					: $"{Environment.NewLine}{Environment.NewLine}It was saved from {configuration.TableName}; only columns with the same names are changed.");
@@ -390,7 +422,7 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 			return;
 		}
 
-		rowSet.ConfigurationResult = Describe(configuration.Name, rowSet.ApplyConfiguration(configuration));
+		rowSet.ConfigurationResult = Describe(configuration.Name, rowSet.ApplyConfiguration(configuration), configuration.RowCount);
 	}
 
 	/// <summary>

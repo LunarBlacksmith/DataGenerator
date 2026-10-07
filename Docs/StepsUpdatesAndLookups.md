@@ -67,6 +67,17 @@ Every row set has a **Step** (1 to 99, shown next to the row count). The run goe
 Within a step, tables are inserted in foreign-key order as before. A later step sees everything earlier steps did, so it can use those rows with **Value from table**, **Generated key** or an update set.
 Row set tabs of a later step show a **Step n** badge, and the run order is listed at the top of a generated SQL file.
 
+Drag a Set tab and drop it on the left half of another tab of the same table to **move** it before that tab, or on the
+right half to move it after it. The Sets in between shift along while keeping their relative order. A coloured bar
+shows where the Set will land.
+To **swap** two Sets instead, hold **Shift** while dragging and drop on the other tab (it is outlined); the tabs between
+them stay in place. Press **Esc** to cancel a drag.
+The selected Set, row counts and column rules are preserved. Moving or swapping changes the order used for sets of the
+same step and action, but does not change step numbers or the rule that inserts run before updates.
+When there are more tabs than fit, use the **mouse wheel over the tab strip** or its horizontal scrollbar to reach them.
+While dragging, hold the tab near either end of the strip to scroll towards that end (further out scrolls faster), or
+turn the mouse wheel. Selecting or adding a Set brings its tab into view.
+
 Insert sets run in step 1 unless you change it. **Generated key** columns need an insert set of the referenced table in the same step or an earlier one.
 
 ## Update sets
@@ -100,12 +111,43 @@ The table is given a short name (an alias) so its columns can be told apart from
 - Write a column as `alias.[ColumnName]`, e.g. `t.[Size]`. The square brackets hold the column name; they are needed for names with spaces, symbols or reserved words, and are harmless otherwise.
 - Any SQL Server condition works: `=`, `<>`, `<`, `>`, `LIKE`, `IN (...)`, `IS NULL`, `AND`, `OR`, `NOT`, functions, and sub-queries on other tables.
 - Text values go in single quotes: `t.[Colour] = 'Red'`.
+- The alias refers only to the current target (`t`) or lookup source (`s`). Another table needs a subquery or `EXISTS`,
+  not a second table name substituted for that alias.
+- For another table, use the full SQL Server name **`[DatabaseName].[SchemaName].[TableName]`** and qualify its columns
+  with a separate alias. For example, `[TestData].[dbo].[Pant] AS p` and `p.[ShirtID]`.
+  `[dbo].[ColumnName]` is not a table reference: `dbo` is a schema, not a table or database.
+- Brackets are required for identifiers with spaces, reserved words or special characters; ordinary identifiers may
+  omit them, but consistently using brackets avoids ambiguity. Database qualification is not inherently required for
+  every same-database query, but is safest here because execution may use a different current database.
+
+For an update Set in `Shirt`, this condition finds rows referenced by small pants:
+
+```sql
+t.[ShirtID] IN (
+    SELECT p.[ShirtID]
+    FROM [TestData].[dbo].[Pant] AS p
+    WHERE p.[Size] = 'S'
+)
+```
+
+For a column using **Value from table**, the lookup's `WHERE SQL` condition uses `s`:
+
+```text
+TestData.dbo.Shirt.ShirtID WHERE SQL EXISTS (
+    SELECT 1
+    FROM [TestData].[dbo].[Pant] AS p
+    WHERE p.[ShirtID] = s.[ShirtID] AND p.[Size] = 'S'
+)
+```
+
+Replace `TestData` with the actual database name. These boxes accept a **condition**, not a whole `WHERE` clause.
+The update Set's Where box takes only `t.[...] ...`; the lookup expression uses the `WHERE SQL` keyword as shown.
 
 | Condition                                                             | Meaning                                                        |
 | --------------------------------------------------------------------- | -------------------------------------------------------------- |
 | `t.[Size] = 'XL' AND t.[ShirtParentID] IS NULL`                       | Rows of size XL that have no parent shirt yet.                 |
 | `t.[Name] LIKE 'P%' OR t.[Colour] IN ('Red', 'Blue')`                 | Rows whose name starts with P, or that are red or blue.        |
-| `t.[ShirtID] IN (SELECT [ShirtID] FROM dbo.Pant WHERE [Size] = 'S')`  | Rows whose shirt is used by a small pant.                      |
+| `t.[ShirtID] IN (SELECT p.[ShirtID] FROM [TestData].[dbo].[Pant] AS p WHERE p.[Size] = 'S')` | Rows whose shirt is used by a small pant. |
 | `s.[IsActive] = 1 AND s.[CreatedOn] >= '2024-01-01'`                  | (Lookup filter) only active source rows created since 2024.    |
 
 ## Rows already there and rows generated now

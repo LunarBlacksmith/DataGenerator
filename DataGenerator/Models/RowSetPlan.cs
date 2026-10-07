@@ -9,6 +9,7 @@ public sealed class RowSetPlan
 	#region FIELDS
 	#region PUBLIC
 	public const int FIRST_STEP = 1;
+	public const int MAXIMUM_ROW_COUNT = 1_000_000;
 	#endregion PUBLIC
 	#endregion FIELDS
 

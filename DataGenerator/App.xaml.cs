@@ -61,6 +61,7 @@ public partial class App : Application
 		DispatcherUnhandledException += OnDispatcherUnhandledException;
 
 		HintPresentation.Register();
+		HorizontalWheelScroll.Register();
 
 		ISqlValueConverter          converter            = new SqlValueConverter();
 		IRegexValueGenerator        regexGenerator       = new RegexValueGenerator();
@@ -70,6 +71,7 @@ public partial class App : Application
 		IPatternSqlTranslator       patternTranslator    = new PatternSqlTranslator();
 		ITableCatalog               tableCatalog         = new TableCatalog();
 		IFileDialogService          fileDialogService    = new FileDialogService();
+		IShellService               shellService         = new ShellService();
 		SavedSettingsLibrary        savedSettings        = new(new JsonSavedSettingsStore(SecurePathService.GetSavedSettingsFilePath()));
 		ISavedSettingsWindowService savedSettingsWindows = new SavedSettingsWindowService(savedSettings, _dialogService, fileDialogService);
 		string?                     savedSettingsWarning = savedSettings.Load();
@@ -111,9 +113,9 @@ public partial class App : Application
 			new DataGenerationService(converter, columnValueGenerator, patternTranslator),
 			fileDialogService,
 			_dialogService,
-			new ShellService(),
+			shellService,
 			new ClipboardService(),
-			new HelpService(patternGenerator),
+			new HelpService(patternGenerator, new MarkdigMarkdownRenderer(), shellService),
 			_exceptionFormatter,
 			new ForeignTableKeyResolver(),
 			tableCatalog,

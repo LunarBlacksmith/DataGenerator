@@ -29,7 +29,7 @@ A Windows desktop tool for generating realistic SQL Server test data in large qu
   - Select several columns to change their mode or settings in bulk. A column that cannot take the change keeps its current rule.
   - Show or hide grid columns such as **Keys** or **Nullable**; the choice is remembered.
   - Move between **Settings** cells with the arrow keys.
-- **Row sets.** A table can have several insert sets, each with its own row count and column rules. For example, 10 shirts with one set of values and 10 more with completely different values.
+- **Row sets.** A table can have several insert sets, each with its own row count and column rules. For example, 10 shirts with one set of values and 10 more with completely different values. Drag a Set tab to move it before or after another tab, or Shift+drag to swap two tabs; overflowing tabs scroll horizontally with the mouse wheel, and the strip also scrolls while dragging near its ends or turning the wheel.
 - **Steps and update sets.**
   - Runs are split into numbered steps that execute in order.
   - **Update sets** change rows that are already there or that an earlier step generated. You choose how many rows, which rows (`WHERE` condition) and the new column values.
@@ -40,12 +40,12 @@ A Windows desktop tool for generating realistic SQL Server test data in large qu
   P FOLLOWED BY SEQ(1-1000, 1) FOLLOWED BY (X OR Y) FOLLOWED BY (RAND_NUM(0, 99, 2))
   ```
 
-  produces `P0001Y73`, `P0002X04`, … It also offers dates (`TODAY()`, `RAND_DATE()`), text functions, `FIRST`/`LAST`, values of other columns (`COL(Name)`) and functions inside functions. The editor has non-intrusive completion: press <kbd>Tab</kbd> twice to accept a suggestion.
+  produces `P0001Y73`, `P0002X04`, … It also offers parity-limited numbers (`ODD(1, 99)`, `EVEN(0, 100)`), dates (`TODAY()`, `RAND_DATE()`), text functions, `FIRST`/`LAST`, values of other columns (`COL(Name)`) and functions inside functions. The editor has non-intrusive completion: press <kbd>Tab</kbd> twice to accept a suggestion.
 - **Value from table.** Use values of a column of any loaded table, taken from existing rows and/or rows generated in the same run. They can be unique, and filtered by a pattern, a regular expression or a SQL condition.
 - **Copy of column.** Copy another column of the same row, converted automatically to this column's type.
 - **Foreign table keys (FTK).** Columns ending in `FTK` are treated like foreign keys even when SQL Server has no constraint for them. DataGenerator offers to generate rows for the table they point to, found by its `…PK`, `…TK` or `…_tk` column.
 - **Saved settings and set configurations.**
-  - Save a single column's settings, or a whole set's column rules, and load them later or share them with colleagues as JSON files.
+  - Save a single column's settings, or a whole set's row count and column rules, and load them later or share them with colleagues as JSON files.
   - Column settings and set configurations are kept and loaded separately, so loading one never overwrites the other by surprise.
 - **Clear existing data first.** Optionally empty the included tables, or every table in their databases, before inserting, and reseed identities. This works for direct inserts and SQL scripts.
 - **Post-generation SQL.** Run stored procedures or any SQL at the end of the run, inside the same transaction.
@@ -102,6 +102,11 @@ The build treats warnings as errors.
 | **Keep current value** | Update sets only: the column is not changed.                                                             |
 
 ## Documentation
+
+Press **F1** or click the small documentation icon in the status bar to read the bundled guides offline inside the app.
+The reader shows the guides as formatted pages (headings, tables, code and keyboard keys) in the current light or dark theme, starting with the SQL WHERE, lookup and execution guide. Links move between guides, Ctrl+F finds text and Ctrl+wheel zooms. It uses the Microsoft Edge WebView2 Runtime, which is included with Windows 10 and 11; without it the reader shows the plain Markdown text.
+
+Anywhere in the app, **Shift + mouse wheel** scrolls wide content sideways, such as the column rules grid and long sample values.
 
 | Document                                                                   | Covers                                                                                       |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |

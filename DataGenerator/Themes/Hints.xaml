@@ -206,7 +206,10 @@
 	<sys:String
 		x:Key="RowSetTabHint">
 		A row set of this table and its number of rows. Each row set generates its own rows with its own column rules. A
-		warning icon means some of its settings need attention.
+		warning icon means some of its settings need attention. Drag a tab to move it: drop on the left half of another tab to
+		insert before it, or the right half to insert after it. Use Shift+drag to swap two tabs instead, and Esc to cancel.
+		These change their order within the same step and action but not step numbers or insert-before-update ordering. Scroll the mouse wheel over the tabs
+		to move sideways when the tab strip overflows; while dragging, hold the tab near either end or turn the wheel to scroll.
 	</sys:String>
 
 	<sys:String
@@ -249,6 +252,7 @@
 		to allow any row in the chosen scope. t stands for the target table, i.e. this table, whose rows the update set
 		changes. Write a column as t.[ColumnName]: the square brackets hold the column name. Any SQL Server condition
 		works (=, &lt;&gt;, &lt;, &gt;, LIKE, IN, IS NULL, AND, OR, NOT, functions and sub-queries on other tables).
+		Use [Database].[Schema].[Table] in a subquery for another table. Press F1 for the SQL WHERE guide and examples.
 		Examples: t.[Size] = 'XL' AND t.[ShirtParentID] IS NULL — or — t.[Name] LIKE 'P%' OR t.[Colour] IN ('Red',
 		'Blue') — or — t.[ShirtID] IN (SELECT [ShirtID] FROM dbo.Pant WHERE [Size] = 'S').
 	</sys:String>
@@ -417,6 +421,7 @@
 		those matching a regular expression (needs SQL Server 2025), or those of rows meeting a SQL condition on the
 		source table. In a SQL condition, s stands for the source table (the table the values come from) and [ ] holds a
 		column name, e.g. s.[Size] = 'XL' AND s.[IsActive] = 1.
+		Reference other tables in subqueries using [Database].[Schema].[Table] and a separate alias. Press F1 for examples.
 	</sys:String>
 
 	<sys:String
@@ -593,7 +598,7 @@
 
 	<sys:String
 		x:Key="SetConfigurationButtonHint">
-		Saves the generation mode and settings of every column of this row set as one named set configuration, or loads a
+		Saves the row count, generation mode and settings of every column of this row set as one named set configuration, or loads a
 		saved one into this row set. Loading replaces the settings of every column the configuration has; the other columns
 		keep theirs. Set configurations are kept apart from the saved settings of single columns (the star button in each
 		Settings cell), so loading one never happens by accident.
@@ -601,15 +606,17 @@
 
 	<sys:String
 		x:Key="SaveSetConfigurationHint">
-		The name to save the settings of every column of this row set under. Press Enter or click Save. Saving under an
-		existing name asks before replacing it. The number of rows and the name of the row set are not part of it.
+		Type a new name, or choose an existing saved configuration from the dropdown to overwrite it. Press Enter or
+		click Save. Replacing an existing configuration always asks for confirmation. The row count and column settings
+		are saved; the row set's name is not restored when loading.
 	</sys:String>
 
 	<sys:String
 		x:Key="LoadSetConfigurationHint">
 		Click a set configuration to load it into this row set, after confirming. Columns are matched by name, so a
 		configuration saved from another table can be loaded too; only its columns that exist here are changed. Settings
-		that do not suit a column are left as they were and reported next to the button.
+		that do not suit a column are left as they were and reported next to the button. The saved row count is restored;
+		older configurations without a count keep the current count. Dividers separate the entries in the scrollable list.
 	</sys:String>
 
 	<sys:String

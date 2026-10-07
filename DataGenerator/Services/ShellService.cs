@@ -61,6 +61,34 @@ public sealed class ShellService : IShellService
 			UseShellExecute = true
 		});
 	}
+
+	/// <summary>
+	///	Opens a web or e-mail link with the user's default application.
+	/// </summary>
+	/// <param name="uri">
+	///	An absolute <c>http</c>, <c>https</c> or <c>mailto</c> link.
+	/// </param>
+	/// <exception cref="ArgumentNullException">
+	///	Thrown when <paramref name="uri"/> is <see langword="null"/>.
+	/// </exception>
+	/// <exception cref="ArgumentException">
+	///	Thrown when <paramref name="uri"/> is relative or uses another scheme, such as <c>file</c>.
+	/// </exception>
+	public void OpenLink(Uri uri)
+	{
+		ArgumentNullException.ThrowIfNull(uri);
+
+		if (!uri.IsAbsoluteUri || uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeMailto)
+		{
+			throw new ArgumentException($"Only web and e-mail links can be opened, not '{uri.OriginalString}'.", nameof(uri));
+		}
+
+		using Process? browser = Process.Start(new ProcessStartInfo
+		{
+			FileName        = uri.AbsoluteUri,
+			UseShellExecute = true
+		});
+	}
 	#endregion PUBLIC
 	#endregion METHODS
 }

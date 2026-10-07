@@ -110,7 +110,7 @@ When in doubt, put parentheses around the parts that belong together.
 
 ## Narrowing numbers
 
-`GREATER THAN`, `LESS THAN`, `AT LEAST` and `AT MOST` narrow the numbers of a `NUM(...)` or `RAND_NUM(...)` that comes straight before them.
+`GREATER THAN`, `LESS THAN`, `AT LEAST` and `AT MOST` narrow the numbers of a `NUM(...)`, `RAND_NUM(...)`, `ODD(...)` or `EVEN(...)` that comes straight before them.
 They can be combined, and they bind more tightly than `REPEATED`, `OR` and `FOLLOWED BY`:
 
 | Pattern                                             | Means                                        | Example values      |
@@ -147,7 +147,7 @@ Argument values can be:
 | A function | `TODAY(format='yyyy-MM-dd')`, `RAND_NUM(2, 5)`, `COL(Size)`        |
 
 Ranges include both ends and are written smallest first. Negative numbers work in ranges too: `-50-50` and `-50 TO 50` are the same range.
-`SEQ`, `RAND_NUM` and `RAND_DECIMAL` also accept a named range, `range=1-1000`, or both ends named, `min=1, max=1000`. A length can be named too: `length=5-8`.
+`SEQ`, `RAND_NUM`, `ODD`, `EVEN` and `RAND_DECIMAL` also accept a named range, `range=1-1000`, or both ends named, `min=1, max=1000`. A length can be named too: `length=5-8`.
 
 ### Functions inside functions
 
@@ -200,6 +200,25 @@ A random whole number from the range, including both ends.
 | `RAND_NUM(1, 500)`    | `45`, `364`, `91` |
 | `RAND_NUM(0, 99, 2)`  | `07`, `45`, `73`  |
 | `RAND_NUM(-50 TO 50)` | `6`, `-37`, `28`  |
+
+### ODD(range, digits) and EVEN(range, digits)
+
+Random whole numbers of the specified parity within an inclusive range. Like `RAND_NUM`, both functions require a range
+and accept an optional `digits` argument for zero padding. Zero is even, and negative ranges are supported for generation.
+Every eligible value has the same chance of being chosen.
+
+| Pattern                          | Possible values                       |
+| -------------------------------- | ------------------------------------- |
+| `ODD(0, 10)`                     | `1`, `3`, `5`, `7`, `9`                |
+| `EVEN(1-10, digits=2)`            | `02`, `04`, `06`, `08`, `10`           |
+| `ODD(min=-5, max=0)`             | `-5`, `-3`, `-1`                       |
+| `EVEN(0, 0)`                     | `0`                                   |
+| `ODD(1, 99) GREATER THAN 90`      | `91`, `93`, `95`, `97`, `99`           |
+| `EVEN(0, RAND_NUM(4, 10))`        | Even values up to the nested maximum  |
+
+A range or comparison with no eligible values, such as `ODD(2, 2)` or `EVEN(1, 2) LESS THAN 2`, reports a pattern error.
+Non-negative ranges also work in lookup pattern filters; their SQL conditions check both the range and the last digit's parity.
+As with other numeric functions, negative ranges cannot be used as SQL lookup filters.
 
 ### NUM(min, max, digits)
 
@@ -459,7 +478,7 @@ A pattern can also describe values to *look for*, in the `WHERE` part of a **Val
 e.g. `Shirt.ShirtCode WHERE S THEN (NUM(digits=5) GREATER THAN 50) THEN (1 OR 2)`. The pattern is then turned into a SQL
 condition that matches every value the pattern could produce. See [Steps, update sets and lookups](StepsUpdatesAndLookups.md).
 
-- Only parts whose values can be recognised may be used: text, `OR`, `REPEATED`, `SEQ`, `NUM`, `RAND_NUM` (with comparisons),
+- Only parts whose values can be recognised may be used: text, `OR`, `REPEATED`, `SEQ`, `NUM`, `RAND_NUM`, `ODD`, `EVEN` (with comparisons),
   `RAND_DIGITS`, `RAND_LETTERS`, `RAND_ALPHANUM`, `ONE_OF`, `CYCLE`, `FIRST`, `LAST` and `GUID`. Dates, decimals, `TODAY`, `ROW`, `COL` and
   the text functions cannot be used, and an error says so.
 - Matching ignores letter case, as SQL Server usually does.
@@ -473,7 +492,7 @@ condition that matches every value the pattern could produce. See [Steps, update
 | `RAND_LETTERS`, `RAND_DIGITS`, `RAND_ALPHANUM` length | 0 to 1,000                          |
 | `digits`                                              | 0 to 19                             |
 | `decimals`                                            | 0 to 10                             |
-| Whole numbers in `SEQ`, `NUM` and `RAND_NUM`          | -10<sup>18</sup> to 10<sup>18</sup> |
+| Whole numbers in `SEQ`, `NUM`, `RAND_NUM`, `ODD` and `EVEN` | -10<sup>18</sup> to 10<sup>18</sup> |
 | `NUM` `digits` without a range                        | 0 to 18                             |
 | `FIRST` and `LAST` row count                          | 1 to 1,000                          |
 | `LEFT`, `RIGHT` and `PAD` length                      | 0 to 1,000                          |
@@ -503,7 +522,7 @@ Common problems:
 | `TODAY('dd/MM/yyyy')`               | The first value is the time, `NOW` or `ANY`. Put the format second, `TODAY(NOW, 'dd/MM/yyyy')`, or name it: `TODAY(format='dd/MM/yyyy')`. |
 | `RAND_NUM(1-RAND_NUM(2, 5))`        | A range cannot contain a function. Write the ends as two arguments: `RAND_NUM(1, RAND_NUM(2, 5))`.                                        |
 | `COL(Colour)` on `Colour` itself    | A column cannot use its own value, and columns cannot use each other in a loop. Pick another column.                                      |
-| `ONE_OF(A, B) GREATER THAN 5`       | Comparisons only follow `NUM(...)` or `RAND_NUM(...)`: `NUM(0, 99) GREATER THAN 5`.                                                        |
+| `ONE_OF(A, B) GREATER THAN 5`       | Comparisons only follow `NUM(...)`, `RAND_NUM(...)`, `ODD(...)` or `EVEN(...)`: `NUM(0, 99) GREATER THAN 5`.                                |
 | `LAST(2, 'A', 'B', 'C')`            | Two rows need two values (or one for both): `LAST(2, 'B', 'C')` or `LAST(3, 'A', 'B', 'C')`.                                              |
 
 ## Examples
@@ -537,7 +556,7 @@ pattern       = concatenation ;
 concatenation = choice , { ( "FOLLOWED" , "BY" | "THEN" | "+" ) , choice } ;
 choice        = repetition , { ( "OR" | "|" ) , repetition } ;
 repetition    = comparison , { "REPEATED" , count , [ ( "TO" | "-" | ".." ) , count ] , [ "TIMES" ] } ;
-comparison    = primary , { ( "GREATER" , "THAN" | "LESS" , "THAN" | "AT" , "LEAST" | "AT" , "MOST" ) , [ "-" ] , count } ;  (* after NUM or RAND_NUM only *)
+comparison    = primary , { ( "GREATER" , "THAN" | "LESS" , "THAN" | "AT" , "LEAST" | "AT" , "MOST" ) , [ "-" ] , count } ;  (* after NUM, RAND_NUM, ODD or EVEN only *)
 primary       = quoted-text | number | word | function | "(" , concatenation , ")" ;
 function      = word , "(" , [ argument , { "," , argument } ] , ")" ;
 argument      = [ word , ( "=" | ":" ) ] , value ;

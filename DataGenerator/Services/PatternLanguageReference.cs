@@ -36,6 +36,18 @@ public static class PatternLanguageReference
 				"RAND_NUM(0, 99, 2) → 07"
 			),
 			Function(
+				"ODD",
+				"ODD(min, max, digits)",
+				"Random odd whole number from min to max inclusive. digits pads it with leading zeros (no padding by default). The range must contain an odd number.",
+				"ODD(0, 10, 2) → 07"
+			),
+			Function(
+				"EVEN",
+				"EVEN(min, max, digits)",
+				"Random even whole number from min to max inclusive. digits pads it with leading zeros (no padding by default). The range must contain an even number.",
+				"EVEN(1, 10, 2) → 04"
+			),
+			Function(
 				"NUM",
 				"NUM(min, max, digits)",
 				"Random whole number with every parameter optional: NUM() is 0 to 999,999,999, NUM(digits=5) is 00000 to 99999 and NUM(1, 50) is the same as RAND_NUM(1, 50). Add GREATER THAN, LESS THAN, AT LEAST or AT MOST to narrow it.",
@@ -181,25 +193,25 @@ public static class PatternLanguageReference
 			Keyword(
 				"GREATER THAN",
 				"NUM(…) GREATER THAN n",
-				"Only numbers above n. Works with NUM and RAND_NUM, and can be combined, e.g. GREATER THAN 10 LESS THAN 20.",
+				"Only numbers above n. Works with NUM, RAND_NUM, ODD and EVEN, and can be combined, e.g. GREATER THAN 10 LESS THAN 20.",
 				"NUM(digits=3) GREATER THAN 50"
 			),
 			Keyword(
 				"LESS THAN",
 				"NUM(…) LESS THAN n",
-				"Only numbers below n. Works with NUM and RAND_NUM.",
+				"Only numbers below n. Works with NUM, RAND_NUM, ODD and EVEN.",
 				"RAND_NUM(0, 999) LESS THAN 100"
 			),
 			Keyword(
 				"AT LEAST",
 				"NUM(…) AT LEAST n",
-				"Only numbers of n or more. Works with NUM and RAND_NUM.",
+				"Only numbers of n or more. Works with NUM, RAND_NUM, ODD and EVEN.",
 				"NUM(digits=4) AT LEAST 1000"
 			),
 			Keyword(
 				"AT MOST",
 				"NUM(…) AT MOST n",
-				"Only numbers of n or less. Works with NUM and RAND_NUM.",
+				"Only numbers of n or less. Works with NUM, RAND_NUM, ODD and EVEN.",
 				"NUM() AT MOST 500"
 			)
 		];

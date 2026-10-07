@@ -12,7 +12,7 @@ public sealed class JsonRowSetConfigurationStore : IRowSetConfigurationStore
 {
 	#region FIELDS
 	#region PRIVATE
-	private const int    FORMAT_VERSION   = 1;
+	private const int    FORMAT_VERSION   = 2;
 	private const string FILE_DESCRIPTION = "set configurations file";
 	#endregion PRIVATE
 	#endregion FIELDS
@@ -169,13 +169,18 @@ public sealed class JsonRowSetConfigurationStore : IRowSetConfigurationStore
 	///	The validated and normalised configuration.
 	/// </returns>
 	/// <exception cref="InvalidDataException">
-	///	Thrown when the configuration has no name or a column without a column name.
+	///	Thrown when the configuration has no name, an invalid row count or a column without a column name.
 	/// </exception>
 	private static SavedRowSetConfiguration Normalize(SavedRowSetConfiguration? configuration, string location)
 	{
 		if (configuration is null || string.IsNullOrWhiteSpace(configuration.Name))
 		{
 			throw new InvalidDataException($"{location} has no name.");
+		}
+
+		if (configuration.RowCount is < 1 or > RowSetPlan.MAXIMUM_ROW_COUNT)
+		{
+			throw new InvalidDataException($"{location} has an invalid row count. Use a count between 1 and {RowSetPlan.MAXIMUM_ROW_COUNT:N0}.");
 		}
 
 		configuration.Name      = configuration.Name.Trim();

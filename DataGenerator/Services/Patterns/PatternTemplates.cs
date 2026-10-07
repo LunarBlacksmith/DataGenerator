@@ -37,6 +37,7 @@ internal sealed record PatternSegment
 	public int                Length  { get; init; }
 	public decimal            Minimum { get; init; }
 	public decimal            Maximum { get; init; }
+	public bool?              IsOdd   { get; init; }
 	#endregion PUBLIC
 	#endregion PROPERTIES
 
@@ -60,12 +61,16 @@ internal sealed record PatternSegment
 	/// <param name="maximum">
 	///	The value of <see cref="Maximum"/>.
 	/// </param>
+	/// <param name="isOdd">
+	///	The required numeric parity, or <see langword="null"/> to allow both parities.
+	/// </param>
 	public PatternSegment(
 		PatternSegmentKind kind,
 		string             text,
 		int                length,
 		decimal            minimum = 0,
-		decimal            maximum = 0
+		decimal            maximum = 0,
+		bool?              isOdd   = null
 	)
 	{
 		Kind    = kind;
@@ -73,6 +78,7 @@ internal sealed record PatternSegment
 		Length  = length;
 		Minimum = minimum;
 		Maximum = maximum;
+		IsOdd   = isOdd;
 	}
 	#endregion PUBLIC
 	#endregion CONSTRUCTORS
@@ -277,13 +283,16 @@ internal sealed class PatternTemplateSet
 	/// <param name="functionName">
 	///	The function name used when reporting unsupported negative ranges.
 	/// </param>
+	/// <param name="isOdd">
+	///	The required numeric parity, or <see langword="null"/> to allow both parities.
+	/// </param>
 	/// <returns>
 	///	A template set whose number segments include any needed numeric range checks.
 	/// </returns>
 	/// <exception cref="PatternSyntaxException">
 	///	Thrown when the range contains negative numbers or produces too many templates.
 	/// </exception>
-	public static PatternTemplateSet ForNumbers(long minimum, long maximum, int digits, string functionName)
+	public static PatternTemplateSet ForNumbers(long minimum, long maximum, int digits, string functionName, bool? isOdd = null)
 	{
 		if (minimum < 0)
 		{
@@ -295,7 +304,7 @@ internal sealed class PatternTemplateSet
 
 		if (digits > 0)
 		{
-			return new PatternTemplateSet([new PatternTemplate([new PatternSegment(PatternSegmentKind.Number, DIGIT_CLASS, digits, minimum, maximum)])]);
+			return new PatternTemplateSet([new PatternTemplate([new PatternSegment(PatternSegmentKind.Number, DIGIT_CLASS, digits, minimum, maximum, isOdd)])]);
 		}
 
 		List<PatternTemplate> templates = [];
@@ -309,7 +318,7 @@ internal sealed class PatternTemplateSet
 
 			templates.Add(
 				new PatternTemplate([
-					new PatternSegment(PatternSegmentKind.Number, DIGIT_CLASS, width, Math.Max(minimum, smallest), Math.Min(maximum, largest))
+					new PatternSegment(PatternSegmentKind.Number, DIGIT_CLASS, width, Math.Max(minimum, smallest), Math.Min(maximum, largest), isOdd)
 				])
 			);
 		}

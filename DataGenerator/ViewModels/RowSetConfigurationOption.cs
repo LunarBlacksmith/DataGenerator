@@ -47,6 +47,11 @@ public sealed class RowSetConfigurationOption
 			isFromActiveTable
 				? $"{configuration.Columns.Count} columns · saved {configuration.SavedAt.ToString("g", CultureInfo.CurrentCulture)}"
 				: $"From {configuration.TableName} · {matchingColumnCount} of its {configuration.Columns.Count} columns are in this table";
+		if (configuration.RowCount is int rowCount)
+		{
+			Summary = $"{rowCount:N0} rows · {Summary}";
+		}
+
 		ToolTipText         = BuildToolTipText(configuration);
 	}
 	#endregion PUBLIC
@@ -68,6 +73,15 @@ public sealed class RowSetConfigurationOption
 		StringBuilder text = new();
 
 		text.Append("Load into this row set. Saved from ").Append(configuration.TableName).AppendLine(":");
+
+		if (configuration.RowCount is int rowCount)
+		{
+			text.AppendLine().Append($"Rows: {rowCount:N0}");
+		}
+		else
+		{
+			text.AppendLine().Append("No saved row count; this set's row count stays unchanged.");
+		}
 
 		foreach (SavedColumnSetting column in configuration.Columns)
 		{

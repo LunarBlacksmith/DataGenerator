@@ -119,7 +119,14 @@ public sealed class PatternSqlTranslator : IPatternSqlTranslator
 				{
 					for (int index = 0; index < segment.Length; ++index)
 					{
-						_ = likePattern.Append(segment.Text);
+						string digitClass =
+							index == segment.Length - 1 && segment.IsOdd.HasValue
+								? segment.IsOdd.Value
+									? "[13579]"
+									: "[02468]"
+								: segment.Text;
+
+						_ = likePattern.Append(digitClass);
 					}
 
 					if (segment.Minimum > 0 || segment.Maximum < PatternTemplateSet.Pow10(segment.Length) - 1)

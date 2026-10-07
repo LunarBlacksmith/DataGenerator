@@ -65,6 +65,7 @@ public sealed class MainViewModel : ObservableObject
 	public AsyncRelayCommand GenerateCommand         { get; }
 	public RelayCommand      CancelCommand           { get; }
 	public RelayCommand      ShowPatternHelpCommand  { get; }
+	public RelayCommand      ShowDocumentationCommand { get; }
 	public RelayCommand      CopyErrorCommand        { get; }
 	public RelayCommand      DismissErrorCommand     { get; }
 
@@ -346,6 +347,7 @@ public sealed class MainViewModel : ObservableObject
 		GenerateCommand         = new AsyncRelayCommand(GenerateAsync, CanGenerate);
 		CancelCommand           = new RelayCommand(Cancel, _ => IsBusy);
 		ShowPatternHelpCommand  = new RelayCommand(parameter => _helpService.ShowPatternLanguageHelp(parameter as string));
+		ShowDocumentationCommand = new RelayCommand(_ => _helpService.ShowDocumentation());
 		CopyErrorCommand        = new RelayCommand(CopyError, _ => HasError);
 		DismissErrorCommand     = new RelayCommand(_ => ClearError(), _ => HasError);
 

@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Text;
+using DataGenerator.Infrastructure;
 using DataGenerator.Models;
 
 namespace DataGenerator.ViewModels;
@@ -33,6 +34,16 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	public TableModel                            Model       { get; }
 	public DatabaseNodeViewModel                 Database    { get; }
 	public ObservableCollection<RowSetViewModel> RowSets     { get; }
+
+	/// <summary>
+	///	Swaps two row sets supplied by the tab Shift+drag behaviour.
+	/// </summary>
+	public RelayCommand SwapRowSetsCommand { get; }
+
+	/// <summary>
+	///	Inserts a set dragged by its tab before or after another set, shifting the intervening sets.
+	/// </summary>
+	public RelayCommand MoveRowSetCommand { get; }
 	public string                                ToolTipText { get; }
 
 	public override string DisplayName => Model.DisplayName;
@@ -172,6 +183,28 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		_isIncluded           = false;
 		_pendingRowCount      = DEFAULT_ROW_COUNT;
 		RowSets               = [];
+		SwapRowSetsCommand    = new RelayCommand(
+			parameter =>
+			{
+				if (parameter is Tuple<object, object> pair
+					&& pair.Item1 is RowSetViewModel source
+					&& pair.Item2 is RowSetViewModel target)
+				{
+					SwapRowSets(source, target);
+				}
+			}
+		);
+		MoveRowSetCommand = new RelayCommand(
+			parameter =>
+			{
+				if (parameter is Tuple<object, object, bool> move
+					&& move.Item1 is RowSetViewModel source
+					&& move.Item2 is RowSetViewModel target)
+				{
+					MoveRowSet(source, target, move.Item3);
+				}
+			}
+		);
 		RefreshRowSetCommands = null;
 
 		Model        = model ?? throw new ArgumentNullException(nameof(model));
@@ -297,6 +330,75 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 		RowSets.RemoveAt(index);
 		SelectedRowSet = RowSets[Math.Min(index, RowSets.Count - 1)];
 		return true;
+	}
+
+	/// <summary>
+	///	Exchanges two row-set positions without changing their rules, steps or the selected set.
+	/// </summary>
+	/// <param name="source">
+	///	The dragged row set belonging to this table.
+	/// </param>
+	/// <param name="target">
+	///	The row set onto which it was dropped.
+	/// </param>
+	/// <exception cref="ArgumentException">
+	///	Thrown when either row set does not belong to this table.
+	/// </exception>
+	public void SwapRowSets(RowSetViewModel source, RowSetViewModel target)
+	{
+		int sourceIndex = RowSets.IndexOf(source);
+		int targetIndex = RowSets.IndexOf(target);
+
+		if (sourceIndex < 0 || targetIndex < 0)
+		{
+			throw new ArgumentException("Both row sets must belong to this table.");
+		}
+
+		if (sourceIndex == targetIndex)
+		{
+			return;
+		}
+
+		RowSetViewModel? selected = SelectedRowSet;
+
+		RowSets.Move(sourceIndex, targetIndex);
+		RowSets.Move(targetIndex > sourceIndex ? targetIndex - 1 : targetIndex + 1, sourceIndex);
+		SelectedRowSet = selected;
+	}
+
+	/// <summary>
+	///	Moves a set to either edge of another set, preserving selection, settings and execution step numbers.
+	/// </summary>
+	/// <param name="source">
+	///	The set being moved.
+	/// </param>
+	/// <param name="target">
+	///	The set marking the insertion position.
+	/// </param>
+	/// <param name="after">
+	///	Whether to insert after the target instead of before it.
+	/// </param>
+	/// <exception cref="ArgumentException">
+	///	Thrown when either set does not belong to this table.
+	/// </exception>
+	public void MoveRowSet(RowSetViewModel source, RowSetViewModel target, bool after)
+	{
+		int sourceIndex = RowSets.IndexOf(source);
+		int targetIndex = RowSets.IndexOf(target);
+		if (sourceIndex < 0 || targetIndex < 0)
+		{
+			throw new ArgumentException("Both row sets must belong to this table.");
+		}
+
+		if (sourceIndex == targetIndex)
+		{
+			return;
+		}
+
+		int destination          = targetIndex + (after ? 1 : 0) - (sourceIndex < targetIndex ? 1 : 0);
+		RowSetViewModel? selected = SelectedRowSet;
+		RowSets.Move(sourceIndex, destination);
+		SelectedRowSet = selected;
 	}
 
 	/// <summary>
