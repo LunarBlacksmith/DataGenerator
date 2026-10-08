@@ -7,7 +7,6 @@ namespace DataGenerator.Services;
 public sealed class ColumnValueGenerator : IColumnValueGenerator
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int    RANDOM_TEXT_LENGTH       = 20;
 	private const int    RANDOM_BINARY_LENGTH     = 16;
 	private const int    UNLIMITED_TEXT_LENGTH    = 4000;
@@ -23,11 +22,9 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 	private readonly IRegexValueGenerator   _regexGenerator;
 	private readonly IPatternValueGenerator _patternGenerator;
 	private readonly IColumnValueCaster     _caster;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="ColumnValueGenerator"/>.
 	/// </summary>
@@ -36,9 +33,7 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 		RANDOM_DATE_MINIMUM = new(2000, 1, 1);
 		RANDOM_DATE_MAXIMUM = new(2030, 12, 31, 23, 59, 59);
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a generator for fixed, sequence, random, regex, pattern and copied column values.
 	/// </summary>
@@ -69,8 +64,7 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 		_patternGenerator = patternGenerator ?? throw new ArgumentNullException(nameof(patternGenerator));
 		_caster           = caster ?? throw new ArgumentNullException(nameof(caster));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -531,7 +525,8 @@ public sealed class ColumnValueGenerator : IColumnValueGenerator
 			rule.PatternExpression,
 			rowIndex,
 			rowCount,
-			columnName => _caster.ToText(lookup.GetValue(columnName))
+			columnName => _caster.ToText(lookup.GetValue(columnName)),
+			lookup.GetValue
 		);
 
 		return _caster.Cast(rule.Column, text);

@@ -8,17 +8,14 @@ namespace DataGenerator.Services.Generation;
 internal sealed class GenerationProgress
 {
 	#region FIELDS
-	#region PRIVATE
 	private const long REPORT_INTERVAL_MILLISECONDS = 200;
 
 	private readonly IProgress<string>? _progress;
 	private readonly Stopwatch          _stopwatch;
 	private long                        _lastReportMilliseconds;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a progress reporter that throttles row-level messages.
 	/// </summary>
@@ -32,11 +29,9 @@ internal sealed class GenerationProgress
 
 		_progress = progress;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Reports an immediate progress message and resets the row-progress throttle.
 	/// </summary>
@@ -86,6 +81,5 @@ internal sealed class GenerationProgress
 		_progress.Report($"{action} {tableName} › Set '{rowSetName}': {completedRows:N0} of {totalRows:N0} rows ({percentage:0}%)");
 		_lastReportMilliseconds = elapsed;
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }

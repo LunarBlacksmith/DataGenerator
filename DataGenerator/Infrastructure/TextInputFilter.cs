@@ -11,13 +11,10 @@ namespace DataGenerator.Infrastructure;
 public static class TextInputFilter
 {
 	#region FIELDS
-	#region PUBLIC
 	public static readonly DependencyProperty KIND_PROPERTY;
-	#endregion PUBLIC
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="TextInputFilter"/>.
 	/// </summary>
@@ -31,8 +28,7 @@ public static class TextInputFilter
 				new PropertyMetadata(TextInputKind.Any, OnKindChanged)
 			);
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

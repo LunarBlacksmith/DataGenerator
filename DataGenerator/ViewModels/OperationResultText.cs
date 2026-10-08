@@ -15,15 +15,11 @@
 public sealed record OperationResultText
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public string  Text      { get; init; }
 	public string? Details   { get; init; }
 	public bool    IsWarning { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="OperationResultText"/> from the supplied values.
 	/// </summary>
@@ -42,6 +38,4 @@ public sealed record OperationResultText
 		Details   = details;
 		IsWarning = isWarning;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

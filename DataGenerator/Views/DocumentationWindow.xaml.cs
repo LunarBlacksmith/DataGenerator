@@ -7,8 +7,6 @@ namespace DataGenerator.Views;
 /// </summary>
 public partial class DocumentationWindow : Window
 {
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Loads the documentation reader controls.
 	/// </summary>
@@ -16,6 +14,4 @@ public partial class DocumentationWindow : Window
 	{
 		InitializeComponent();
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

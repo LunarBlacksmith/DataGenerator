@@ -11,7 +11,6 @@ namespace DataGenerator.ViewModels;
 public sealed class PatternHelpViewModel : ObservableObject
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int    SAMPLE_COUNT       = 6;
 	private const string DEFAULT_EXPRESSION = "P FOLLOWED BY SEQ(1-1000, 1) FOLLOWED BY (X OR Y) FOLLOWED BY RAND_NUM(0, 99, 2)";
 
@@ -19,11 +18,9 @@ public sealed class PatternHelpViewModel : ObservableObject
 
 	private string _expression;
 	private string _errorMessage;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public ObservableCollection<PatternSample> Samples           { get; }
 	public RelayCommand                        UseExampleCommand { get; }
 
@@ -58,11 +55,9 @@ public sealed class PatternHelpViewModel : ObservableObject
 	}
 
 	public bool HasError => _errorMessage.Length > 0;
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the pattern help view model and generates the first sample values.
 	/// </summary>
@@ -119,11 +114,9 @@ public sealed class PatternHelpViewModel : ObservableObject
 
 		RefreshSamples();
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PRIVATE
 	/// <summary>
 	///	Copies a ready-made example into the editable expression box.
 	/// </summary>
@@ -167,7 +160,6 @@ public sealed class PatternHelpViewModel : ObservableObject
 			ErrorMessage = exception.Message;
 		}
 	}
-	#endregion PRIVATE
 	#endregion METHODS
 }
 
@@ -177,15 +169,11 @@ public sealed class PatternHelpViewModel : ObservableObject
 public sealed record PatternSyntaxHelp
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public string Syntax      { get; init; }
 	public string Description { get; init; }
 	public string Example     { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="PatternSyntaxHelp"/> from the supplied values.
 	/// </summary>
@@ -204,8 +192,6 @@ public sealed record PatternSyntaxHelp
 		Description = description;
 		Example     = example;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }
 
 /// <summary>
@@ -214,14 +200,10 @@ public sealed record PatternSyntaxHelp
 public sealed record PatternExample
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public string Title      { get; init; }
 	public string Expression { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="PatternExample"/> from the supplied values.
 	/// </summary>
@@ -236,8 +218,6 @@ public sealed record PatternExample
 		Title      = title;
 		Expression = expression;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }
 
 /// <summary>
@@ -246,14 +226,10 @@ public sealed record PatternExample
 public sealed record PatternSample
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public int    RowNumber { get; init; }
 	public string Value     { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="PatternSample"/> from the supplied values.
 	/// </summary>
@@ -268,6 +244,4 @@ public sealed record PatternSample
 		RowNumber = rowNumber;
 		Value     = value;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

@@ -31,18 +31,14 @@ internal enum PatternSegmentKind
 internal sealed record PatternSegment
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public PatternSegmentKind Kind    { get; init; }
 	public string             Text    { get; init; }
 	public int                Length  { get; init; }
 	public decimal            Minimum { get; init; }
 	public decimal            Maximum { get; init; }
 	public bool?              IsOdd   { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="PatternSegment"/> from the supplied values.
 	/// </summary>
@@ -80,8 +76,6 @@ internal sealed record PatternSegment
 		Maximum = maximum;
 		IsOdd   = isOdd;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }
 
 /// <summary>
@@ -90,13 +84,10 @@ internal sealed record PatternSegment
 internal sealed class PatternTemplate
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public IReadOnlyList<PatternSegment> Segments { get; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates one fixed-length output shape from ordered literal, character-class and number segments.
 	/// </summary>
@@ -107,11 +98,9 @@ internal sealed class PatternTemplate
 	{
 		Segments = segments;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Concatenates another template after this one, merging adjacent literal segments.
 	/// </summary>
@@ -143,7 +132,6 @@ internal sealed class PatternTemplate
 
 		return new PatternTemplate(segments);
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
@@ -166,13 +154,10 @@ internal sealed class PatternTemplateSet
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public IReadOnlyList<PatternTemplate> Templates { get; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="PatternTemplateSet"/>.
 	/// </summary>
@@ -180,9 +165,7 @@ internal sealed class PatternTemplateSet
 	{
 		EMPTY_TEXT = new([new PatternTemplate([])]);
 	}
-	#endregion STATIC
 
-	#region PRIVATE
 	/// <summary>
 	///	Creates a set of possible output templates, enforcing the SQL translation shape limit.
 	/// </summary>
@@ -201,8 +184,7 @@ internal sealed class PatternTemplateSet
 
 		Templates = templates;
 	}
-	#endregion PRIVATE
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

@@ -9,13 +9,10 @@ namespace DataGenerator.ViewModels;
 public sealed class ColumnRuleFactory
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly ColumnRuleServices _services;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a rule factory that uses the shared column-rule services.
 	/// </summary>
@@ -29,8 +26,7 @@ public sealed class ColumnRuleFactory
 	{
 		_services = services ?? throw new ArgumentNullException(nameof(services));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

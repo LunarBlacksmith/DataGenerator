@@ -7,16 +7,12 @@
 public sealed record PatternCompletionResult
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public int                                 WordStart  { get; init; }
 	public int                                 WordLength { get; init; }
 	public string                              Prefix     { get; init; }
 	public IReadOnlyList<PatternLanguageEntry> Entries    { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="PatternCompletionResult"/> from the supplied values.
 	/// </summary>
@@ -44,6 +40,4 @@ public sealed record PatternCompletionResult
 		Prefix     = prefix;
 		Entries    = entries;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

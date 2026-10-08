@@ -6,28 +6,23 @@ namespace DataGenerator.Services;
 public sealed class FileDialogService : IFileDialogService
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string SETTINGS_EXTENSION                  = ".json";
 	private const string SETTINGS_EXPORT_FILE_NAME           = "DataGenerator column settings.json";
 	private const string SETTINGS_FILTER                     = "Saved column settings (*.json)|*.json|All files (*.*)|*.*";
 	private const string SET_CONFIGURATIONS_EXPORT_FILE_NAME = "DataGenerator set configurations.json";
 	private const string SET_CONFIGURATIONS_FILTER           = "Set configurations (*.json)|*.json|All files (*.*)|*.*";
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="FileDialogService"/>.
 	/// </summary>
 	public FileDialogService()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Shows the save dialog used to choose a SQL script output file.
 	/// </summary>
@@ -142,6 +137,5 @@ public sealed class FileDialogService : IFileDialogService
 
 		return result == true ? dialog.FileName : null;
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }

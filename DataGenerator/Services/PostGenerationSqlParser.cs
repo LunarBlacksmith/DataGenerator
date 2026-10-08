@@ -13,7 +13,6 @@ namespace DataGenerator.Services;
 public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int    MAXIMUM_NAME_LENGTH = 60;
 	private const string COMMENT_PREFIX      = "--";
 
@@ -21,11 +20,9 @@ public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 	///	Words that can stand alone on a line of SQL and must not be mistaken for a stored procedure.
 	/// </summary>
 	private static readonly HashSet<string> SQL_KEYWORDS;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="PostGenerationSqlParser"/>.
 	/// </summary>
@@ -41,17 +38,14 @@ public sealed partial class PostGenerationSqlParser : IPostGenerationSqlParser
 			StringComparer.OrdinalIgnoreCase
 		);
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="PostGenerationSqlParser"/>.
 	/// </summary>
 	public PostGenerationSqlParser()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

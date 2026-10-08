@@ -13,7 +13,6 @@ namespace DataGenerator.ViewModels;
 public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 {
 	#region FIELDS
-	#region PRIVATE
 	private static readonly CultureInfo INVARIANT;
 
 	private readonly ColumnRuleFactory                        _ruleFactory;
@@ -31,11 +30,9 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	private string              _bulkRowCountText;
 	private int                 _bulkUpdateDepth;
 	private bool                _hasPendingSettingsChange;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public ObservableCollection<DatabaseNodeViewModel> Databases { get; }
 
 	public IEnumerable<TableNodeViewModel> AllTables => Databases.SelectMany(database => database.Tables);
@@ -179,20 +176,16 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 			HasDatabases
 				? $"{IncludedTableCount:N0} of {TotalTableCount:N0} tables included · {IncludedRowCount:N0} rows"
 				: "No metadata loaded.";
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
 	#region EVENTS
-	#region PUBLIC
 	/// <summary>
 	///	Raised when tables are included or excluded, or when row counts or rule validity change.
 	/// </summary>
 	public event EventHandler? GenerationSettingsChanged;
-	#endregion PUBLIC
 	#endregion EVENTS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="DatabaseExplorerViewModel"/>.
 	/// </summary>
@@ -200,9 +193,7 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 	{
 		INVARIANT = CultureInfo.InvariantCulture;
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates the database explorer view model and initialises commands, selections and saved-setting subscriptions.
 	/// </summary>
@@ -292,8 +283,7 @@ public sealed class DatabaseExplorerViewModel : ValidatableObservableObject
 		_savedSettings.Changed                         += OnSavedSettingsChanged;
 		_savedSettings.ApplyAutomaticSettingsRequested += OnApplyAutomaticSettingsRequested;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

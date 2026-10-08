@@ -9,13 +9,10 @@ namespace DataGenerator.Infrastructure;
 public static class ButtonIcon
 {
 	#region FIELDS
-	#region PUBLIC
 	public static readonly DependencyProperty GLYPH_PROPERTY;
-	#endregion PUBLIC
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="ButtonIcon"/>.
 	/// </summary>
@@ -29,11 +26,9 @@ public static class ButtonIcon
 				new FrameworkPropertyMetadata(null)
 			);
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Gets the icon glyph attached to a button or other dependency object.
 	/// </summary>
@@ -55,6 +50,5 @@ public static class ButtonIcon
 	///	The glyph string to show, or <see langword="null"/> to clear the value.
 	/// </param>
 	public static void SetGlyph(DependencyObject element, string? value) => element.SetValue(GLYPH_PROPERTY, value);
-	#endregion PUBLIC
 	#endregion METHODS
 }

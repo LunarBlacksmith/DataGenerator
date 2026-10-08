@@ -11,20 +11,15 @@ namespace DataGenerator.Services;
 public sealed class JsonRowSetConfigurationStore : IRowSetConfigurationStore
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int    FORMAT_VERSION   = 2;
 	private const string FILE_DESCRIPTION = "set configurations file";
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public string LibraryFilePath { get; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a store for the set configuration library file.
 	/// </summary>
@@ -42,8 +37,7 @@ public sealed class JsonRowSetConfigurationStore : IRowSetConfigurationStore
 		ArgumentException.ThrowIfNullOrWhiteSpace(libraryFilePath);
 		LibraryFilePath = libraryFilePath;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -233,18 +227,13 @@ public sealed class JsonRowSetConfigurationStore : IRowSetConfigurationStore
 	#endregion METHODS
 
 	#region TYPES
-	#region PRIVATE
 	private sealed class RowSetConfigurationsDocument
 	{
 		#region PROPERTIES
-		#region PUBLIC
 		public int                              FormatVersion     { get; set; }
 		public List<SavedRowSetConfiguration?>? SetConfigurations { get; set; }
-		#endregion PUBLIC
 		#endregion PROPERTIES
 
-		#region CONSTRUCTORS
-		#region PUBLIC
 		/// <summary>
 		///	Creates a new <see cref="RowSetConfigurationsDocument"/> and sets the default values of its fields and properties.
 		/// </summary>
@@ -253,9 +242,6 @@ public sealed class JsonRowSetConfigurationStore : IRowSetConfigurationStore
 			FormatVersion     = 0;
 			SetConfigurations = null;
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
 	}
-	#endregion PRIVATE
 	#endregion TYPES
 }

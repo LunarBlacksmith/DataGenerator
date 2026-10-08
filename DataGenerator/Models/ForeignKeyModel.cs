@@ -3,7 +3,6 @@
 public sealed class ForeignKeyModel
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public required string Name               { get; init; }
 
 	public required string ParentDatabase     { get; init; }
@@ -33,11 +32,8 @@ public sealed class ForeignKeyModel
 	public string ReferencedColumnKey => $"{ReferencedTableKey}.{ReferencedColumn}";
 
 	public string ReferencedDisplayName => $"{ReferencedSchema}.{ReferencedTable}.{ReferencedColumn}";
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="ForeignKeyModel"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -45,6 +41,4 @@ public sealed class ForeignKeyModel
 	{
 		IsInferred = false;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

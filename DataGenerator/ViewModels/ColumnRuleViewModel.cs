@@ -13,7 +13,6 @@ namespace DataGenerator.ViewModels;
 public sealed class ColumnRuleViewModel : ValidatableObservableObject
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int    PREVIEW_SAMPLE_COUNT = 3;
 	private const string PREVIEW_SEPARATOR    = "  ·  ";
 	private const string DEFAULT_SEQUENCE     = "1";
@@ -44,11 +43,9 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	private bool                              _isApplyingSetting;
 	private bool                              _isSavedSettingsMenuOpen;
 	private IReadOnlyList<SavedSettingOption> _savedSettingOptions;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public TableModel Table { get; }
 
 	/// <summary>
@@ -382,20 +379,16 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 		or ValueGenerationMode.Pattern
 		or ValueGenerationMode.CopyColumn
 		or ValueGenerationMode.TableLookup;
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
 	#region EVENTS
-	#region PUBLIC
 	/// <summary>
 	///	Raised when the mode or a setting of the mode changes, so that columns which use this column's value can update.
 	/// </summary>
 	public event EventHandler? SettingsChanged;
-	#endregion PUBLIC
 	#endregion EVENTS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="ColumnRuleViewModel"/>.
 	/// </summary>
@@ -403,9 +396,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	{
 		INVARIANT = CultureInfo.InvariantCulture;
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates the generation rule view model for one table column and initialises its available modes, defaults and commands.
 	/// </summary>
@@ -481,8 +472,7 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 		Validate();
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -1700,21 +1690,17 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	#endregion METHODS
 
 	#region TYPES
-	#region PRIVATE
 	/// <summary>
 	///	The values of the other columns of one preview row.
 	/// </summary>
 	private sealed class SampleRowValues : IRowValueLookup
 	{
 		#region FIELDS
-		#region PRIVATE
 		private readonly ColumnRuleViewModel _owner;
 		private readonly long                _rowIndex;
-		#endregion PRIVATE
 		#endregion FIELDS
 
-		#region CONSTRUCTORS
-		#region PUBLIC
+		#region CONSTRUCTOR
 		/// <summary>
 		///	Creates a preview lookup for the other column values in one row.
 		/// </summary>
@@ -1729,11 +1715,9 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			_owner    = owner;
 			_rowIndex = rowIndex;
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
+		#endregion CONSTRUCTOR
 
 		#region METHODS
-		#region PUBLIC
 		/// <summary>
 		///	Gets the preview value of another column in the same row.
 		/// </summary>
@@ -1764,7 +1748,6 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 
 			return rule.GenerateSampleForOtherColumn(_rowIndex);
 		}
-		#endregion PUBLIC
 		#endregion METHODS
 	}
 
@@ -1773,8 +1756,6 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 	/// </summary>
 	private sealed class SampleUnavailableException : InvalidOperationException
 	{
-		#region CONSTRUCTORS
-		#region PUBLIC
 		/// <summary>
 		///	Creates an exception that explains why a preview sample is unavailable but generation can continue.
 		/// </summary>
@@ -1785,9 +1766,6 @@ public sealed class ColumnRuleViewModel : ValidatableObservableObject
 			: base(message)
 		{
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
 	}
-	#endregion PRIVATE
 	#endregion TYPES
 }

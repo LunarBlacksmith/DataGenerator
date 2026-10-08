@@ -6,18 +6,14 @@
 public sealed record PatternLanguageEntry
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public string                   Name        { get; init; }
 	public string                   Signature   { get; init; }
 	public string                   Description { get; init; }
 	public string                   Example     { get; init; }
 	public PatternLanguageEntryKind Kind        { get; init; }
 	public bool IsFunction => Kind == PatternLanguageEntryKind.Function;
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="PatternLanguageEntry"/> from the supplied values.
 	/// </summary>
@@ -50,6 +46,4 @@ public sealed record PatternLanguageEntry
 		Example     = example;
 		Kind        = kind;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

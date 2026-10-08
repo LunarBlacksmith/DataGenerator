@@ -7,16 +7,13 @@ namespace DataGenerator.Services.Patterns;
 public sealed class PatternValueGenerator : IPatternValueGenerator
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int MAXIMUM_CACHE_SIZE = 256;
 
 	private readonly ConcurrentDictionary<string, ParsedPattern> _cache;
 	private readonly TimeProvider                                _timeProvider;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a pattern value generator that uses the system clock for TODAY.
 	/// </summary>
@@ -40,8 +37,7 @@ public sealed class PatternValueGenerator : IPatternValueGenerator
 
 		_timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -92,12 +88,16 @@ public sealed class PatternValueGenerator : IPatternValueGenerator
 	/// <exception cref="InvalidOperationException">
 	///	Thrown when generation needs unavailable column values or exceeds the maximum output length.
 	/// </exception>
-	public string Generate(string expression, long rowIndex, long? rowCount, Func<string, string>? columnValues)
+	/// <param name="typedColumnValues">
+	///	Optional raw same-row values for typed predicates and extraction.
+	/// </param>
+	public string Generate(string expression, long rowIndex, long? rowCount, Func<string, string>? columnValues,
+		Func<string, object?>? typedColumnValues = null)
 	{
 		ParsedPattern pattern = GetOrParse(expression);
 		StringBuilder builder = new();
 
-		pattern.Node.Append(builder, new PatternContext(rowIndex, rowCount, Random.Shared, _timeProvider, columnValues));
+		pattern.Node.Append(builder, new PatternContext(rowIndex, rowCount, Random.Shared, _timeProvider, columnValues, typedColumnValues));
 		return builder.ToString();
 	}
 
@@ -200,18 +200,13 @@ public sealed class PatternValueGenerator : IPatternValueGenerator
 	#endregion METHODS
 
 	#region TYPES
-	#region PRIVATE
 	private sealed record ParsedPattern
 	{
 		#region PROPERTIES
-		#region PUBLIC
 		public PatternNode           Node             { get; init; }
 		public IReadOnlyList<string> ColumnReferences { get; init; }
-		#endregion PUBLIC
 		#endregion PROPERTIES
 
-		#region CONSTRUCTORS
-		#region PUBLIC
 		/// <summary>
 		///	Creates a new <see cref="ParsedPattern"/> from the supplied values.
 		/// </summary>
@@ -226,9 +221,6 @@ public sealed class PatternValueGenerator : IPatternValueGenerator
 			Node             = node;
 			ColumnReferences = columnReferences;
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
 	}
-	#endregion PRIVATE
 	#endregion TYPES
 }

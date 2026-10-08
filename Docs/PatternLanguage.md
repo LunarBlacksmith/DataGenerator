@@ -24,6 +24,7 @@ The sequence moves on by one for every row; the random parts are picked again fo
 - [Narrowing numbers](#narrowing-numbers)
 - [Function arguments](#function-arguments)
 - [Functions](#functions)
+- [Conditions and extraction](#conditions-and-extraction)
 - [Column types](#column-types)
 - [Row numbers and row sets](#row-numbers-and-row-sets)
 - [Finding existing values with a pattern](#finding-existing-values-with-a-pattern)
@@ -151,7 +152,8 @@ Ranges include both ends and are written smallest first. Negative numbers work i
 
 ### Functions inside functions
 
-Any argument can be another function call, including named arguments. The inner function is worked out first for every row and its value is used as the argument, as if it had been typed in:
+Any argument can be another function call, including named arguments. Usually the inner function is worked out first for every row and its value is used as the argument, as if it had been typed in.
+`IF`, `AND` and `OR` are exceptions: they evaluate only the branch or conditions needed for the result (see [Conditions and extraction](#conditions-and-extraction)).
 
 | Pattern                                               | Means                                                      |
 | ----------------------------------------------------- | ---------------------------------------------------------- |
@@ -162,6 +164,84 @@ Any argument can be another function call, including named arguments. The inner 
 
 - A range cannot contain a function (`RAND_NUM(1-RAND_NUM(2, 5))`); write its ends as two arguments instead: `RAND_NUM(1, RAND_NUM(2, 5))`.
 - The value of the inner function must suit the argument. For example, `RAND_DATE` needs a date, so `TODAY()` must use a format that reads as a date (its default `'yyyy-MM-dd HH:mm:ss'` and `'yyyy-MM-dd'` both work).
+
+## Conditions and extraction
+
+### IF(condition, thenValue, elseValue)
+
+Choose an output based on the values of the current row. Branches can be text, numbers, booleans, `NULL`, `COL(name)` or nested functions, including another `IF`. Only the selected branch is evaluated; an unused branch does not read columns or consume random values.
+
+```text
+IF(EQ(COL(Side), 'L'), 1, 2)
+IF(EQ(COL(Side), 'L'), 1, IF(EQ(COL(Side), 'R'), 2, 0))
+IF(AND(GE(COL(Quantity), 10), NOT(IS_NULL(COL(Code)))), SUBSTRING(COL(Code), 2, 3), 0)
+```
+
+The first example outputs `1` for `L` and `2` otherwise. Nest `IF` calls to handle more cases.
+Conditions must be boolean values or boolean text (`true`/`false`, ignoring case), not numbers, empty text or `NULL`.
+Inside these new functions, unquoted `TRUE`, `FALSE` and `NULL` are typed values; quote them to keep text (`'NULL'`).
+Existing functions keep their existing argument semantics.
+
+| Predicate | Meaning |
+| --- | --- |
+| `EQ(left, right)`, `NE(left, right)` | Equal / not equal. |
+| `GT(left, right)`, `GE(left, right)` | Greater than / greater than or equal. |
+| `LT(left, right)`, `LE(left, right)` | Less than / less than or equal. |
+| `AND(condition, condition, ...)` | All conditions are true; stops at the first false. Requires at least two conditions. |
+| `OR(condition, condition, ...)` | Any condition is true; stops at the first true. Requires at least two conditions. This function is logical OR; the existing **infix** `A OR B` still chooses randomly. |
+| `NOT(condition)` | Inverts a boolean condition. |
+| `IS_NULL(value)` | True for explicit `NULL` or a referenced column's database NULL, but not empty text or the text `'NULL'`. |
+| `CONTAINS(text, part)` | Case-sensitive text containment. |
+| `STARTS_WITH(text, part)`, `ENDS_WITH(text, part)` | Case-sensitive text prefix / suffix tests. |
+
+**Comparison rules:** two text values compare using ordinal, case-sensitive order, without trimming or numeric guessing.
+`EQ('01', '1')` is false and `GT('2', '10')` is true.
+When a numeric value is involved, numeric text may be converted using invariant signed decimal notation (no thousands separators, whitespace or exponent).
+Thus `EQ(1, '01')` is true and `GT(2, '10')` is false. Numeric comparisons use the .NET decimal domain; values that cannot be represented are rejected.
+Two booleans, or a boolean and `true`/`false` text, support only `EQ` and `NE`; `1`/`0` are not boolean operands.
+`EQ(NULL, NULL)` is true; NULL equals nothing else, including empty text. `NE` is its inverse. Ordered comparisons with NULL error rather than adopting SQL's three-valued logic.
+
+Within these functions, `COL` preserves the generated column's type and NULL for comparisons.
+Two `DateTime`, two `DateTimeOffset` or two `TimeSpan` values can be compared using their .NET ordering; two GUIDs support equality/inequality only.
+Dates in quotes and date-generating functions return text: no implicit date parsing or cross-type date conversion is performed.
+Other incompatible types (including binary values) produce an explicit error.
+Existing text-producing functions return text even when they look numeric; use a numeric operand to request numeric comparison.
+Text predicates require two non-null text operands; an empty search text matches.
+
+These new functions take **positional arguments only**, without ranges or named parameters.
+Arguments are literals or individual nested function calls, not infix comparisons or concatenations.
+For example use `IF(EQ(COL(Side), 'L'), 1, 2)`, not `IF(COL(Side) = 'L', 1, 2)`.
+Syntax, literal condition types and literal extraction bounds are checked even in unused branches.
+Row-dependent operand/type failures are reported when that expression is evaluated (including the sample preview).
+All `COL` references in all branches still participate in the existing unknown-column, self-reference and cycle checks and dependency ordering.
+
+### SUBSTRING(text, startIndex, length)
+
+Extract part of literal text, a number or another generated column:
+
+```text
+SUBSTRING('P100', 2, 3)
+SUBSTRING(COL(Column1), 2, 3)
+SUBSTRING(12345, 2, 3)
+SUBSTRING(UPPER(COL(Code)), 1, 1)
+```
+
+Indices are **1-based**: `P` is at index 1 in `P100`; the three digits start at **2**, not 1.
+The first two examples yield `100`, which becomes the integer `100` when the destination column (`Column2`) has type `INT`.
+The third yields `234`.
+`startIndex` must be a whole number from 1 to 2,147,483,647; `length` must be a whole number from 0 to 2,147,483,647.
+Nested functions / `COL` may supply either number; numeric text follows the invariant decimal rules above.
+Zero/negative starts, negative lengths, fractional bounds, NULL bounds and oversized bounds are errors.
+
+A request extending beyond the source is truncated. Starting past the end, zero length, empty text and NULL source all yield empty text.
+Extraction counts .NET UTF-16 code units, not Unicode grapheme clusters. Non-text scalar sources are formatted invariantly before extraction; predicates do not automatically convert text operands.
+The result is **text**, not a new SQL expression. The existing destination conversion applies: literal-only patterns use strict generated-text conversion; patterns referencing columns keep the existing lenient copied-value conversion (including digit extraction/clamping for numeric destinations).
+Consequently an empty result may fail strict INT conversion, while an empty copied-column result follows the existing caster's zero/default behavior. Guard empty or NULL sources with `IF` when a specific fallback is required.
+An `IF` branch returning NULL emits empty pattern text, **not a database NULL**; use the column's NULL generation mode for database NULL.
+
+These functions run locally for both direct insertion and SQL-file generation. Values use the existing parameterized insertion / escaped SQL literal paths; no supplied text is executed as code.
+Values only resolved later by SQL Server (such as deferred captured keys) cannot be evaluated by these functions.
+`IF`, extraction and predicates are explicitly **unsupported in pattern-to-SQL lookup filters**, even with literal arguments; they produce a translation error rather than an approximate filter.
 
 ## Functions
 
@@ -480,7 +560,7 @@ condition that matches every value the pattern could produce. See [Steps, update
 
 - Only parts whose values can be recognised may be used: text, `OR`, `REPEATED`, `SEQ`, `NUM`, `RAND_NUM`, `ODD`, `EVEN` (with comparisons),
   `RAND_DIGITS`, `RAND_LETTERS`, `RAND_ALPHANUM`, `ONE_OF`, `CYCLE`, `FIRST`, `LAST` and `GUID`. Dates, decimals, `TODAY`, `ROW`, `COL` and
-  the text functions cannot be used, and an error says so.
+  the text functions, `IF`, `SUBSTRING` and the condition predicates cannot be used, and an error says so.
 - Matching ignores letter case, as SQL Server usually does.
 - A pattern with a very large number of possible shapes (for example many `OR`s inside a `REPEATED`) is reported as too complex; use a `REGEX` or `SQL` filter instead.
 
@@ -496,6 +576,8 @@ condition that matches every value the pattern could produce. See [Steps, update
 | `NUM` `digits` without a range                        | 0 to 18                             |
 | `FIRST` and `LAST` row count                          | 1 to 1,000                          |
 | `LEFT`, `RIGHT` and `PAD` length                      | 0 to 1,000                          |
+| Nested function depth                                 | 64                                  |
+| `SUBSTRING` start / length                            | 1 / 0 to 2,147,483,647               |
 | One generated value                                   | 100,000 characters                  |
 
 ## Errors
@@ -540,6 +622,8 @@ Common problems:
 | Due from today    | `RAND_DATE(TODAY(format='yyyy-MM-dd'), '2030-12-31')`                              | `2027-08-19`, `2025-11-02`                   |
 | Based on a column | `COL(Colour) THEN '-' THEN SEQ(1-999)`                                             | `Red-001`, `Blue-002`                        |
 | Short colour code | `UPPER(LEFT(COL(Colour), 3)) + PAD(ROW(), 4)`                                      | `RED0001`, `BLU0002`                         |
+| Conditional side | `IF(EQ(COL(Side), 'L'), 1, 2)` | `1` for `L`, otherwise `2` |
+| Extract integer | `SUBSTRING('P100', 2, 3)` | `100` (converted to INT for an INT destination) |
 | Rotating sizes    | `CYCLE('S', 'M', 'L')`                                                             | `S`, `M`, `L`, `S`                           |
 | Closing row       | `'Line ' + ROW() + LAST(' (final)')`                                               | `Line 1`, …, `Line 10 (final)`               |
 | Number above 50   | `S THEN (NUM(digits=5) GREATER THAN 50) THEN (1 OR 2)`                             | `S048211`, `S000522`                         |
@@ -550,6 +634,8 @@ Common problems:
 ## Grammar
 
 For reference, the full syntax in EBNF. Keywords and function names are case-insensitive.
+The condition and extraction functions use the same function syntax but allow only positional, non-range arguments.
+Unquoted `TRUE`, `FALSE` and `NULL` words are typed literals only inside those functions.
 
 ```ebnf
 pattern       = concatenation ;

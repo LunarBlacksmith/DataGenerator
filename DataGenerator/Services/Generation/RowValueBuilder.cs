@@ -9,13 +9,10 @@ namespace DataGenerator.Services.Generation;
 internal sealed class RowValueBuilder
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly IColumnValueGenerator _valueGenerator;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the service that produces row values from row-set blueprints.
 	/// </summary>
@@ -29,8 +26,7 @@ internal sealed class RowValueBuilder
 	{
 		_valueGenerator = valueGenerator ?? throw new ArgumentNullException(nameof(valueGenerator));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -193,22 +189,18 @@ internal sealed class RowValueBuilder
 	#endregion METHODS
 
 	#region TYPES
-	#region PRIVATE
 	/// <summary>
 	///	The values generated so far for the row, for rules that use the value of another column.
 	/// </summary>
 	private sealed class RowValueLookup : IRowValueLookup
 	{
 		#region FIELDS
-		#region PRIVATE
 		private readonly RowSetBlueprint _rowSet;
 		private readonly object?[]       _values;
 		private readonly bool[]          _isGenerated;
-		#endregion PRIVATE
 		#endregion FIELDS
 
-		#region CONSTRUCTORS
-		#region PUBLIC
+		#region CONSTRUCTOR
 		/// <summary>
 		///	Creates a lookup over values generated so far for one row.
 		/// </summary>
@@ -224,11 +216,9 @@ internal sealed class RowValueBuilder
 			_values      = values;
 			_isGenerated = new bool[values.Length];
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
+		#endregion CONSTRUCTOR
 
 		#region METHODS
-		#region PUBLIC
 		/// <summary>
 		///	Marks a source value as available to later column rules.
 		/// </summary>
@@ -256,9 +246,7 @@ internal sealed class RowValueBuilder
 					: _isGenerated[index]
 						? _values[index]
 						: throw new InvalidOperationException($"The value of column [{columnName}] has not been generated yet.");
-		#endregion PUBLIC
 		#endregion METHODS
 	}
-	#endregion PRIVATE
 	#endregion TYPES
 }

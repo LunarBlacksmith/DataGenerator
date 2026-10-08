@@ -6,16 +6,14 @@ namespace DataGenerator.Services;
 
 public sealed class DialogService : IDialogService
 {
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="DialogService"/>.
 	/// </summary>
 	public DialogService()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

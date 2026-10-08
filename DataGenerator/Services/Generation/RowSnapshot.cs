@@ -9,23 +9,18 @@ namespace DataGenerator.Services.Generation;
 internal sealed class RowSnapshot
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string ROW_ALIAS = "[b]";
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public int                   Number      { get; }
 	public TableModel            Table       { get; }
 	public IReadOnlyList<string> ColumnNames { get; }
 
 	public string TableName => $"#dg_before_{Number}";
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a snapshot descriptor for one table and column set.
 	/// </summary>
@@ -44,11 +39,9 @@ internal sealed class RowSnapshot
 		Table       = table;
 		ColumnNames = columnNames;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Builds the cache key for a table and snapshot column set.
 	/// </summary>
@@ -122,7 +115,6 @@ internal sealed class RowSnapshot
 
 		return scope == RowScope.Existing ? exists : $"NOT {exists}";
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
@@ -132,20 +124,15 @@ internal sealed class RowSnapshot
 internal sealed class RowSnapshotSet
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly Dictionary<string, RowSnapshot> _snapshots;
 	private readonly List<RowSnapshot>               _ordered;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public IReadOnlyList<RowSnapshot> Snapshots => _ordered;
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="RowSnapshotSet"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -154,11 +141,9 @@ internal sealed class RowSnapshotSet
 		_snapshots = new(StringComparer.OrdinalIgnoreCase);
 		_ordered   = [];
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Gets an existing snapshot descriptor or creates one for the table and columns.
 	/// </summary>
@@ -184,6 +169,5 @@ internal sealed class RowSnapshotSet
 
 		return snapshot;
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }

@@ -5,20 +5,15 @@ namespace DataGenerator.Infrastructure;
 public sealed class RelayCommand : ICommand
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly Action<object?> _execute;
 	private readonly Predicate<object?>? _canExecute;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region EVENTS
-	#region PUBLIC
 	public event EventHandler? CanExecuteChanged;
-	#endregion PUBLIC
 	#endregion EVENTS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a command from delegates supplied by a view model.
 	/// </summary>
@@ -36,11 +31,9 @@ public sealed class RelayCommand : ICommand
 		_execute    = execute ?? throw new ArgumentNullException(nameof(execute));
 		_canExecute = canExecute;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Checks whether the command may execute for the supplied parameter.
 	/// </summary>
@@ -64,6 +57,5 @@ public sealed class RelayCommand : ICommand
 	///	Raises <see cref="CanExecuteChanged"/> so WPF queries the command state again.
 	/// </summary>
 	public void NotifyCanExecuteChanged()     => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
-	#endregion PUBLIC
 	#endregion METHODS
 }

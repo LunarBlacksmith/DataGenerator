@@ -3,23 +3,18 @@
 public sealed class RegexProfile
 {
 	#region FIELDS
-	#region PUBLIC
 	/// <summary>
 	///	Ready-made regular expressions offered next to the regex editor of a column rule.
 	/// </summary>
 	public static readonly IReadOnlyList<RegexProfile> DEFAULT_PROFILES;
-	#endregion PUBLIC
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public required string Name    { get; init; }
 	public required string Pattern { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="RegexProfile"/>.
 	/// </summary>
@@ -49,20 +44,16 @@ public sealed class RegexProfile
 			}
 		];
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="RegexProfile"/>.
 	/// </summary>
 	public RegexProfile()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Returns the profile name shown in selection controls.
 	/// </summary>
@@ -70,6 +61,5 @@ public sealed class RegexProfile
 	///	The profile name.
 	/// </returns>
 	public override string ToString() => Name;
-	#endregion PUBLIC
 	#endregion METHODS
 }

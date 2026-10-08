@@ -8,14 +8,11 @@ namespace DataGenerator.Services.Generation;
 internal sealed class GeneratedKeyTable
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly List<object?[]> _rows;
 	private int                      _outputRowCount;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public TableModel                 Table   { get; }
 	public IReadOnlyList<ColumnModel> Columns { get; }
 
@@ -26,11 +23,9 @@ internal sealed class GeneratedKeyTable
 	public string? OutputVariableName { get; }
 
 	public int RowCount => OutputVariableName is null ? _rows.Count : _outputRowCount;
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a table that stores generated key values for later row sets.
 	/// </summary>
@@ -52,11 +47,9 @@ internal sealed class GeneratedKeyTable
 		Columns            = columns;
 		OutputVariableName = outputVariableName;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Gets the generated value-column name for a captured key column.
 	/// </summary>
@@ -137,6 +130,5 @@ internal sealed class GeneratedKeyTable
 
 		return new SqlFragment($"(SELECT {valueColumn} FROM {OutputVariableName} WHERE [RowNumber] = {rowIndex + 1})");
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }

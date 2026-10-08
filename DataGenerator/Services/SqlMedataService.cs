@@ -7,16 +7,14 @@ namespace DataGenerator.Services;
 
 public sealed class SqlMetadataService : ISqlMetadataService
 {
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="SqlMetadataService"/>.
 	/// </summary>
 	public SqlMetadataService()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

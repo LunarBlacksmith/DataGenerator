@@ -8,15 +8,12 @@ namespace DataGenerator.Services;
 public sealed class SavedSettingsWindowService : ISavedSettingsWindowService
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly SavedSettingsLibrary _library;
 	private readonly IDialogService       _dialogService;
 	private readonly IFileDialogService   _fileDialogService;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the window service used to show saved-setting dialogs and the settings manager.
 	/// </summary>
@@ -38,8 +35,7 @@ public sealed class SavedSettingsWindowService : ISavedSettingsWindowService
 		_dialogService     = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
 		_fileDialogService = fileDialogService ?? throw new ArgumentNullException(nameof(fileDialogService));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

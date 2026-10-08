@@ -22,27 +22,22 @@ public sealed class RowSetConfigurationLibrary
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	/// <summary>
 	///	The saved configurations, sorted by name. Change them only through the methods of this class.
 	/// </summary>
 	public IReadOnlyList<SavedRowSetConfiguration> Configurations => _configurations;
 
 	public string FilePath => _store.LibraryFilePath;
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
 	#region EVENTS
-	#region PUBLIC
 	/// <summary>
 	///	Raised after configurations are added, replaced, removed or loaded.
 	/// </summary>
 	public event EventHandler? Changed;
-	#endregion PUBLIC
 	#endregion EVENTS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the library around the store that loads, saves, imports and exports row-set configurations.
 	/// </summary>
@@ -57,8 +52,7 @@ public sealed class RowSetConfigurationLibrary
 		_store          = store ?? throw new ArgumentNullException(nameof(store));
 		_configurations = [];
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

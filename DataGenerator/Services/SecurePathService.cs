@@ -5,7 +5,6 @@ namespace DataGenerator.Services;
 public static class SecurePathService
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string COMPANY_DIRECTORY        = "LocalTools";
 	private const string APPLICATION_DIRECTORY    = "DataGenerator";
 	private const string GENERATED_DATA_DIRECTORY = "GeneratedData";
@@ -13,22 +12,19 @@ public static class SecurePathService
 	private const string SAVED_SETTINGS_FILE      = "SavedColumnSettings.json";
 	private const string SET_CONFIGURATIONS_FILE  = "SavedSetConfigurations.json";
 	private const string PREFERENCES_FILE         = "Preferences.json";
-	#endregion PRIVATE
+	private const string EXPRESSIONS_FILE         = "SavedExpressions.json";
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Initialises the static state of <see cref="SecurePathService"/>.
 	/// </summary>
 	static SecurePathService()
 	{
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Creates and returns the application data directory under the user's local application data folder.
 	/// </summary>
@@ -99,6 +95,11 @@ public static class SecurePathService
 	public static string GetPreferencesFilePath() => Path.Combine(GetApplicationDataDirectory(), PREFERENCES_FILE);
 
 	/// <summary>
+	///	Builds the file path of the saved expression builder library.
+	/// </summary>
+	public static string GetExpressionsFilePath() => Path.Combine(GetApplicationDataDirectory(), EXPRESSIONS_FILE);
+
+	/// <summary>
 	///	Creates a timestamped default name for an exported SQL data file.
 	/// </summary>
 	/// <returns>
@@ -149,6 +150,5 @@ public static class SecurePathService
 				StringComparison.OrdinalIgnoreCase
 			);
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }

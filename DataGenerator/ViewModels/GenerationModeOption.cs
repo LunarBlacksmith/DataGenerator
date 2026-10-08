@@ -8,21 +8,16 @@ namespace DataGenerator.ViewModels;
 public sealed class GenerationModeOption
 {
 	#region FIELDS
-	#region PUBLIC
 	public static readonly IReadOnlyList<GenerationModeOption> ALL_OPTIONS;
-	#endregion PUBLIC
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public ValueGenerationMode Mode        { get; }
 	public string              DisplayName { get; }
 	public string              Description { get; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="GenerationModeOption"/>.
 	/// </summary>
@@ -93,9 +88,7 @@ public sealed class GenerationModeOption
 			)
 		];
 	}
-	#endregion STATIC
 
-	#region PRIVATE
 	/// <summary>
 	///	Creates a generation mode option with the text shown in the UI.
 	/// </summary>
@@ -114,11 +107,9 @@ public sealed class GenerationModeOption
 		DisplayName = displayName;
 		Description = description;
 	}
-	#endregion PRIVATE
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Finds the option for a generation mode.
 	/// </summary>
@@ -137,6 +128,5 @@ public sealed class GenerationModeOption
 	///	The display name.
 	/// </returns>
 	public override string ToString() => DisplayName;
-	#endregion PUBLIC
 	#endregion METHODS
 }

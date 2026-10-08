@@ -9,19 +9,16 @@ namespace DataGenerator.Infrastructure;
 /// </summary>
 public sealed class InverseBooleanToVisibilityConverter : IValueConverter
 {
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="InverseBooleanToVisibilityConverter"/>.
 	/// </summary>
 	public InverseBooleanToVisibilityConverter()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Converts a boolean value to the opposite visibility state.
 	/// </summary>
@@ -65,6 +62,5 @@ public sealed class InverseBooleanToVisibilityConverter : IValueConverter
 	/// </returns>
 	public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
 		=> value is Visibility visibility ? visibility != Visibility.Visible : Binding.DoNothing;
-	#endregion PUBLIC
 	#endregion METHODS
 }

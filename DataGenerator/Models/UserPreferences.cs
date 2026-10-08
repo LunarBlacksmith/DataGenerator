@@ -6,7 +6,6 @@
 public sealed class UserPreferences
 {
 	#region PROPERTIES
-	#region PUBLIC
 	/// <summary>
 	///	The chosen theme, or <see langword="null"/> to follow the Windows app theme.
 	/// </summary>
@@ -16,11 +15,8 @@ public sealed class UserPreferences
 	///	The keys of the optional columns of the column rules grid that the user hid (see RuleGridColumnsViewModel).
 	/// </summary>
 	public List<string> HiddenRuleGridColumns { get; set; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="UserPreferences"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -29,6 +25,4 @@ public sealed class UserPreferences
 		Theme                 = null;
 		HiddenRuleGridColumns = [];
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

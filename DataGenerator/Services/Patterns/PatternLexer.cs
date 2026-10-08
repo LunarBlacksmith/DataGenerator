@@ -4,16 +4,14 @@ namespace DataGenerator.Services.Patterns;
 
 internal static class PatternLexer
 {
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Initialises the static state of <see cref="PatternLexer"/>.
 	/// </summary>
 	static PatternLexer()
 	{
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

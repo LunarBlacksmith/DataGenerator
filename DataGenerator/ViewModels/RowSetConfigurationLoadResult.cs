@@ -6,7 +6,6 @@
 public sealed class RowSetConfigurationLoadResult
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public int UpdatedCount { get; init; }
 
 	/// <summary>
@@ -23,11 +22,8 @@ public sealed class RowSetConfigurationLoadResult
 	///	Columns of the configuration that the row set does not have.
 	/// </summary>
 	public IReadOnlyList<string> UnknownColumns { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="RowSetConfigurationLoadResult"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -38,6 +34,4 @@ public sealed class RowSetConfigurationLoadResult
 		NotInConfiguration = [];
 		UnknownColumns     = [];
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

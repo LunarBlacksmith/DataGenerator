@@ -29,7 +29,6 @@ internal sealed class RowSetUpdate
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public int                        Number          { get; }
 
 	/// <summary>
@@ -50,11 +49,9 @@ internal sealed class RowSetUpdate
 	public string                     UpdateStatement { get; }
 
 	public string StagingTableName => $"#dg_update_{Number}";
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the SQL metadata needed to stage and apply one update row set.
 	/// </summary>
@@ -92,8 +89,7 @@ internal sealed class RowSetUpdate
 		CreateStatement = BuildCreateStatement(converter);
 		UpdateStatement = BuildUpdateStatement(table, rowSet, scopeCondition);
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

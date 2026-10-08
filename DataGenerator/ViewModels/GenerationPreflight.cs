@@ -8,19 +8,16 @@ namespace DataGenerator.ViewModels;
 /// </summary>
 public static class GenerationPreflight
 {
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Initialises the static state of <see cref="GenerationPreflight"/>.
 	/// </summary>
 	static GenerationPreflight()
 	{
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Collects validation problems from the included tables' row sets and column rules.
 	/// </summary>
@@ -140,7 +137,6 @@ public static class GenerationPreflight
 
 		return missing;
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
@@ -150,16 +146,12 @@ public static class GenerationPreflight
 public sealed record RuleProblem
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public TableNodeViewModel Table    { get; init; }
 	public RowSetViewModel    RowSet   { get; init; }
 	public string             Location { get; init; }
 	public string             Message  { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="RuleProblem"/> from the supplied values.
 	/// </summary>
@@ -182,8 +174,6 @@ public sealed record RuleProblem
 		Location = location;
 		Message  = message;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }
 
 /// <summary>
@@ -192,15 +182,11 @@ public sealed record RuleProblem
 public sealed record MissingReference
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public TableNodeViewModel  ReferencingTable { get; init; }
 	public ColumnRuleViewModel Rule             { get; init; }
 	public TableNodeViewModel  ReferencedTable  { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="MissingReference"/> from the supplied values.
 	/// </summary>
@@ -223,6 +209,4 @@ public sealed record MissingReference
 		Rule             = rule;
 		ReferencedTable  = referencedTable;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

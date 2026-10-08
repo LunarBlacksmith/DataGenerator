@@ -16,13 +16,10 @@ namespace DataGenerator.Infrastructure;
 public static class TreeViewMultiSelect
 {
 	#region FIELDS
-	#region PUBLIC
 	public static readonly DependencyProperty SELECT_COMMAND_PROPERTY;
-	#endregion PUBLIC
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="TreeViewMultiSelect"/>.
 	/// </summary>
@@ -36,8 +33,7 @@ public static class TreeViewMultiSelect
 				new PropertyMetadata(null, OnSelectCommandChanged)
 			);
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

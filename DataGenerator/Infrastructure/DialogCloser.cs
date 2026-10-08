@@ -9,13 +9,10 @@ namespace DataGenerator.Infrastructure;
 public static class DialogCloser
 {
 	#region FIELDS
-	#region PUBLIC
 	public static readonly DependencyProperty DIALOG_RESULT_PROPERTY;
-	#endregion PUBLIC
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="DialogCloser"/>.
 	/// </summary>
@@ -29,8 +26,7 @@ public static class DialogCloser
 				new PropertyMetadata(null, OnDialogResultChanged)
 			);
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

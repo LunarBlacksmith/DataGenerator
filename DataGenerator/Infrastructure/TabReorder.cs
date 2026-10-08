@@ -36,8 +36,7 @@ public static class TabReorder
 	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Registers the move and swap commands and the per-control drag state.
 	/// </summary>
@@ -62,8 +61,7 @@ public static class TabReorder
 			new PropertyMetadata(null)
 		);
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -166,21 +164,23 @@ public static class TabReorder
 
 		tabs.PreviewMouseLeftButtonDown -= OnMouseDown;
 		tabs.PreviewMouseMove           -= OnMouseMove;
-		tabs.PreviewMouseLeftButtonUp   -= OnMouseUp;
+		tabs.RemoveHandler(UIElement.PreviewMouseLeftButtonUpEvent, new MouseButtonEventHandler(OnMouseUp));
 		tabs.PreviewMouseWheel          -= OnMouseWheel;
 		tabs.PreviewKeyDown             -= OnKeyDown;
-		tabs.LostMouseCapture           -= OnLostMouseCapture;
+		tabs.RemoveHandler(Mouse.LostMouseCaptureEvent, new MouseEventHandler(OnLostMouseCapture));
 		tabs.SelectionChanged           -= OnSelectionChanged;
+		tabs.Unloaded                   -= OnUnloaded;
 
 		if (GetMoveCommand(tabs) is not null || GetSwapCommand(tabs) is not null)
 		{
 			tabs.PreviewMouseLeftButtonDown += OnMouseDown;
 			tabs.PreviewMouseMove           += OnMouseMove;
-			tabs.PreviewMouseLeftButtonUp   += OnMouseUp;
+			tabs.AddHandler(UIElement.PreviewMouseLeftButtonUpEvent, new MouseButtonEventHandler(OnMouseUp), true);
 			tabs.PreviewMouseWheel          += OnMouseWheel;
 			tabs.PreviewKeyDown             += OnKeyDown;
-			tabs.LostMouseCapture           += OnLostMouseCapture;
+			tabs.AddHandler(Mouse.LostMouseCaptureEvent, new MouseEventHandler(OnLostMouseCapture), true);
 			tabs.SelectionChanged           += OnSelectionChanged;
+			tabs.Unloaded                   += OnUnloaded;
 		}
 	}
 
@@ -257,16 +257,16 @@ public static class TabReorder
 			return;
 		}
 
+		if (e.LeftButton != MouseButtonState.Pressed)
+		{
+			EndDrag(tabs, state);
+			return;
+		}
+
 		if (state.IsDragging)
 		{
 			UpdateDrag(tabs, state);
 			e.Handled = true;
-			return;
-		}
-
-		if (e.LeftButton != MouseButtonState.Pressed)
-		{
-			tabs.ClearValue(STATE_PROPERTY);
 			return;
 		}
 
@@ -306,14 +306,20 @@ public static class TabReorder
 			return;
 		}
 
-		DropOperation? operation = ResolveDrop(
-			tabs,
-			state.Tab,
-			e.GetPosition(tabs),
-			Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)
-		);
-
-		EndDrag(tabs, state);
+		DropOperation? operation;
+		try
+		{
+			operation = ResolveDrop(
+				tabs,
+				state.Tab,
+				e.GetPosition(tabs),
+				Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)
+			);
+		}
+		finally
+		{
+			EndDrag(tabs, state);
+		}
 
 		if (operation is not null)
 		{
@@ -389,7 +395,20 @@ public static class TabReorder
 	{
 		TabControl tabs = (TabControl)sender;
 
-		if (tabs.GetValue(STATE_PROPERTY) is DragState { IsDragging: true } state)
+		if (!tabs.IsMouseCaptured && tabs.GetValue(STATE_PROPERTY) is DragState { IsDragging: true } state)
+		{
+			EndDrag(tabs, state);
+		}
+	}
+
+	/// <summary>
+	///	Restores drag state when the control leaves the visual tree.
+	/// </summary>
+	private static void OnUnloaded(object sender, RoutedEventArgs e)
+	{
+		TabControl tabs = (TabControl)sender;
+
+		if (tabs.GetValue(STATE_PROPERTY) is DragState state)
 		{
 			EndDrag(tabs, state);
 		}
@@ -406,25 +425,39 @@ public static class TabReorder
 	/// </param>
 	private static void BeginDrag(TabControl tabs, DragState state)
 	{
-		if (!tabs.CaptureMouse())
-		{
-			tabs.ClearValue(STATE_PROPERTY);
-			return;
-		}
-
+		// Capture can synchronously reenter the input handlers, so save restoration state first.
 		state.IsDragging      = true;
-		state.Scroller        = FindHeaderScroller(tabs, state.Tab);
 		state.OriginalOpacity = state.Tab.Opacity;
 		state.PreviousCursor  = Mouse.OverrideCursor;
-		state.Tab.Opacity     = DRAGGED_TAB_OPACITY;
-		state.Timer           = new DispatcherTimer(DispatcherPriority.Input, tabs.Dispatcher)
+		try
 		{
-			Interval = TimeSpan.FromMilliseconds(EDGE_SCROLL_INTERVAL_MILLISECONDS)
-		};
+			if (!tabs.CaptureMouse())
+			{
+				EndDrag(tabs, state);
+				return;
+			}
 
-		state.Timer.Tick += (_, _) => OnDragTick(tabs, state);
-		state.Timer.Start();
-		UpdateDrag(tabs, state);
+			if (!state.IsDragging || !ReferenceEquals(tabs.GetValue(STATE_PROPERTY), state))
+			{
+				return;
+			}
+
+			state.Scroller = FindHeaderScroller(tabs, state.Tab);
+			state.Tab.SetCurrentValue(UIElement.OpacityProperty, DRAGGED_TAB_OPACITY);
+			state.Timer = new DispatcherTimer(DispatcherPriority.Input, tabs.Dispatcher)
+			{
+				Interval = TimeSpan.FromMilliseconds(EDGE_SCROLL_INTERVAL_MILLISECONDS)
+			};
+
+			state.Timer.Tick += (_, _) => OnDragTick(tabs, state);
+			state.Timer.Start();
+			UpdateDrag(tabs, state);
+		}
+		catch
+		{
+			EndDrag(tabs, state);
+			throw;
+		}
 	}
 
 	/// <summary>
@@ -440,6 +473,12 @@ public static class TabReorder
 	{
 		if (!state.IsDragging)
 		{
+			return;
+		}
+
+		if (Mouse.LeftButton != MouseButtonState.Pressed || !tabs.IsMouseCaptured)
+		{
+			EndDrag(tabs, state);
 			return;
 		}
 
@@ -471,6 +510,11 @@ public static class TabReorder
 	/// </param>
 	private static void UpdateDrag(TabControl tabs, DragState state)
 	{
+		if (!state.IsDragging || !ReferenceEquals(tabs.GetValue(STATE_PROPERTY), state))
+		{
+			return;
+		}
+
 		DropOperation? operation = ResolveDrop(
 			tabs,
 			state.Tab,
@@ -521,7 +565,10 @@ public static class TabReorder
 	private static void EndDrag(TabControl tabs, DragState state)
 	{
 		// The state is cleared first so the capture release below does not end the drag a second time.
-		tabs.ClearValue(STATE_PROPERTY);
+		if (ReferenceEquals(tabs.GetValue(STATE_PROPERTY), state))
+		{
+			tabs.ClearValue(STATE_PROPERTY);
+		}
 
 		if (!state.IsDragging)
 		{
@@ -531,7 +578,7 @@ public static class TabReorder
 		state.IsDragging = false;
 		state.Timer?.Stop();
 		RemoveIndicator(state);
-		state.Tab.Opacity    = state.OriginalOpacity;
+		state.Tab.SetCurrentValue(UIElement.OpacityProperty, state.OriginalOpacity);
 		Mouse.OverrideCursor = state.PreviousCursor;
 
 		if (tabs.IsMouseCaptured)
@@ -762,11 +809,9 @@ public static class TabReorder
 	#endregion METHODS
 
 	#region TYPES
-	#region PRIVATE
 	private sealed class DragState
 	{
 		#region PROPERTIES
-		#region PUBLIC
 		public TabItem               Tab             { get; }
 		public Point                 Origin          { get; }
 		public bool                  IsDragging      { get; set; }
@@ -775,11 +820,8 @@ public static class TabReorder
 		public DropIndicatorAdorner? Indicator       { get; set; }
 		public Cursor?               PreviousCursor  { get; set; }
 		public double                OriginalOpacity { get; set; }
-		#endregion PUBLIC
 		#endregion PROPERTIES
 
-		#region CONSTRUCTORS
-		#region PUBLIC
 		/// <summary>
 		///	Captures the tab and pointer position at the start of a possible drag.
 		/// </summary>
@@ -801,24 +843,18 @@ public static class TabReorder
 			Tab    = tab;
 			Origin = origin;
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
 	}
 
 	private sealed class DropOperation
 	{
 		#region PROPERTIES
-		#region PUBLIC
 		public ICommand Command   { get; }
 		public object   Parameter { get; }
 		public TabItem  Target    { get; }
 		public bool     IsSwap    { get; }
 		public bool     After     { get; }
-		#endregion PUBLIC
 		#endregion PROPERTIES
 
-		#region CONSTRUCTORS
-		#region PUBLIC
 		/// <summary>
 		///	Describes a possible drop.
 		/// </summary>
@@ -845,25 +881,20 @@ public static class TabReorder
 			IsSwap    = isSwap;
 			After     = after;
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
 	}
 
 	private sealed class DropIndicatorAdorner : Adorner
 	{
 		#region FIELDS
-		#region PRIVATE
 		private const double SWAP_OUTLINE_THICKNESS = 2;
 		private const double INSERTION_BAR_WIDTH    = 3;
 
 		private readonly Brush _brush;
 		private bool           _isSwap;
 		private bool           _after;
-		#endregion PRIVATE
 		#endregion FIELDS
 
-		#region CONSTRUCTORS
-		#region PUBLIC
+		#region CONSTRUCTOR
 		/// <summary>
 		///	Creates an indicator drawn over a header without taking part in hit testing.
 		/// </summary>
@@ -881,8 +912,7 @@ public static class TabReorder
 			_brush           = brush;
 			IsHitTestVisible = false;
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
+		#endregion CONSTRUCTOR
 
 		#region METHODS
 		#region PUBLIC
@@ -945,6 +975,5 @@ public static class TabReorder
 		#endregion PROTECTED
 		#endregion METHODS
 	}
-	#endregion PRIVATE
 	#endregion TYPES
 }

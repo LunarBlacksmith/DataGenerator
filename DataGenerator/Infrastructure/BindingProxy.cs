@@ -9,23 +9,18 @@ namespace DataGenerator.Infrastructure;
 public sealed class BindingProxy : Freezable
 {
 	#region FIELDS
-	#region PUBLIC
 	public static readonly DependencyProperty DATA_PROPERTY;
-	#endregion PUBLIC
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public object? Data
 	{
 		get => GetValue(DATA_PROPERTY);
 		set => SetValue(DATA_PROPERTY, value);
 	}
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="BindingProxy"/>.
 	/// </summary>
@@ -39,20 +34,16 @@ public sealed class BindingProxy : Freezable
 				new UIPropertyMetadata(null)
 			);
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="BindingProxy"/>.
 	/// </summary>
 	public BindingProxy()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PROTECTED
 	/// <summary>
 	///	Creates a new proxy instance for WPF's <see cref="Freezable"/> cloning infrastructure.
 	/// </summary>
@@ -60,6 +51,5 @@ public sealed class BindingProxy : Freezable
 	///	A new <see cref="BindingProxy"/> with no data assigned.
 	/// </returns>
 	protected override Freezable CreateInstanceCore() => new BindingProxy();
-	#endregion PROTECTED
 	#endregion METHODS
 }

@@ -16,7 +16,6 @@ internal enum ValueSourceKind
 internal sealed class ValueSource
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public required ColumnRule         Rule        { get; init; }
 	public required ValueSourceKind    Kind        { get; init; }
 	public GeneratedKeyTable?          KeyTable    { get; init; }
@@ -32,11 +31,8 @@ internal sealed class ValueSource
 	///	Columns of the same (composite) foreign key share a group, so they use the same referenced row.
 	/// </summary>
 	public int                         GroupIndex  { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="ValueSource"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -48,14 +44,11 @@ internal sealed class ValueSource
 		ColumnIndex = 0;
 		GroupIndex  = 0;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }
 
 internal sealed class RowSetBlueprint
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public required RowSetPlan                 Plan                   { get; init; }
 
 	/// <summary>
@@ -99,11 +92,8 @@ internal sealed class RowSetBlueprint
 	public RowSetUpdate?                           Update              { get; init; }
 
 	public bool IsUpdate => Update is not null;
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="RowSetBlueprint"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -111,8 +101,6 @@ internal sealed class RowSetBlueprint
 	{
 		Update = null;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }
 
 /// <summary>
@@ -121,28 +109,21 @@ internal sealed class RowSetBlueprint
 internal sealed class GenerationOperation
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public required TableBlueprint  Table  { get; init; }
 	public required RowSetBlueprint RowSet { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="GenerationOperation"/>.
 	/// </summary>
 	public GenerationOperation()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }
 
 internal sealed class TableBlueprint
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public required TableModel                     Table            { get; init; }
 	public required IReadOnlyList<RowSetBlueprint> RowSets          { get; init; }
 
@@ -165,11 +146,8 @@ internal sealed class TableBlueprint
 			RowSets
 				.Where(rowSet => rowSet.IsUpdate)
 				.Sum(rowSet => (long)rowSet.Plan.RowCount);
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="TableBlueprint"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -177,14 +155,11 @@ internal sealed class TableBlueprint
 	{
 		Keys = null;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }
 
 internal sealed class GenerationBlueprint
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public required IReadOnlyList<TableBlueprint>      Tables             { get; init; }
 
 	/// <summary>
@@ -234,11 +209,8 @@ internal sealed class GenerationBlueprint
 			Operations
 				.Select(operation => operation.RowSet.Update)
 				.OfType<RowSetUpdate>();
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="GenerationBlueprint"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -246,6 +218,4 @@ internal sealed class GenerationBlueprint
 	{
 		PostGeneration = null;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

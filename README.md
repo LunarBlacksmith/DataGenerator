@@ -40,7 +40,8 @@ A Windows desktop tool for generating realistic SQL Server test data in large qu
   P FOLLOWED BY SEQ(1-1000, 1) FOLLOWED BY (X OR Y) FOLLOWED BY (RAND_NUM(0, 99, 2))
   ```
 
-  produces `P0001Y73`, `P0002X04`, … It also offers parity-limited numbers (`ODD(1, 99)`, `EVEN(0, 100)`), dates (`TODAY()`, `RAND_DATE()`), text functions, `FIRST`/`LAST`, values of other columns (`COL(Name)`) and functions inside functions. The editor has non-intrusive completion: press <kbd>Tab</kbd> twice to accept a suggestion.
+  produces `P0001Y73`, `P0002X04`, … It also offers parity-limited numbers (`ODD(1, 99)`, `EVEN(0, 100)`), dates (`TODAY()`, `RAND_DATE()`), text functions, `FIRST`/`LAST`, values of other columns (`COL(Name)`) and functions inside functions. Use lazy `IF(EQ(COL(Side), 'L'), 1, 2)` for conditional values, with typed comparisons and short-circuit logical predicates. Extract text with 1-based `SUBSTRING('P100', 2, 3)`; its `100` result converts to the destination type, including `INT`. See [conditions and extraction](Docs/PatternLanguage.md#conditions-and-extraction) for coercion, NULL and error behavior. These generation functions are not supported in lookup pattern filters. The editor has non-intrusive completion: press <kbd>Tab</kbd> twice to accept a suggestion.
+- **Expression builder.** Open a separate [Pattern / Regex / SQL builder](Docs/ExpressionBuilder.md) from the status bar. Describe fixed-width segments such as `MS[10]-Y[01, 03, 05]-X[001 > 050]-[LR]-D[1]`, then build a readable breakdown, a generation Pattern, a .NET Regex and a SQL Server predicate. Named entries save the input and all outputs for searching, recall and copying, without executing SQL.
 - **Value from table.** Use values of a column of any loaded table, taken from existing rows and/or rows generated in the same run. They can be unique, and filtered by a pattern, a regular expression or a SQL condition.
 - **Copy of column.** Copy another column of the same row, converted automatically to this column's type.
 - **Foreign table keys (FTK).** Columns ending in `FTK` are treated like foreign keys even when SQL Server has no constraint for them. DataGenerator offers to generate rows for the table they point to, found by its `…PK`, `…TK` or `…_tk` column.
@@ -72,6 +73,12 @@ dotnet run --project DataGenerator
 ```
 
 The build treats warnings as errors.
+
+Run the focused sanitizer, expression builder and persistence tests with:
+
+```powershell
+dotnet test DataGenerator.Tests
+```
 
 ## Quick start
 
@@ -108,9 +115,16 @@ The reader shows the guides as formatted pages (headings, tables, code and keybo
 
 Anywhere in the app, **Shift + mouse wheel** scrolls wide content sideways, such as the column rules grid and long sample values.
 
+### Markdown HTML sanitization
+
+Documentation is converted with Markdig, then the complete HTML fragment is sanitized with the maintained Ganss.Xss **HtmlSanitizer** allowlist. The reader also sanitizes HTML supplied directly to its `Html` property before inserting it into the page. Safe formatting remains available, including headings and heading IDs, tables, code blocks, task lists and `<kbd>` keyboard keys. Relative guide links, heading fragments and HTTP, HTTPS and mail links are retained for the existing link handler.
+
+Document scripts, inline styles, event handlers, embedded frames/objects and resource-loading attributes are removed. Only already-disabled checkbox inputs are retained for task lists; enabled checkboxes and all other input types are removed. Images and other embedded resources are not rendered, and unsafe URI schemes such as `javascript:`, `data:` and `file:` are rejected. The reader's existing content security policy, nonce-protected application script, blocked browser navigation and disabled host-object access remain additional protections.
+
 | Document                                                                   | Covers                                                                                       |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | [Pattern language](Docs/PatternLanguage.md)                                | Every pattern function, operators, column types, row numbering, limits, errors and grammar.  |
+| [Expression builder](Docs/ExpressionBuilder.md)                            | Feed syntax, Pattern / Regex / SQL outputs, saved entries and safe reuse.                    |
 | [Steps, update sets and values from tables](Docs/StepsUpdatesAndLookups.md) | Steps, update sets, `Value from table`, SQL conditions (`s.` and `t.`), FTK columns.        |
 | [Saved settings and set configurations](Docs/SavedSettings.md)             | Saving, applying, managing and sharing column settings and set configurations.               |
 | [Post-generation SQL](Docs/PostGenerationSql.md)                           | Running stored procedures or SQL at the end of a run.                                        |
@@ -195,5 +209,5 @@ DataGenerator\
   ];
   ```
 - Every method has an XML documentation comment, with `<summary>`, `<param>`, `<returns>` and `<exception>` tags as needed. Tag lines use `/// `, text lines use `///` followed by a tab, and `<para>` blocks separate longer summaries.
-- Class layout, top to bottom: fields, properties, events, constructors, methods, nested types. Each is wrapped in a named region (`#region FIELDS` … `#endregion FIELDS`), with nested accessor regions (`#region PUBLIC`, `#region PRIVATE`, and so on), and `static`/`const` members at the top of their region. Classes that hold only fields or properties still use the regions.
+- Class layout, top to bottom: fields, properties, events, constructors, methods, nested types. Each category is wrapped in one named region (`#region FIELDS` … `#endregion FIELDS`), with nested accessor regions (`#region PUBLIC`, `#region PRIVATE`, and so on) only when that category contains multiple access levels. Keep `static`/`const` members at the top of their region. Constructors use only `#region CONSTRUCTOR`, without accessor subregions; when the constructor is the type's only method, leave it unwrapped. Classes that hold only fields or properties still use the regions.
 - Every class declares a constructor (static classes declare a static constructor). Default values for fields and properties are assigned in the constructor, never in an initialiser on the declaration. `const` values are the exception, because the language requires an initialiser. Static members are assigned in the static constructor.

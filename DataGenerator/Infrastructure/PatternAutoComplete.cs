@@ -21,8 +21,7 @@ public static class PatternAutoComplete
 	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="PatternAutoComplete"/>.
 	/// </summary>
@@ -45,8 +44,7 @@ public static class PatternAutoComplete
 				new FrameworkPropertyMetadata(null)
 			);
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

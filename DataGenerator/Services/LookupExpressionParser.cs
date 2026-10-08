@@ -8,7 +8,6 @@ namespace DataGenerator.Services;
 public sealed class LookupExpressionParser : ILookupExpressionParser
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string KEYWORD_UNIQUE    = "UNIQUE";
 	private const string KEYWORD_FROM      = "FROM";
 	private const string KEYWORD_WHERE     = "WHERE";
@@ -21,11 +20,9 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 
 	private readonly ITableCatalog         _catalog;
 	private readonly IPatternSqlTranslator _patternTranslator;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="LookupExpressionParser"/>.
 	/// </summary>
@@ -33,9 +30,7 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 	{
 		REGEX_CHECK_TIMEOUT = TimeSpan.FromSeconds(1);
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a parser that resolves lookup expressions against the loaded table catalog and validates pattern filters.
 	/// </summary>
@@ -53,8 +48,7 @@ public sealed class LookupExpressionParser : ILookupExpressionParser
 		_catalog           = catalog ?? throw new ArgumentNullException(nameof(catalog));
 		_patternTranslator = patternTranslator ?? throw new ArgumentNullException(nameof(patternTranslator));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

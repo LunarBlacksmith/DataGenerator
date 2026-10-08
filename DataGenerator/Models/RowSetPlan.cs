@@ -7,14 +7,11 @@
 public sealed class RowSetPlan
 {
 	#region FIELDS
-	#region PUBLIC
 	public const int FIRST_STEP = 1;
 	public const int MAXIMUM_ROW_COUNT = 1_000_000;
-	#endregion PUBLIC
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public required string                    Name            { get; init; }
 	public required int                       RowCount        { get; init; }
 	public required IReadOnlyList<ColumnRule> Rules           { get; init; }
@@ -41,11 +38,8 @@ public sealed class RowSetPlan
 	public bool                               RequireAllRows  { get; init; }
 
 	public bool IsUpdate => Action == RowSetAction.Update;
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="RowSetPlan"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -57,6 +51,4 @@ public sealed class RowSetPlan
 		UpdateCondition = string.Empty;
 		RequireAllRows  = true;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

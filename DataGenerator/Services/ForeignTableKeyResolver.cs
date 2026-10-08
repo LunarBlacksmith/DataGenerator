@@ -23,16 +23,14 @@ public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="ForeignTableKeyResolver"/>.
 	/// </summary>
 	public ForeignTableKeyResolver()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -234,18 +232,13 @@ public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 	#endregion METHODS
 
 	#region TYPES
-	#region PRIVATE
 	private sealed record KeyCandidate
 	{
 		#region PROPERTIES
-		#region PUBLIC
 		public TableModel  Table  { get; init; }
 		public ColumnModel Column { get; init; }
-		#endregion PUBLIC
 		#endregion PROPERTIES
 
-		#region CONSTRUCTORS
-		#region PUBLIC
 		/// <summary>
 		///	Creates a new <see cref="KeyCandidate"/> from the supplied values.
 		/// </summary>
@@ -260,9 +253,6 @@ public sealed class ForeignTableKeyResolver : IForeignTableKeyResolver
 			Table  = table;
 			Column = column;
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
 	}
-	#endregion PRIVATE
 	#endregion TYPES
 }

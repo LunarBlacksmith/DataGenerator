@@ -51,8 +51,7 @@ public static class HintPresentation
 	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="HintPresentation"/>.
 	/// </summary>
@@ -60,8 +59,7 @@ public static class HintPresentation
 	{
 		IS_REGISTERED = false;
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

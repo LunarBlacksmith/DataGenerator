@@ -6,21 +6,17 @@ namespace DataGenerator.Services;
 public sealed class RegexValueGenerator : IRegexValueGenerator
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int MAXIMUM_REPEAT_COUNT = 1000;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="RegexValueGenerator"/>.
 	/// </summary>
 	public RegexValueGenerator()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

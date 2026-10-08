@@ -10,23 +10,19 @@ namespace DataGenerator.Infrastructure;
 public static class WindowTitleBar
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int USE_IMMERSIVE_DARK_MODE_ATTRIBUTE        = 20;
 	private const int LEGACY_USE_IMMERSIVE_DARK_MODE_ATTRIBUTE = 19;
 	private const int S_OK                                     = 0;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Initialises the static state of <see cref="WindowTitleBar"/>.
 	/// </summary>
 	static WindowTitleBar()
 	{
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

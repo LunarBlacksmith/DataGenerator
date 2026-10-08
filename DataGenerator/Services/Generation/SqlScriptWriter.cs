@@ -12,7 +12,6 @@ namespace DataGenerator.Services.Generation;
 internal sealed class SqlScriptWriter
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int    SCRIPT_BATCH_SIZE     = 100;
 	private const int    UPDATE_SHORTAGE_ERROR = 50002;
 	private const int    LOOKUP_SHORTAGE_ERROR = 50003;
@@ -21,11 +20,9 @@ internal sealed class SqlScriptWriter
 
 	private readonly ISqlValueConverter _converter;
 	private readonly RowValueBuilder    _rowValueBuilder;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the service that writes transactional generation scripts.
 	/// </summary>
@@ -43,8 +40,7 @@ internal sealed class SqlScriptWriter
 		_converter       = converter       ?? throw new ArgumentNullException(nameof(converter));
 		_rowValueBuilder = rowValueBuilder ?? throw new ArgumentNullException(nameof(rowValueBuilder));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

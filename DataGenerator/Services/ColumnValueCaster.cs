@@ -9,7 +9,6 @@ namespace DataGenerator.Services;
 public sealed class ColumnValueCaster : IColumnValueCaster
 {
 	#region FIELDS
-	#region PRIVATE
 	private const decimal MONEY_MAXIMUM       = 922337203685477.5807m;
 	private const decimal SMALL_MONEY_MAXIMUM = 214748.3647m;
 	private const int     MONEY_SCALE         = 4;
@@ -26,11 +25,9 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 	private static readonly string[]    TRUE_WORDS;
 
 	private readonly ISqlValueConverter _converter;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="ColumnValueCaster"/>.
 	/// </summary>
@@ -42,9 +39,7 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 		SMALL_DATETIME_MAXIMUM = new(2079, 6, 6, 23, 59, 0);
 		TRUE_WORDS             = ["true", "yes", "y", "on"];
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a caster that uses the shared SQL value converter for column metadata and SQL type conversions.
 	/// </summary>
@@ -58,8 +53,7 @@ public sealed class ColumnValueCaster : IColumnValueCaster
 	{
 		_converter = converter ?? throw new ArgumentNullException(nameof(converter));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

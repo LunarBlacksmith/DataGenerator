@@ -6,7 +6,6 @@
 public sealed class ColumnRule
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public required ColumnModel         Column            { get; init; }
 	public required ValueGenerationMode GenerationMode    { get; init; }
 	public string                       FixedValue        { get; init; }
@@ -31,11 +30,8 @@ public sealed class ColumnRule
 	/// </summary>
 	public ColumnLookup?                Lookup            { get; init; }
 	public ForeignKeyModel?             Reference         { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="ColumnRule"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -51,6 +47,4 @@ public sealed class ColumnRule
 		Lookup            = null;
 		Reference         = null;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

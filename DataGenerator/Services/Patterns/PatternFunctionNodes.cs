@@ -5,19 +5,16 @@ namespace DataGenerator.Services.Patterns;
 
 internal static class PatternNumberFormatter
 {
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Initialises the static state of <see cref="PatternNumberFormatter"/>.
 	/// </summary>
 	static PatternNumberFormatter()
 	{
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Appends a whole number with invariant-culture digits and optional zero padding after any minus sign.
 	/// </summary>
@@ -50,24 +47,20 @@ internal static class PatternNumberFormatter
 	///	The number of digits in <paramref name="value"/> without its sign.
 	/// </returns>
 	public static int CountDigits(long value) => Math.Abs(value).ToString(CultureInfo.InvariantCulture).Length;
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
 internal sealed class SequencePatternNode : PatternNode
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly long _minimum;
 	private readonly long _maximum;
 	private readonly long _start;
 	private readonly long _step;
 	private readonly int  _digits;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a sequence node that walks a whole-number range by a fixed step and wraps within the range.
 	/// </summary>
@@ -94,11 +87,9 @@ internal sealed class SequencePatternNode : PatternNode
 		_step    = step;
 		_digits  = digits;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Appends the sequence value for the current row, wrapping forwards or backwards inside the configured range.
 	/// </summary>
@@ -127,28 +118,22 @@ internal sealed class SequencePatternNode : PatternNode
 	///	Thrown when the sequence contains negative numbers, which cannot be translated to SQL pattern matching.
 	/// </exception>
 	public override PatternTemplateSet ExpandTemplates() => PatternTemplateSet.ForNumbers(_minimum, _maximum, _digits, FunctionName);
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
 internal sealed class RandomNumberPatternNode : PatternNode
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly int   _digits;
 	private readonly bool? _isOdd;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public long Minimum { get; }
 	public long Maximum { get; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a random whole-number node for an inclusive range and optional padding width.
 	/// </summary>
@@ -192,11 +177,9 @@ internal sealed class RandomNumberPatternNode : PatternNode
 		_digits = digits;
 		_isOdd  = isOdd;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Appends a random whole number from the configured inclusive range.
 	/// </summary>
@@ -244,22 +227,18 @@ internal sealed class RandomNumberPatternNode : PatternNode
 	/// </exception>
 	public RandomNumberPatternNode WithRange(long minimum, long maximum)
 		=> new RandomNumberPatternNode(minimum, maximum, _digits, _isOdd) { FunctionName = FunctionName };
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
 internal sealed class RandomDecimalPatternNode : PatternNode
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly decimal _minimum;
 	private readonly decimal _maximum;
 	private readonly int     _decimals;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a random decimal node for an inclusive range and fixed number of decimal places.
 	/// </summary>
@@ -278,11 +257,9 @@ internal sealed class RandomDecimalPatternNode : PatternNode
 		_maximum  = maximum;
 		_decimals = decimals;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Appends a random decimal in the configured range, rounded and formatted with the configured decimal places.
 	/// </summary>
@@ -299,22 +276,18 @@ internal sealed class RandomDecimalPatternNode : PatternNode
 
 		_ = builder.Append(Math.Clamp(value, _minimum, _maximum).ToString($"F{_decimals}", CultureInfo.InvariantCulture));
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
 internal sealed class RandomTextPatternNode : PatternNode
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly string _alphabet;
 	private readonly int    _minimumLength;
 	private readonly int    _maximumLength;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a random text node that draws characters from an alphabet and uses a fixed or ranged length.
 	/// </summary>
@@ -333,11 +306,9 @@ internal sealed class RandomTextPatternNode : PatternNode
 		_minimumLength = minimumLength;
 		_maximumLength = maximumLength;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Appends a random string whose length is chosen from the configured length range.
 	/// </summary>
@@ -384,22 +355,18 @@ internal sealed class RandomTextPatternNode : PatternNode
 
 		return PatternTemplateSet.ForCharacters(likeClass, _minimumLength, _maximumLength);
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
 internal sealed class RandomDatePatternNode : PatternNode
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly DateTime _minimum;
 	private readonly DateTime _maximum;
 	private readonly string   _format;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a random date node for an inclusive date-time range and output format.
 	/// </summary>
@@ -418,11 +385,9 @@ internal sealed class RandomDatePatternNode : PatternNode
 		_maximum = maximum;
 		_format  = format;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Appends a random date and time from the configured range using the configured format.
 	/// </summary>
@@ -438,7 +403,6 @@ internal sealed class RandomDatePatternNode : PatternNode
 
 		_ = builder.Append(value.ToString(_format, CultureInfo.InvariantCulture));
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
@@ -448,14 +412,11 @@ internal sealed class RandomDatePatternNode : PatternNode
 internal sealed class TodayPatternNode : PatternNode
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly bool   _anyTime;
 	private readonly string _format;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a TODAY node for the current time or a random time on the current date.
 	/// </summary>
@@ -470,11 +431,9 @@ internal sealed class TodayPatternNode : PatternNode
 		_anyTime = anyTime;
 		_format  = format;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Appends today's date using either the generation time or a random time from the same day.
 	/// </summary>
@@ -494,24 +453,20 @@ internal sealed class TodayPatternNode : PatternNode
 
 		_ = builder.Append(value.ToString(_format, CultureInfo.InvariantCulture));
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
 internal sealed class GuidPatternNode : PatternNode
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string HEX_CLASS = "[0-9A-F]";
 
 	private static readonly int[] GROUP_LENGTHS;
 
 	private readonly bool _upperCase;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="GuidPatternNode"/>.
 	/// </summary>
@@ -519,9 +474,7 @@ internal sealed class GuidPatternNode : PatternNode
 	{
 		GROUP_LENGTHS = [8, 4, 4, 4, 12];
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a GUID node with a fixed letter case.
 	/// </summary>
@@ -532,11 +485,9 @@ internal sealed class GuidPatternNode : PatternNode
 	{
 		_upperCase = upperCase;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Appends a newly generated GUID in the configured letter case.
 	/// </summary>
@@ -575,7 +526,6 @@ internal sealed class GuidPatternNode : PatternNode
 
 		return result;
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
@@ -585,13 +535,10 @@ internal sealed class GuidPatternNode : PatternNode
 internal sealed class RowNumberPatternNode : PatternNode
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly int _digits;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a ROW node with optional zero padding.
 	/// </summary>
@@ -602,11 +549,9 @@ internal sealed class RowNumberPatternNode : PatternNode
 	{
 		_digits = digits;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Appends the current row's one-based number.
 	/// </summary>
@@ -618,7 +563,6 @@ internal sealed class RowNumberPatternNode : PatternNode
 	/// </param>
 	public override void Append(StringBuilder builder, PatternContext context)
 		=> PatternNumberFormatter.AppendPadded(builder, context.RowIndex + 1, _digits);
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
@@ -628,13 +572,10 @@ internal sealed class RowNumberPatternNode : PatternNode
 internal sealed class CyclePatternNode : PatternNode
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly IReadOnlyList<string> _values;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a CYCLE node from the ordered values it should repeat through the row set.
 	/// </summary>
@@ -645,11 +586,9 @@ internal sealed class CyclePatternNode : PatternNode
 	{
 		_values = values;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Appends the cycle value selected by the current row index.
 	/// </summary>
@@ -678,7 +617,6 @@ internal sealed class CyclePatternNode : PatternNode
 					.Select(PatternTemplateSet.FromLiteral)
 			]
 		);
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
@@ -689,15 +627,12 @@ internal sealed class CyclePatternNode : PatternNode
 internal sealed class RowPositionPatternNode : PatternNode
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly bool                  _fromEnd;
 	private readonly IReadOnlyList<string> _values;
 	private readonly string                _otherValue;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a FIRST or LAST node with row-specific values and the value for all other rows.
 	/// </summary>
@@ -716,11 +651,9 @@ internal sealed class RowPositionPatternNode : PatternNode
 		_values     = values;
 		_otherValue = otherValue;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Appends the configured first-row, last-row or other-row value for the current row.
 	/// </summary>
@@ -760,7 +693,6 @@ internal sealed class RowPositionPatternNode : PatternNode
 					.Select(PatternTemplateSet.FromLiteral)
 			]
 		);
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
@@ -770,13 +702,10 @@ internal sealed class RowPositionPatternNode : PatternNode
 internal sealed class ColumnReferencePatternNode : PatternNode
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly string _columnName;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a COL node for another column in the current row.
 	/// </summary>
@@ -787,11 +716,11 @@ internal sealed class ColumnReferencePatternNode : PatternNode
 	{
 		_columnName = columnName;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
+	public override object? Evaluate(PatternContext context) => context.GetTypedColumnValue(_columnName);
+
 	/// <summary>
 	///	Appends the referenced column's current-row value.
 	/// </summary>
@@ -823,7 +752,6 @@ internal sealed class ColumnReferencePatternNode : PatternNode
 			columnNames.Add(_columnName);
 		}
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
@@ -834,17 +762,14 @@ internal sealed class ColumnReferencePatternNode : PatternNode
 internal sealed class DynamicFunctionPatternNode : PatternNode
 {
 	#region FIELDS
-	#region PRIVATE
 	private const char KEY_SEPARATOR = '\u001F';
 
 	private readonly PatternToken                   _nameToken;
 	private readonly IReadOnlyList<PatternArgument> _arguments;
 	private CachedFunction?                         _lastFunction;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a function node whose nested-function arguments are evaluated for each row before the outer function runs.
 	/// </summary>
@@ -861,11 +786,9 @@ internal sealed class DynamicFunctionPatternNode : PatternNode
 		_nameToken = nameToken;
 		_arguments = arguments;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Evaluates nested function arguments, creates or reuses the matching outer function node, and appends its value.
 	/// </summary>
@@ -925,22 +848,16 @@ internal sealed class DynamicFunctionPatternNode : PatternNode
 			argument.Expression?.CollectColumnReferences(columnNames);
 		}
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 
 	#region TYPES
-	#region PRIVATE
 	private sealed record CachedFunction
 	{
 		#region PROPERTIES
-		#region PUBLIC
 		public string      Key  { get; init; }
 		public PatternNode Node { get; init; }
-		#endregion PUBLIC
 		#endregion PROPERTIES
 
-		#region CONSTRUCTORS
-		#region PUBLIC
 		/// <summary>
 		///	Creates a new <see cref="CachedFunction"/> from the supplied values.
 		/// </summary>
@@ -955,9 +872,6 @@ internal sealed class DynamicFunctionPatternNode : PatternNode
 			Key  = key;
 			Node = node;
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
 	}
-	#endregion PRIVATE
 	#endregion TYPES
 }

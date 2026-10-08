@@ -3,7 +3,6 @@
 public sealed class TableGenerationPlan
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public required TableModel                Table   { get; init; }
 	public required IReadOnlyList<RowSetPlan> RowSets { get; init; }
 
@@ -21,17 +20,12 @@ public sealed class TableGenerationPlan
 			RowSets
 				.Where(rowSet => rowSet.IsUpdate)
 				.Sum(rowSet => rowSet.RowCount);
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="TableGenerationPlan"/>.
 	/// </summary>
 	public TableGenerationPlan()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

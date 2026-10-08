@@ -10,16 +10,13 @@ namespace DataGenerator.ViewModels;
 public sealed class SavedSettingRowViewModel : ValidatableObservableObject
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly Func<SavedSettingRowViewModel, string, string?> _rename;
 	private readonly Action<SavedSettingRowViewModel, bool>          _setApplyAutomatically;
 
 	private string _name;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public SavedColumnSetting Setting { get; }
 
 	public string ModeName   => GenerationModeOption.Get(Setting.GenerationMode).DisplayName;
@@ -63,11 +60,9 @@ public sealed class SavedSettingRowViewModel : ValidatableObservableObject
 			}
 		}
 	}
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a row for one saved setting and the callbacks that persist edits.
 	/// </summary>
@@ -94,11 +89,9 @@ public sealed class SavedSettingRowViewModel : ValidatableObservableObject
 		_setApplyAutomatically = setApplyAutomatically ?? throw new ArgumentNullException(nameof(setApplyAutomatically));
 		_name                  = setting.Name;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Shows the saved values again after the library changed.
 	/// </summary>
@@ -108,6 +101,5 @@ public sealed class SavedSettingRowViewModel : ValidatableObservableObject
 		ClearErrors(nameof(Name));
 		OnPropertyChanged(string.Empty);
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }

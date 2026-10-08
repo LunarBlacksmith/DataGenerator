@@ -12,7 +12,6 @@ namespace DataGenerator.ViewModels;
 public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly SavedSettingsLibrary _library;
 	private readonly SavedColumnSetting   _values;
 
@@ -20,11 +19,9 @@ public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 	private AutomaticApplicationKind _automaticApplication;
 	private string?                  _errorMessage;
 	private bool?                    _dialogResult;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public RelayCommand SaveCommand { get; }
 
 	public string ValuesSummary => SavedSettingDescriber.DescribeValues(_values);
@@ -124,11 +121,9 @@ public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 	///	The name the setting was saved under.
 	/// </summary>
 	public string SavedName => _name.Trim();
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the save dialog for a column's current settings and suggests how it should be applied automatically.
 	/// </summary>
@@ -168,8 +163,7 @@ public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 		SaveCommand = new RelayCommand(_ => Save(), _ => !HasErrors);
 		ValidateName();
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PROTECTED
@@ -250,13 +244,11 @@ public sealed class SaveColumnSettingViewModel : ValidatableObservableObject
 	#endregion METHODS
 
 	#region TYPES
-	#region PRIVATE
 	private enum AutomaticApplicationKind
 	{
 		Never               = 0,
 		ThisColumn          = 1,
 		EveryColumnWithName = 2
 	}
-	#endregion PRIVATE
 	#endregion TYPES
 }

@@ -15,23 +15,23 @@ internal sealed class PatternParser
 	#endregion PUBLIC
 
 	#region PRIVATE
+	private const int MAXIMUM_FUNCTION_DEPTH = 64;
+
 	private static readonly string[] RESERVED_WORDS;
 
 	private readonly IReadOnlyList<PatternToken> _tokens;
 	private int                                  _index;
+	private int                                  _functionDepth;
 	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PRIVATE
 	private PatternToken Current => _tokens[_index];
 
 	private PatternToken Next => _tokens[Math.Min(_index + 1, _tokens.Count - 1)];
-	#endregion PRIVATE
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="PatternParser"/>.
 	/// </summary>
@@ -39,9 +39,7 @@ internal sealed class PatternParser
 	{
 		RESERVED_WORDS = ["FOLLOWED", "BY", "THEN", "OR", "REPEATED", "TO", "TIMES"];
 	}
-	#endregion STATIC
 
-	#region PRIVATE
 	/// <summary>
 	///	Creates a parser over an already-tokenized pattern expression.
 	/// </summary>
@@ -51,11 +49,11 @@ internal sealed class PatternParser
 	private PatternParser(IReadOnlyList<PatternToken> tokens)
 	{
 		_index = 0;
+		_functionDepth = 0;
 
 		_tokens = tokens;
 	}
-	#endregion PRIVATE
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -406,7 +404,7 @@ internal sealed class PatternParser
 
 			case PatternTokenKind.Word:
 			{
-				if (RESERVED_WORDS.Contains(token.Text, StringComparer.OrdinalIgnoreCase))
+				if (Next.Kind != PatternTokenKind.LeftParenthesis && RESERVED_WORDS.Contains(token.Text, StringComparer.OrdinalIgnoreCase))
 				{
 					throw new PatternSyntaxException(
 						$"'{token.Text}' is a keyword, but text, a number, a function or '(' was expected here. "
@@ -450,6 +448,25 @@ internal sealed class PatternParser
 	///	Thrown when arguments are malformed, the closing parenthesis is missing, or the function is invalid.
 	/// </exception>
 	private PatternNode ParseFunction(PatternToken nameToken)
+	{
+		if (_functionDepth >= MAXIMUM_FUNCTION_DEPTH)
+		{
+			throw new PatternSyntaxException($"Functions may be nested at most {MAXIMUM_FUNCTION_DEPTH} levels.", nameToken.Position);
+		}
+
+		++_functionDepth;
+
+		try
+		{
+			return ParseFunctionArguments(nameToken);
+		}
+		finally
+		{
+			--_functionDepth;
+		}
+	}
+
+	private PatternNode ParseFunctionArguments(PatternToken nameToken)
 	{
 		List<PatternArgument> arguments = [];
 
@@ -531,10 +548,15 @@ internal sealed class PatternParser
 		if (valueToken.Kind is PatternTokenKind.Text or PatternTokenKind.Word)
 		{
 			Advance();
+			bool typedLiteral = PatternExpressionNode.IsFunction(nameToken.Text) && valueToken.Kind == PatternTokenKind.Word;
 			return new PatternArgument
 			{
 				Name     = name,
-				Kind     = PatternArgumentKind.Text,
+				Kind     = typedLiteral && valueToken.IsKeyword("NULL")
+					? PatternArgumentKind.Null
+					: typedLiteral && (valueToken.IsKeyword("TRUE") || valueToken.IsKeyword("FALSE"))
+						? PatternArgumentKind.Boolean
+						: PatternArgumentKind.Text,
 				Text     = valueToken.Text,
 				Position = position
 			};

@@ -3,7 +3,6 @@
 public sealed class GenerationRequest
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public required IReadOnlyList<TableGenerationPlan> Plans              { get; init; }
 	public required GenerationMode                     Mode               { get; init; }
 	public string?                                     OutputFilePath     { get; init; }
@@ -23,11 +22,8 @@ public sealed class GenerationRequest
 	///	Stored procedures or SQL that run after the inserts and before the commit; null when there are none.
 	/// </summary>
 	public PostGenerationScript?                       PostGeneration     { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="GenerationRequest"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -39,6 +35,4 @@ public sealed class GenerationRequest
 		ResetIdentitySeeds = false;
 		PostGeneration     = null;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

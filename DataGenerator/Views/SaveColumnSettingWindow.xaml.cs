@@ -7,8 +7,6 @@ namespace DataGenerator.Views;
 /// </summary>
 public partial class SaveColumnSettingWindow : Window
 {
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates the window and loads its XAML-defined save-setting controls.
 	/// </summary>
@@ -16,6 +14,4 @@ public partial class SaveColumnSettingWindow : Window
 	{
 		InitializeComponent();
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

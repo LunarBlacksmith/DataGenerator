@@ -10,22 +10,18 @@ namespace DataGenerator.Services.Patterns;
 public sealed class PatternSqlTranslator : IPatternSqlTranslator
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string BINARY_COLLATION = "Latin1_General_100_BIN2";
 	private const string NUMBER_TYPE      = "decimal(19, 0)";
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="PatternSqlTranslator"/>.
 	/// </summary>
 	public PatternSqlTranslator()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

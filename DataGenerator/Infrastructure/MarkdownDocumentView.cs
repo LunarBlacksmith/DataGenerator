@@ -112,7 +112,6 @@ public sealed class MarkdownDocumentView : Decorator
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public string? Html
 	{
 		get => (string?)GetValue(HTML_PROPERTY);
@@ -184,11 +183,9 @@ public sealed class MarkdownDocumentView : Decorator
 		get => (Brush?)GetValue(ALTERNATE_ROW_BACKGROUND_PROPERTY);
 		set => SetValue(ALTERNATE_ROW_BACKGROUND_PROPERTY, value);
 	}
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Registers the document, link and theme properties of <see cref="MarkdownDocumentView"/>.
 	/// </summary>
@@ -227,9 +224,7 @@ public sealed class MarkdownDocumentView : Decorator
 		HEADER_BACKGROUND_PROPERTY        = RegisterThemeBrush(nameof(HeaderBackground));
 		ALTERNATE_ROW_BACKGROUND_PROPERTY = RegisterThemeBrush(nameof(AlternateRowBackground));
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates the view; the browser itself starts when the view is loaded.
 	/// </summary>
@@ -244,14 +239,13 @@ public sealed class MarkdownDocumentView : Decorator
 		Loaded   += OnLoaded;
 		Unloaded += OnUnloaded;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
 	/// <summary>
 	///	Builds the complete page shown by the browser: a strict content security policy, the theme, the style sheet, the
-	///	document and the link-handling script.
+	///	sanitized document and the link-handling script.
 	/// </summary>
 	/// <param name="bodyHtml">
 	///	The rendered document.
@@ -276,7 +270,7 @@ public sealed class MarkdownDocumentView : Decorator
 		_ = page.Append("<style id=\"theme\">").Append(themeCss).Append("</style>");
 		_ = page.Append("<style>").Append(STYLE_SHEET).Append("</style>");
 		_ = page.Append("</head><body>");
-		_ = page.Append(bodyHtml);
+		_ = page.Append(MarkdownHtmlSanitizer.Sanitize(bodyHtml));
 		_ = page.Append("<script nonce=\"").Append(nonce).Append("\">").Append(PAGE_SCRIPT).Append("</script>");
 		_ = page.Append("</body></html>");
 

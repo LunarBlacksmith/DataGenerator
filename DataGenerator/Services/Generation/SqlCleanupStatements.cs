@@ -8,24 +8,19 @@ namespace DataGenerator.Services.Generation;
 internal static class SqlCleanupStatements
 {
 	#region FIELDS
-	#region PUBLIC
 	public const string RESEED_VARIABLE_NAME = "@dg_reseed";
-	#endregion PUBLIC
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Initialises the static state of <see cref="SqlCleanupStatements"/>.
 	/// </summary>
 	static SqlCleanupStatements()
 	{
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Checks whether a table contains an identity column.
 	/// </summary>
@@ -86,6 +81,5 @@ internal static class SqlCleanupStatements
 				+ $"{SqlSyntax.QuoteUnicodeText(command)}, N'@value BIGINT', @value = {RESEED_VARIABLE_NAME};"
 		];
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }

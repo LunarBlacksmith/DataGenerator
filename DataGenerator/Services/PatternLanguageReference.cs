@@ -7,15 +7,12 @@
 public static class PatternLanguageReference
 {
 	#region FIELDS
-	#region PUBLIC
 	public static readonly IReadOnlyList<PatternLanguageEntry> FUNCTIONS;
 
 	public static readonly IReadOnlyList<PatternLanguageEntry> KEYWORDS;
-	#endregion PUBLIC
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="PatternLanguageReference"/>.
 	/// </summary>
@@ -23,6 +20,25 @@ public static class PatternLanguageReference
 	{
 		FUNCTIONS =
 		[
+			Function("IF", "IF(condition, thenValue, elseValue)",
+				"Evaluates a boolean condition and only the selected branch. Branches can be values, COL calls or nested functions.",
+				"IF(EQ(COL(Side), 'L'), 1, 2)"),
+			Function("SUBSTRING", "SUBSTRING(text, startIndex, length)",
+				"Extracts text using a 1-based index (first character is 1). Short results are truncated; past the end or NULL gives empty text. Converted to the destination column type during generation.",
+				"SUBSTRING('P100', 2, 3)"),
+			Function("EQ", "EQ(left, right)", "Equality: ordinal case-sensitive text; numeric values allow invariant numeric text. NULL equals only NULL.", "IF(EQ('L', 'L'), 1, 2)"),
+			Function("NE", "NE(left, right)", "Not equal; the inverse of EQ. NULL is distinct from empty text.", "NE('L', 'R')"),
+			Function("GT", "GT(left, right)", "Greater than for compatible non-null values. Two text operands compare ordinally; numeric operands compare numerically.", "GT(100, 50)"),
+			Function("GE", "GE(left, right)", "Greater than or equal for compatible non-null values.", "GE(100, 100)"),
+			Function("LT", "LT(left, right)", "Less than for compatible non-null values.", "LT(1, 2)"),
+			Function("LE", "LE(left, right)", "Less than or equal for compatible non-null values.", "LE(1, 1)"),
+			Function("AND", "AND(condition, condition, ...)", "TRUE only when every condition is true. Stops at the first false condition.", "AND(GT(100, 50), LT(100, 200))"),
+			Function("OR", "OR(condition, condition, ...)", "TRUE when any condition is true. Stops at the first true condition. Unlike infix OR, this is not a random choice.", "OR(EQ('L', 'L'), EQ('L', 'R'))"),
+			Function("NOT", "NOT(condition)", "Inverts a boolean condition. Numeric and NULL truth values are not accepted.", "NOT(FALSE)"),
+			Function("IS_NULL", "IS_NULL(value)", "Tests explicit NULL or a NULL column value without treating empty text as NULL.", "IS_NULL(NULL)"),
+			Function("CONTAINS", "CONTAINS(text, part)", "Ordinal case-sensitive containment of two non-null text values.", "CONTAINS('P100', '100')"),
+			Function("STARTS_WITH", "STARTS_WITH(text, part)", "Ordinal case-sensitive prefix test of two non-null text values.", "STARTS_WITH('P100', 'P')"),
+			Function("ENDS_WITH", "ENDS_WITH(text, part)", "Ordinal case-sensitive suffix test of two non-null text values.", "ENDS_WITH('P100', '100')"),
 			Function(
 				"SEQ",
 				"SEQ(min-max, start, step, digits)",
@@ -216,11 +232,9 @@ public static class PatternLanguageReference
 			)
 		];
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PRIVATE
 	/// <summary>
 	///	Creates a pattern-language function entry for the shared reference list.
 	/// </summary>
@@ -262,6 +276,5 @@ public static class PatternLanguageReference
 	/// </returns>
 	private static PatternLanguageEntry Keyword(string name, string signature, string description, string example)
 		=> new PatternLanguageEntry(name, signature, description, example, PatternLanguageEntryKind.Keyword);
-	#endregion PRIVATE
 	#endregion METHODS
 }

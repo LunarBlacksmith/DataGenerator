@@ -15,4 +15,9 @@ public interface IHelpService
 	///	Shows the bundled documentation reader without requiring an internet connection.
 	/// </summary>
 	void ShowDocumentation();
+
+	/// <summary>
+	///	Shows or activates the saved Pattern / Regex / SQL expression builder.
+	/// </summary>
+	void ShowExpressionBuilder();
 }

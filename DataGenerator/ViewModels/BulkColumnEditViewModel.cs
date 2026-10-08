@@ -31,7 +31,6 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	/// <summary>
 	///	The columns selected in the grid, kept in step with the grid's selection.
 	/// </summary>
@@ -110,11 +109,9 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 		get         => _resultHasSkips;
 		private set => SetProperty(ref _resultHasSkips, value);
 	}
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the bulk editor for all rules in the active row set and tracks the grid selection.
 	/// </summary>
@@ -143,11 +140,9 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 
 		SelectedRules.CollectionChanged += OnSelectedRulesChanged;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PRIVATE
 	/// <summary>
 	///	Refreshes the bulk action state after the grid selection changes.
 	/// </summary>
@@ -315,6 +310,5 @@ public sealed class BulkColumnEditViewModel : ObservableObject
 		ResultDetails  = null;
 		ResultHasSkips = false;
 	}
-	#endregion PRIVATE
 	#endregion METHODS
 }

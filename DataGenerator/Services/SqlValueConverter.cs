@@ -8,7 +8,6 @@ namespace DataGenerator.Services;
 public sealed class SqlValueConverter : ISqlValueConverter
 {
 	#region FIELDS
-	#region PRIVATE
 	private const decimal MONEY_MAXIMUM       = 922337203685477.5807m;
 	private const decimal SMALL_MONEY_MAXIMUM = 214748.3647m;
 	private const int     MONEY_SCALE         = 4;
@@ -23,11 +22,9 @@ public sealed class SqlValueConverter : ISqlValueConverter
 	private static readonly DateTime    SMALL_DATETIME_MAXIMUM;
 	private static readonly string[]    TRUE_VALUES;
 	private static readonly string[]    FALSE_VALUES;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="SqlValueConverter"/>.
 	/// </summary>
@@ -40,17 +37,14 @@ public sealed class SqlValueConverter : ISqlValueConverter
 		TRUE_VALUES            = ["1", "true", "yes", "y", "on"];
 		FALSE_VALUES           = ["0", "false", "no", "n", "off"];
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="SqlValueConverter"/>.
 	/// </summary>
 	public SqlValueConverter()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

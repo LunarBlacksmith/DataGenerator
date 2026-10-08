@@ -13,7 +13,6 @@ namespace DataGenerator.ViewModels;
 public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposable
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string DIALOG_TITLE = "Saved column settings";
 
 	private readonly SavedSettingsLibrary _library;
@@ -23,11 +22,9 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 	private SavedSettingRowViewModel? _selectedSetting;
 	private string                    _statusText;
 	private bool                      _isDisposed;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public ObservableCollection<SavedSettingRowViewModel> Settings { get; }
 
 	public RelayCommand DeleteCommand      { get; }
@@ -63,11 +60,9 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		get => _statusText;
 		private set => SetProperty(ref _statusText, value);
 	}
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the saved-settings manager and loads the current saved settings.
 	/// </summary>
@@ -106,8 +101,7 @@ public sealed class SavedSettingsManagerViewModel : ObservableObject, IDisposabl
 		_library.Changed += OnLibraryChanged;
 		RebuildRows();
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

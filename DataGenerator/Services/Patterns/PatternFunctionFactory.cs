@@ -32,8 +32,7 @@ internal static class PatternFunctionFactory
 	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="PatternFunctionFactory"/>.
 	/// </summary>
@@ -46,8 +45,7 @@ internal static class PatternFunctionFactory
 		];
 		FUNCTION_ALIASES = ["SEQUENCE", "COLUMN"];
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -70,6 +68,11 @@ internal static class PatternFunctionFactory
 	public static PatternNode Create(PatternToken nameToken, IReadOnlyList<PatternArgument> arguments)
 	{
 		string functionName = nameToken.Text.ToUpperInvariant();
+
+		if (PatternExpressionNode.IsFunction(functionName))
+		{
+			return new PatternExpressionNode(nameToken, arguments);
+		}
 
 		if (!FUNCTION_NAMES.Contains(functionName) && !FUNCTION_ALIASES.Contains(functionName))
 		{

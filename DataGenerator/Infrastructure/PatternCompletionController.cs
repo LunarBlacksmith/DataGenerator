@@ -16,7 +16,6 @@ namespace DataGenerator.Infrastructure;
 internal sealed class PatternCompletionController
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string POPUP_TEMPLATE_KEY = "PatternCompletionPopupTemplate";
 
 	private readonly TextBox                    _textBox;
@@ -27,20 +26,16 @@ internal sealed class PatternCompletionController
 	private ListBox? _list;
 	private Window?  _window;
 	private bool     _isEditing;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	/// <summary>
 	///	Whether the suggestions are shown, in which case ↑ and ↓ choose a suggestion.
 	/// </summary>
 	public bool IsOpen => _popup?.IsOpen == true;
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a controller for one text box and starts listening for text, selection and keyboard changes.
 	/// </summary>
@@ -70,8 +65,7 @@ internal sealed class PatternCompletionController
 		_textBox.LostKeyboardFocus += OnLostKeyboardFocus;
 		_textBox.Unloaded          += OnUnloaded;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

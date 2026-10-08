@@ -12,17 +12,14 @@ namespace DataGenerator.Services;
 public sealed class JsonUserPreferencesStore : IUserPreferencesStore
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string TEMPORARY_EXTENSION = ".tmp";
 
 	private static readonly JsonSerializerOptions SERIALIZER_OPTIONS;
 
 	private readonly string _filePath;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="JsonUserPreferencesStore"/>.
 	/// </summary>
@@ -38,9 +35,7 @@ public sealed class JsonUserPreferencesStore : IUserPreferencesStore
 			Converters                  = { new JsonStringEnumConverter() }
 		};
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a store for the user preferences file.
 	/// </summary>
@@ -58,8 +53,7 @@ public sealed class JsonUserPreferencesStore : IUserPreferencesStore
 		ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 		_filePath = filePath;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

@@ -34,8 +34,7 @@ internal sealed class LookupPoolFactory
 	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the factory that turns value-from-table rules into lookup pools.
 	/// </summary>
@@ -64,8 +63,7 @@ internal sealed class LookupPoolFactory
 		_snapshots           = snapshots  ?? throw new ArgumentNullException(nameof(snapshots));
 		_usesScriptVariables = usesScriptVariables;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

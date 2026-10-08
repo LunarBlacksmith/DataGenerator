@@ -7,16 +7,12 @@
 public sealed record PatternCompletionEdit
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public int    Start      { get; init; }
 	public int    Length     { get; init; }
 	public string Text       { get; init; }
 	public int    CaretIndex { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="PatternCompletionEdit"/> from the supplied values.
 	/// </summary>
@@ -39,6 +35,4 @@ public sealed record PatternCompletionEdit
 		Text       = text;
 		CaretIndex = caretIndex;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

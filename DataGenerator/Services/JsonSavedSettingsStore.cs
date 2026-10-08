@@ -10,20 +10,15 @@ namespace DataGenerator.Services;
 public sealed class JsonSavedSettingsStore : ISavedSettingsStore
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int    FORMAT_VERSION   = 1;
 	private const string FILE_DESCRIPTION = "saved column settings file";
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public string LibraryFilePath { get; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a store for the saved column settings library file.
 	/// </summary>
@@ -41,8 +36,7 @@ public sealed class JsonSavedSettingsStore : ISavedSettingsStore
 		ArgumentException.ThrowIfNullOrWhiteSpace(libraryFilePath);
 		LibraryFilePath = libraryFilePath;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -224,18 +218,13 @@ public sealed class JsonSavedSettingsStore : ISavedSettingsStore
 	#endregion METHODS
 
 	#region TYPES
-	#region PRIVATE
 	private sealed class SavedSettingsDocument
 	{
 		#region PROPERTIES
-		#region PUBLIC
 		public int                        FormatVersion { get; set; }
 		public List<SavedColumnSetting?>? Settings      { get; set; }
-		#endregion PUBLIC
 		#endregion PROPERTIES
 
-		#region CONSTRUCTORS
-		#region PUBLIC
 		/// <summary>
 		///	Creates a new <see cref="SavedSettingsDocument"/> and sets the default values of its fields and properties.
 		/// </summary>
@@ -244,9 +233,6 @@ public sealed class JsonSavedSettingsStore : ISavedSettingsStore
 			FormatVersion = 0;
 			Settings      = null;
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
 	}
-	#endregion PRIVATE
 	#endregion TYPES
 }

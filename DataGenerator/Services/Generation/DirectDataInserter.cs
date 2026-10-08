@@ -12,7 +12,6 @@ namespace DataGenerator.Services.Generation;
 internal sealed class DirectDataInserter
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int    COMMAND_TIMEOUT_SECONDS         = 120;
 	private const int    CLEANUP_TIMEOUT_SECONDS         = 600;
 	private const int    POST_GENERATION_TIMEOUT_SECONDS = 600;
@@ -26,11 +25,9 @@ internal sealed class DirectDataInserter
 
 	private readonly ISqlValueConverter _converter;
 	private readonly RowValueBuilder    _rowValueBuilder;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the service that inserts generated rows directly into SQL Server.
 	/// </summary>
@@ -48,8 +45,7 @@ internal sealed class DirectDataInserter
 		_converter       = converter       ?? throw new ArgumentNullException(nameof(converter));
 		_rowValueBuilder = rowValueBuilder ?? throw new ArgumentNullException(nameof(rowValueBuilder));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

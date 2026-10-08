@@ -11,13 +11,10 @@ namespace DataGenerator.Services;
 public sealed class MarkdigMarkdownRenderer : IMarkdownRenderer
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly MarkdownPipeline _pipeline;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Builds the Markdown pipeline once for every document rendered by this instance.
 	/// </summary>
@@ -30,11 +27,9 @@ public sealed class MarkdigMarkdownRenderer : IMarkdownRenderer
 				.UseAdvancedExtensions()
 				.Build();
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Converts Markdown into an HTML fragment.
 	/// </summary>
@@ -42,7 +37,7 @@ public sealed class MarkdigMarkdownRenderer : IMarkdownRenderer
 	///	The Markdown text to convert.
 	/// </param>
 	/// <returns>
-	///	The HTML body content.
+	///	The sanitized HTML body content.
 	/// </returns>
 	/// <exception cref="ArgumentNullException">
 	///	Thrown when <paramref name="markdown"/> is <see langword="null"/>.
@@ -51,8 +46,7 @@ public sealed class MarkdigMarkdownRenderer : IMarkdownRenderer
 	{
 		ArgumentNullException.ThrowIfNull(markdown);
 
-		return Markdown.ToHtml(markdown, _pipeline);
+		return MarkdownHtmlSanitizer.Sanitize(Markdown.ToHtml(markdown, _pipeline));
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }

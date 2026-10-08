@@ -22,8 +22,7 @@ public static class MultiSelection
 	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="MultiSelection"/>.
 	/// </summary>
@@ -44,8 +43,7 @@ public static class MultiSelection
 			new PropertyMetadata(null)
 		);
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -109,19 +107,15 @@ public static class MultiSelection
 	#endregion METHODS
 
 	#region TYPES
-	#region PRIVATE
 	private sealed class Synchronizer
 	{
 		#region FIELDS
-		#region PRIVATE
 		private readonly MultiSelector _selector;
 		private readonly IList         _items;
 		private bool                   _isSynchronizing;
-		#endregion PRIVATE
 		#endregion FIELDS
 
-		#region CONSTRUCTORS
-		#region PUBLIC
+		#region CONSTRUCTOR
 		/// <summary>
 		///	Creates a synchroniser for a selector and a bound collection, starting with no selected items.
 		/// </summary>
@@ -154,8 +148,7 @@ public static class MultiSelection
 				observableItems.CollectionChanged += OnItemsChanged;
 			}
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
+		#endregion CONSTRUCTOR
 
 		#region METHODS
 		#region PUBLIC
@@ -256,6 +249,5 @@ public static class MultiSelection
 		#endregion PRIVATE
 		#endregion METHODS
 	}
-	#endregion PRIVATE
 	#endregion TYPES
 }

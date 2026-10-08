@@ -6,14 +6,10 @@
 public sealed record TreeSelectionRequest
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public object            Item { get; init; }
 	public TreeSelectionMode Mode { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="TreeSelectionRequest"/> from the supplied values.
 	/// </summary>
@@ -28,6 +24,4 @@ public sealed record TreeSelectionRequest
 		Item = item;
 		Mode = mode;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

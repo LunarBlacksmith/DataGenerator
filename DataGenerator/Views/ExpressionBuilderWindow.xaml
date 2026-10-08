@@ -1,0 +1,112 @@
+<Window
+	x:Class               ="DataGenerator.Views.ExpressionBuilderWindow"
+	xmlns                 ="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x               ="http://schemas.microsoft.com/winfx/2006/xaml"
+	Title                 ="Pattern / Regex / SQL builder"
+	Width                 ="1100"
+	Height                ="750"
+	MinWidth              ="800"
+	MinHeight             ="500"
+	Background            ="{DynamicResource WindowBackgroundBrush}"
+	Foreground            ="{DynamicResource TextBrush}"
+	ShowInTaskbar         ="False"
+	UseLayoutRounding     ="True"
+	WindowStartupLocation ="CenterOwner">
+	<Grid Margin="12">
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="260" />
+			<ColumnDefinition Width="12" />
+			<ColumnDefinition Width="*" />
+		</Grid.ColumnDefinitions>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="*" />
+			<RowDefinition Height="Auto" />
+		</Grid.RowDefinitions>
+		<GroupBox Header="Saved expressions" Style="{StaticResource RulesSectionStyle}">
+			<DockPanel>
+				<TextBox DockPanel.Dock="Top" Margin="0,0,0,8"
+					Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="Find saved names or feed text" />
+				<Button DockPanel.Dock="Bottom" Margin="0,8,0,0" Content="Delete selected"
+					Style="{StaticResource ToolbarButtonStyle}" Command="{Binding DeleteCommand}" />
+				<ListBox
+					Background   ="{DynamicResource RowBrush}"
+					Foreground   ="{DynamicResource TextBrush}"
+					BorderBrush  ="{DynamicResource SectionBorderBrush}"
+					BorderThickness="1"
+					ItemsSource  ="{Binding VisibleEntries}"
+					SelectedItem="{Binding SelectedEntry}">
+					<ListBox.ItemTemplate>
+						<DataTemplate>
+							<StackPanel Margin="2,4">
+								<TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+								<TextBlock Text="{Binding Feed}" TextWrapping="Wrap" FontFamily="{StaticResource CodeFontFamily}" />
+								<TextBlock Text="{Binding SavedAt, StringFormat={}{0:g}}" Style="{StaticResource SecondaryTextStyle}" />
+							</StackPanel>
+						</DataTemplate>
+					</ListBox.ItemTemplate>
+				</ListBox>
+			</DockPanel>
+		</GroupBox>
+		<Grid Grid.Column="2">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto" />
+				<RowDefinition Height="*" />
+			</Grid.RowDefinitions>
+			<StackPanel>
+				<TextBlock Text="Feed text (explicit bracketed segments)" FontWeight="SemiBold" Margin="0,0,0,4" />
+				<TextBox Text="{Binding Feed, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource CodeFontFamily}"
+					TextWrapping="Wrap" ToolTip="Example: MS[10]-Y[01, 03, 05]-X[001 &gt; 050]-[LR]-D[1]" />
+				<TextBlock Margin="0,6" TextWrapping="Wrap"
+					Text="[10] = any 2 digits; [01, 03, 05] = listed values; [LR] = L or R; [001 &gt; 050] = 3 digits strictly greater than 50. Outside brackets is literal text. This is explicit syntax, not inference from sample values." />
+				<Grid Margin="0,4,0,8">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*" />
+						<ColumnDefinition Width="180" />
+					</Grid.ColumnDefinitions>
+					<StackPanel Margin="0,0,8,0">
+						<TextBlock Text="Saved name (optional; defaults to feed text)" />
+						<TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+					</StackPanel>
+					<StackPanel Grid.Column="1">
+						<TextBlock Text="SQL column name" />
+						<TextBox Text="{Binding ColumnName, UpdateSourceTrigger=PropertyChanged}" ToolTip="One column identifier, not SQL code or a qualified name" />
+					</StackPanel>
+				</Grid>
+				<StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+					<Button Content="Build and save" Command="{Binding BuildCommand}" Style="{StaticResource ToolbarButtonStyle}" />
+					<Button Content="Save as named entry" Command="{Binding SaveCommand}" Style="{StaticResource ToolbarButtonStyle}" Margin="8,0,0,0" />
+				</StackPanel>
+			</StackPanel>
+			<TabControl Grid.Row="1">
+				<TabItem Header="Breakdown">
+					<DockPanel Margin="8">
+						<Button DockPanel.Dock="Bottom" Content="Copy breakdown" Command="{Binding CopyCommand}" CommandParameter="Description" Style="{StaticResource ToolbarButtonStyle}" />
+						<TextBox Text="{Binding Description, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+					</DockPanel>
+				</TabItem>
+				<TabItem Header="Pattern">
+					<DockPanel Margin="8">
+						<Button DockPanel.Dock="Bottom" Content="Copy Pattern" Command="{Binding CopyCommand}" CommandParameter="Pattern" Style="{StaticResource ToolbarButtonStyle}" />
+						<TextBox Text="{Binding Pattern, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" FontFamily="{StaticResource CodeFontFamily}" VerticalScrollBarVisibility="Auto" />
+					</DockPanel>
+				</TabItem>
+				<TabItem Header="Regex">
+					<DockPanel Margin="8">
+						<TextBlock DockPanel.Dock="Top" Margin="0,0,0,8" TextWrapping="Wrap"
+							Text="Whole-value .NET matcher. Use the Pattern output for data generation; the built-in Regex generator does not support these alternatives." />
+						<Button DockPanel.Dock="Bottom" Content="Copy Regex" Command="{Binding CopyCommand}" CommandParameter="Regex" Style="{StaticResource ToolbarButtonStyle}" />
+						<TextBox Text="{Binding Regex, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" FontFamily="{StaticResource CodeFontFamily}" VerticalScrollBarVisibility="Auto" />
+					</DockPanel>
+				</TabItem>
+				<TabItem Header="SQL predicate">
+					<DockPanel Margin="8">
+						<TextBlock DockPanel.Dock="Top" Text="Paste after WHERE. SQL is never executed here; matching is case-sensitive and whole-value." TextWrapping="Wrap" Margin="0,0,0,8" />
+						<Button DockPanel.Dock="Bottom" Content="Copy SQL predicate" Command="{Binding CopyCommand}" CommandParameter="Sql" Style="{StaticResource ToolbarButtonStyle}" />
+						<TextBox Text="{Binding Sql, Mode=OneWay}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="{StaticResource CodeFontFamily}" VerticalScrollBarVisibility="Auto" />
+					</DockPanel>
+				</TabItem>
+			</TabControl>
+		</Grid>
+		<TextBlock Grid.Row="1" Grid.ColumnSpan="3" Margin="0,8,0,0" Text="{Binding Message}" TextWrapping="Wrap" />
+	</Grid>
+</Window>

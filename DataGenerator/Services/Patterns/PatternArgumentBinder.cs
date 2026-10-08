@@ -7,19 +7,18 @@ internal enum PatternArgumentKind
 	Number     = 0,
 	Range      = 1,
 	Text       = 2,
-	Expression = 3
+	Expression = 3,
+	Boolean    = 4,
+	Null       = 5
 }
 
 internal sealed class PatternArgument
 {
 	#region FIELDS
-	#region PRIVATE
 	private static readonly CultureInfo INVARIANT;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public required string?             Name        { get; init; }
 	public required PatternArgumentKind Kind        { get; init; }
 	public required string              Text        { get; init; }
@@ -38,11 +37,9 @@ internal sealed class PatternArgument
 	///	even when it looks like a number (e.g. TODAY(format='yyyyMMdd')).
 	/// </summary>
 	public bool                         IsEvaluated { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="PatternArgument"/>.
 	/// </summary>
@@ -50,9 +47,7 @@ internal sealed class PatternArgument
 	{
 		INVARIANT = CultureInfo.InvariantCulture;
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="PatternArgument"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -64,11 +59,9 @@ internal sealed class PatternArgument
 		Expression  = null;
 		IsEvaluated = false;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a copy of the argument using the text produced by its nested function call. Numeric text is kept as a number;
 	///	all other text stays as text and is marked as evaluated.
@@ -98,7 +91,6 @@ internal sealed class PatternArgument
 			IsEvaluated = true
 		};
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }
 
@@ -124,8 +116,7 @@ internal sealed class PatternArgumentBinder
 	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="PatternArgumentBinder"/>.
 	/// </summary>
@@ -133,9 +124,7 @@ internal sealed class PatternArgumentBinder
 	{
 		INVARIANT = CultureInfo.InvariantCulture;
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Splits a function call's arguments into positional and named lookups and rejects positional values after named ones or
 	///	duplicate names.
@@ -181,8 +170,7 @@ internal sealed class PatternArgumentBinder
 			}
 		}
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

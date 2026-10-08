@@ -8,13 +8,10 @@ namespace DataGenerator.ViewModels;
 public sealed class DatabaseNodeViewModel : TreeNodeViewModel
 {
 	#region FIELDS
-	#region PRIVATE
 	private bool _wasExpandedBeforeHiding;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public DatabaseModel                     Model  { get; }
 	public IReadOnlyList<TableNodeViewModel> Tables { get; }
 
@@ -70,11 +67,9 @@ public sealed class DatabaseNodeViewModel : TreeNodeViewModel
 
 	public string IncludeToolTip
 		=> $"Include or exclude all {Tables.Count:N0} tables of {Model.Name}. A partly filled box means only some tables are included.";
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the database node and its table child nodes.
 	/// </summary>
@@ -107,8 +102,7 @@ public sealed class DatabaseNodeViewModel : TreeNodeViewModel
 			table.GenerationSettingsChanged += OnTableSettingsChanged;
 		}
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PROTECTED

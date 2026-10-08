@@ -8,15 +8,12 @@ namespace DataGenerator.ViewModels;
 public sealed class LookupTableOption
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public TableModel Table       { get; }
 	public bool       IsSameTable { get; }
 	public string     DisplayName { get; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a table choice for a lookup builder and marks whether it is the target table.
 	/// </summary>
@@ -45,11 +42,9 @@ public sealed class LookupTableOption
 			DisplayName += " (this table)";
 		}
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Returns the text shown for this table choice.
 	/// </summary>
@@ -57,6 +52,5 @@ public sealed class LookupTableOption
 	///	The display name, including the database or "this table" label when needed.
 	/// </returns>
 	public override string ToString() => DisplayName;
-	#endregion PUBLIC
 	#endregion METHODS
 }

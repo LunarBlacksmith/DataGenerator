@@ -54,7 +54,11 @@ public interface IPatternValueGenerator
 	/// <exception cref="Services.Patterns.PatternSyntaxException">
 	///	Thrown when <paramref name="expression"/> is not valid or requires a column value that cannot be supplied.
 	/// </exception>
-	string Generate(string expression, long rowIndex, long? rowCount, Func<string, string>? columnValues);
+	/// <param name="typedColumnValues">
+	///	Optional raw same-row values for typed predicates and extraction. When omitted, COL operands remain text.
+	/// </param>
+	string Generate(string expression, long rowIndex, long? rowCount, Func<string, string>? columnValues,
+		Func<string, object?>? typedColumnValues = null);
 
 	/// <summary>
 	///	The names of the columns used with COL(...) in the expression, or none when the expression is invalid.

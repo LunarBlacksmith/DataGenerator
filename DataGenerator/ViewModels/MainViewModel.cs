@@ -13,7 +13,6 @@ namespace DataGenerator.ViewModels;
 public sealed class MainViewModel : ObservableObject
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string READY_STATUS            = "Ready.";
 	private const string FAILED_STATUS           = "Operation failed. See the error panel for what happened and where.";
 	private const string CANCELLED_STATUS        = "Generation cancelled.";
@@ -50,11 +49,9 @@ public sealed class MainViewModel : ObservableObject
 	private bool                     _isBusy;
 	private string                   _statusMessage;
 	private ErrorReport?             _error;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public DatabaseExplorerViewModel  Explorer       { get; }
 	public ThemeViewModel             Theme          { get; }
 	public PostGenerationSqlViewModel PostGeneration { get; }
@@ -62,12 +59,13 @@ public sealed class MainViewModel : ObservableObject
 	public AsyncRelayCommand LoadMetadataCommand     { get; }
 	public RelayCommand      BrowseOutputCommand     { get; }
 	public RelayCommand      OpenOutputFolderCommand { get; }
-	public AsyncRelayCommand GenerateCommand         { get; }
-	public RelayCommand      CancelCommand           { get; }
-	public RelayCommand      ShowPatternHelpCommand  { get; }
-	public RelayCommand      ShowDocumentationCommand { get; }
-	public RelayCommand      CopyErrorCommand        { get; }
-	public RelayCommand      DismissErrorCommand     { get; }
+	public AsyncRelayCommand GenerateCommand              { get; }
+	public RelayCommand      CancelCommand                { get; }
+	public RelayCommand      ShowPatternHelpCommand       { get; }
+	public RelayCommand      ShowDocumentationCommand     { get; }
+	public RelayCommand      ShowExpressionBuilderCommand { get; }
+	public RelayCommand      CopyErrorCommand             { get; }
+	public RelayCommand      DismissErrorCommand          { get; }
 
 	public string           ServerName
 	{
@@ -243,11 +241,9 @@ public sealed class MainViewModel : ObservableObject
 			Explorer.IncludedTableCount == 0
 				? "Include at least one table in the database explorer."
 				: $"{Explorer.IncludedRowCount:N0} rows for {Explorer.IncludedTableCount:N0} table(s)";
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the main application view model and initialises defaults, commands and child view-model subscriptions.
 	/// </summary>
@@ -344,18 +340,18 @@ public sealed class MainViewModel : ObservableObject
 		LoadMetadataCommand     = new AsyncRelayCommand(LoadMetadataAsync, CanLoadMetadata);
 		BrowseOutputCommand     = new RelayCommand(BrowseOutputFile, _ => !IsBusy && IsSqlFileMode);
 		OpenOutputFolderCommand = new RelayCommand(OpenOutputFolder);
-		GenerateCommand         = new AsyncRelayCommand(GenerateAsync, CanGenerate);
-		CancelCommand           = new RelayCommand(Cancel, _ => IsBusy);
-		ShowPatternHelpCommand  = new RelayCommand(parameter => _helpService.ShowPatternLanguageHelp(parameter as string));
-		ShowDocumentationCommand = new RelayCommand(_ => _helpService.ShowDocumentation());
-		CopyErrorCommand        = new RelayCommand(CopyError, _ => HasError);
-		DismissErrorCommand     = new RelayCommand(_ => ClearError(), _ => HasError);
+		GenerateCommand                = new AsyncRelayCommand(GenerateAsync, CanGenerate);
+		CancelCommand                  = new RelayCommand(Cancel, _ => IsBusy);
+		ShowPatternHelpCommand         = new RelayCommand(parameter => _helpService.ShowPatternLanguageHelp(parameter as string));
+		ShowDocumentationCommand       = new RelayCommand(_ => _helpService.ShowDocumentation());
+		ShowExpressionBuilderCommand = new RelayCommand(_ => _helpService.ShowExpressionBuilder());
+		CopyErrorCommand               = new RelayCommand(CopyError, _ => HasError);
+		DismissErrorCommand            = new RelayCommand(_ => ClearError(), _ => HasError);
 
 		Explorer.GenerationSettingsChanged += OnGenerationSettingsChanged;
 		PostGeneration.Changed             += OnPostGenerationChanged;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

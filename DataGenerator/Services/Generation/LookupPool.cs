@@ -9,15 +9,12 @@ namespace DataGenerator.Services.Generation;
 internal sealed class LookupPool
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int SCRIPT_CHOICE_RANGE = 1_000_000_000;
 
 	private List<object?>? _values;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public int          Number              { get; }
 	public ColumnLookup Lookup              { get; }
 
@@ -45,11 +42,9 @@ internal sealed class LookupPool
 
 	public string VariableName      => $"@dg_lookup_{Number}";
 	public string CountVariableName => $"@dg_lookup_{Number}_count";
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a pool descriptor for one value-from-table rule.
 	/// </summary>
@@ -94,11 +89,9 @@ internal sealed class LookupPool
 		Location            = location;
 		UsesScriptVariables = usesScriptVariables;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Describes why the lookup cannot supply enough values.
 	/// </summary>
@@ -183,6 +176,5 @@ internal sealed class LookupPool
 
 		return Lookup.IsUnique ? _values[(int)rowIndex] : _values[random.Next(_values.Count)];
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }

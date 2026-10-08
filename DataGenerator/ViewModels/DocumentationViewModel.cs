@@ -17,7 +17,6 @@ namespace DataGenerator.ViewModels;
 public sealed class DocumentationViewModel : ObservableObject
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string RESOURCE_URI_FORMAT = "pack://application:,,,/DataGenerator;component/Documentation/{0}";
 
 	private readonly IMarkdownRenderer          _markdownRenderer;
@@ -25,11 +24,9 @@ public sealed class DocumentationViewModel : ObservableObject
 	private readonly Dictionary<string, string> _renderedPages;
 	private ChoiceOption<string>                _selectedTopic;
 	private string?                             _fragment;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public IReadOnlyList<ChoiceOption<string>> Topics { get; }
 
 	public ChoiceOption<string> SelectedTopic
@@ -57,11 +54,9 @@ public sealed class DocumentationViewModel : ObservableObject
 	}
 
 	public ICommand OpenLinkCommand { get; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Loads the bundled documentation and starts with the SQL conditions and execution guide.
 	/// </summary>
@@ -89,14 +84,14 @@ public sealed class DocumentationViewModel : ObservableObject
 			LoadTopic("StepsUpdatesAndLookups.md", "SQL WHERE, lookups, steps and update sets"),
 			LoadTopic("README.md", "Getting started"),
 			LoadTopic("PatternLanguage.md", "Pattern language"),
+			LoadTopic("ExpressionBuilder.md", "Pattern / Regex / SQL expression builder"),
 			LoadTopic("SavedSettings.md", "Saved column settings and Set configurations"),
 			LoadTopic("PostGenerationSql.md", "Post-generation SQL")
 		];
 		_selectedTopic  = Topics[0];
 		OpenLinkCommand = new RelayCommand(parameter => OpenLink(parameter as string));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

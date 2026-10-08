@@ -8,22 +8,18 @@ namespace DataGenerator.ViewModels;
 public static class SavedSettingDescriber
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int    MAXIMUM_VALUE_LENGTH = 60;
 	private const string ELLIPSIS             = "…";
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Initialises the static state of <see cref="SavedSettingDescriber"/>.
 	/// </summary>
 	static SavedSettingDescriber()
 	{
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

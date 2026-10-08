@@ -5,19 +5,16 @@ namespace DataGenerator.Services;
 
 public sealed class ClipboardService : IClipboardService
 {
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="ClipboardService"/>.
 	/// </summary>
 	public ClipboardService()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Places text on the Windows clipboard and keeps the data available after the application exits.
 	/// </summary>
@@ -34,6 +31,5 @@ public sealed class ClipboardService : IClipboardService
 		// WPF retries internally while another application holds the clipboard open.
 		Clipboard.SetDataObject(text, true);
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }

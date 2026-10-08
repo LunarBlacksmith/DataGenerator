@@ -152,16 +152,13 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 	#endregion PROPERTIES
 
 	#region EVENTS
-	#region PUBLIC
 	/// <summary>
 	///	Raised when inclusion, row counts or the validity of the rules change.
 	/// </summary>
 	public event EventHandler? GenerationSettingsChanged;
-	#endregion PUBLIC
 	#endregion EVENTS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a table node and stores the factory used when row sets are first needed.
 	/// </summary>
@@ -214,8 +211,7 @@ public sealed class TableNodeViewModel : TreeNodeViewModel
 
 		RowSets.CollectionChanged += (_, _) => OnRowSetsChanged();
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

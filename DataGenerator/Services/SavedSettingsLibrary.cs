@@ -22,18 +22,15 @@ public sealed class SavedSettingsLibrary
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	/// <summary>
 	///	The saved settings, sorted by name. Change them only through the methods of this class.
 	/// </summary>
 	public IReadOnlyList<SavedColumnSetting> Settings => _settings;
 
 	public string FilePath => _store.LibraryFilePath;
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
 	#region EVENTS
-	#region PUBLIC
 	/// <summary>
 	///	Raised after settings are added, changed, removed or loaded.
 	/// </summary>
@@ -44,11 +41,9 @@ public sealed class SavedSettingsLibrary
 	///	Handlers report how many columns they updated.
 	/// </summary>
 	public event EventHandler<ApplyAutomaticSettingsEventArgs>? ApplyAutomaticSettingsRequested;
-	#endregion PUBLIC
 	#endregion EVENTS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the library around the store that loads, saves, imports and exports saved column settings.
 	/// </summary>
@@ -63,8 +58,7 @@ public sealed class SavedSettingsLibrary
 		_store    = store ?? throw new ArgumentNullException(nameof(store));
 		_settings = [];
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -597,13 +591,9 @@ public sealed class SavedSettingsLibrary
 public sealed class ApplyAutomaticSettingsEventArgs : EventArgs
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public int UpdatedColumnCount { get; set; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="ApplyAutomaticSettingsEventArgs"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -611,6 +601,4 @@ public sealed class ApplyAutomaticSettingsEventArgs : EventArgs
 	{
 		UpdatedColumnCount = 0;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

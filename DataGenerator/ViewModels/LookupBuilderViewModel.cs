@@ -33,7 +33,6 @@ public sealed class LookupBuilderViewModel : ObservableObject
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public IReadOnlyList<LookupTableOption>             Tables        { get; }
 	public IReadOnlyList<ChoiceOption<RowScope>>         ScopeOptions  => SCOPE_OPTIONS;
 	public IReadOnlyList<ChoiceOption<LookupFilterKind>> FilterOptions => FILTER_OPTIONS;
@@ -156,11 +155,9 @@ public sealed class LookupBuilderViewModel : ObservableObject
 	public bool HasError => _errorMessage is not null;
 
 	public bool CanApply => _errorMessage is null && _expression.Length > 0;
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="LookupBuilderViewModel"/>.
 	/// </summary>
@@ -182,9 +179,7 @@ public sealed class LookupBuilderViewModel : ObservableObject
 			new ChoiceOption<LookupFilterKind>(LookupFilterKind.Sql, "SQL condition", "Only values of the rows that meet a SQL condition. s stands for the source table (the table the values come from) and [ ] holds a column name, e.g. s.[Size] = 'XL' AND s.[IsActive] = 1.")
 		];
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a lookup builder for one target column and initialises it from the current lookup when present.
 	/// </summary>
@@ -266,11 +261,9 @@ public sealed class LookupBuilderViewModel : ObservableObject
 
 		UpdateExpression();
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PRIVATE
 	/// <summary>
 	///	Rebuilds the Settings expression from the chosen table, column, scope and filter, then validates it.
 	/// </summary>
@@ -305,6 +298,5 @@ public sealed class LookupBuilderViewModel : ObservableObject
 
 		_onChanged();
 	}
-	#endregion PRIVATE
 	#endregion METHODS
 }

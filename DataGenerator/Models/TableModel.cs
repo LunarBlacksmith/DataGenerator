@@ -6,15 +6,12 @@ namespace DataGenerator.Models;
 public sealed class TableModel : ObservableObject
 {
 	#region FIELDS
-	#region PRIVATE
 	private string _databaseName;
 	private string _schemaName;
 	private string _name;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public string DatabaseName
 	{
 		get => _databaseName;
@@ -65,11 +62,9 @@ public sealed class TableModel : ObservableObject
 
 	public ObservableCollection<ColumnModel>     Columns     { get; }
 	public ObservableCollection<ForeignKeyModel> ForeignKeys { get; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="TableModel"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -81,8 +76,7 @@ public sealed class TableModel : ObservableObject
 		Columns       = [];
 		ForeignKeys   = [];
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

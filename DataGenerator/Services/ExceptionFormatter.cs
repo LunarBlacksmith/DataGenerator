@@ -12,15 +12,12 @@ namespace DataGenerator.Services;
 public sealed class ExceptionFormatter : IExceptionFormatter
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string APPLICATION_NAMESPACE = "DataGenerator";
 
 	private static readonly string[] FRAMEWORK_NAMESPACES;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="ExceptionFormatter"/>.
 	/// </summary>
@@ -28,17 +25,14 @@ public sealed class ExceptionFormatter : IExceptionFormatter
 	{
 		FRAMEWORK_NAMESPACES = ["System", "Microsoft", "MS"];
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="ExceptionFormatter"/>.
 	/// </summary>
 	public ExceptionFormatter()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

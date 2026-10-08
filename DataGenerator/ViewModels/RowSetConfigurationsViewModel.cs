@@ -15,7 +15,6 @@ namespace DataGenerator.ViewModels;
 public sealed class RowSetConfigurationsViewModel : ObservableObject
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string DIALOG_TITLE        = "Set configurations";
 	private const string NAME_SEPARATOR      = " – ";
 	private const int    MAXIMUM_NAMED_SKIPS = 3;
@@ -28,7 +27,6 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	private bool                _isMenuOpen;
 	private string              _newName;
 	private string?             _nameError;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
@@ -121,8 +119,7 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 	#endregion PRIVATE
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the set-configuration menu and connects it to the saved configuration library.
 	/// </summary>
@@ -163,8 +160,7 @@ public sealed class RowSetConfigurationsViewModel : ObservableObject
 
 		_library.Changed += OnLibraryChanged;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

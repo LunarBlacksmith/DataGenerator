@@ -15,13 +15,10 @@ namespace DataGenerator.Infrastructure;
 public static class GridCellNavigation
 {
 	#region FIELDS
-	#region PUBLIC
 	public static readonly DependencyProperty IS_ENABLED_PROPERTY;
-	#endregion PUBLIC
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="GridCellNavigation"/>.
 	/// </summary>
@@ -35,8 +32,7 @@ public static class GridCellNavigation
 				new FrameworkPropertyMetadata(false, OnIsEnabledChanged)
 			);
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

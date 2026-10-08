@@ -6,15 +6,12 @@
 public sealed class ChoiceOption<T>
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public T      Value       { get; }
 	public string DisplayName { get; }
 	public string Description { get; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a choice for a drop-down list.
 	/// </summary>
@@ -36,11 +33,9 @@ public sealed class ChoiceOption<T>
 		DisplayName = displayName ?? throw new ArgumentNullException(nameof(displayName));
 		Description = description ?? throw new ArgumentNullException(nameof(description));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Returns the text shown for this choice.
 	/// </summary>
@@ -48,6 +43,5 @@ public sealed class ChoiceOption<T>
 	///	The display name.
 	/// </returns>
 	public override string ToString() => DisplayName;
-	#endregion PUBLIC
 	#endregion METHODS
 }

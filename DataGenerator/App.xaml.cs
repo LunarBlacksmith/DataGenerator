@@ -15,7 +15,6 @@ namespace DataGenerator;
 public partial class App : Application
 {
 	#region FIELDS
-	#region PRIVATE
 	private const string UNEXPECTED_ERROR_TITLE         = "Unexpected error";
 	private const string SAVED_SETTINGS_ERROR_TITLE     = "Saved column settings";
 	private const string SET_CONFIGURATIONS_ERROR_TITLE = "Set configurations";
@@ -24,11 +23,9 @@ public partial class App : Application
 	private readonly IDialogService      _dialogService;
 
 	private MainViewModel? _mainViewModel;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="App"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -38,8 +35,7 @@ public partial class App : Application
 		_dialogService      = new DialogService();
 		_mainViewModel      = null;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PROTECTED
@@ -115,7 +111,15 @@ public partial class App : Application
 			_dialogService,
 			shellService,
 			new ClipboardService(),
-			new HelpService(patternGenerator, new MarkdigMarkdownRenderer(), shellService),
+			new HelpService(
+				patternGenerator,
+				new MarkdigMarkdownRenderer(),
+				shellService,
+				new ExpressionBuilder(),
+				new JsonExpressionLibraryStore(SecurePathService.GetExpressionsFilePath()),
+				new ClipboardService(),
+				_dialogService
+			),
 			_exceptionFormatter,
 			new ForeignTableKeyResolver(),
 			tableCatalog,

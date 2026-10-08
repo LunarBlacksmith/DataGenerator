@@ -8,15 +8,12 @@ namespace DataGenerator.ViewModels;
 public sealed class RuleGridColumnOption : ObservableObject
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly Action<RuleGridColumnOption> _onVisibilityChanged;
 
 	private bool _isVisible;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	/// <summary>
 	///	The name under which the choice is remembered in the user's preferences.
 	/// </summary>
@@ -37,11 +34,8 @@ public sealed class RuleGridColumnOption : ObservableObject
 			}
 		}
 	}
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a rule-grid column choice and records how visibility changes are saved.
 	/// </summary>
@@ -84,6 +78,4 @@ public sealed class RuleGridColumnOption : ObservableObject
 		_isVisible           = isVisible;
 		_onVisibilityChanged = onVisibilityChanged ?? throw new ArgumentNullException(nameof(onVisibilityChanged));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

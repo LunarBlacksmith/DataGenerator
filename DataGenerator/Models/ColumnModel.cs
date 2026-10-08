@@ -25,7 +25,6 @@ public sealed class ColumnModel : ObservableObject
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public string Name
 	{
 		get => _name;
@@ -105,11 +104,8 @@ public sealed class ColumnModel : ObservableObject
 	public bool IsForeignTableKey
 		=> Name.Length > FOREIGN_TABLE_KEY_SUFFIX.Length
 			&& Name.EndsWith(FOREIGN_TABLE_KEY_SUFFIX, StringComparison.OrdinalIgnoreCase);
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="ColumnModel"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -127,6 +123,4 @@ public sealed class ColumnModel : ObservableObject
 		_isForeignKey  = false;
 		_hasDefault    = false;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

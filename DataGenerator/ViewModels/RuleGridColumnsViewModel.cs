@@ -30,7 +30,6 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public RuleGridColumnOption                 Keys           { get; }
 	public RuleGridColumnOption                 SqlType        { get; }
 	public RuleGridColumnOption                 Nullable       { get; }
@@ -62,11 +61,9 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 		get => _isMenuOpen;
 		set => SetProperty(ref _isMenuOpen, value);
 	}
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the grid-column menu and loads the user's hidden-column choices.
 	/// </summary>
@@ -115,11 +112,9 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 		Options        = [Keys, SqlType, Nullable, SampleValues];
 		ShowAllCommand = new RelayCommand(_ => ShowAll(), _ => HasHiddenColumns);
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PRIVATE
 	/// <summary>
 	///	Creates one grid-column choice from the saved hidden-column set.
 	/// </summary>
@@ -190,6 +185,5 @@ public sealed class RuleGridColumnsViewModel : ObservableObject
 			);
 		}
 	}
-	#endregion PRIVATE
 	#endregion METHODS
 }

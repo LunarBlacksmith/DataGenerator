@@ -10,27 +10,20 @@ namespace DataGenerator.Infrastructure;
 public abstract class ValidatableObservableObject : ObservableObject, INotifyDataErrorInfo
 {
 	#region FIELDS
-	#region PRIVATE
 	private static readonly string[] NO_ERRORS;
 
 	private readonly Dictionary<string, string> _errors;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public bool HasErrors => _errors.Count > 0;
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
 	#region EVENTS
-	#region PUBLIC
 	public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
-	#endregion PUBLIC
 	#endregion EVENTS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="ValidatableObservableObject"/>.
 	/// </summary>
@@ -38,9 +31,7 @@ public abstract class ValidatableObservableObject : ObservableObject, INotifyDat
 	{
 		NO_ERRORS = [];
 	}
-	#endregion STATIC
 
-	#region PROTECTED
 	/// <summary>
 	///	Creates a new <see cref="ValidatableObservableObject"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -48,8 +39,7 @@ public abstract class ValidatableObservableObject : ObservableObject, INotifyDat
 	{
 		_errors = new(StringComparer.Ordinal);
 	}
-	#endregion PROTECTED
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

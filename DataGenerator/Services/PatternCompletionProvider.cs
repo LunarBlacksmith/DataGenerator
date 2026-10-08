@@ -5,18 +5,15 @@ namespace DataGenerator.Services;
 public sealed class PatternCompletionProvider : IPatternCompletionProvider
 {
 	#region FIELDS
-	#region PRIVATE
 	private const int  MINIMUM_PREFIX_LENGTH = 2;
 	private const char NO_QUOTE              = '\0';
 	private const char OPENING_BRACKET       = '(';
 	private const char SPACE                 = ' ';
 
 	private static readonly IReadOnlyList<PatternLanguageEntry> ENTRIES;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="PatternCompletionProvider"/>.
 	/// </summary>
@@ -25,17 +22,14 @@ public sealed class PatternCompletionProvider : IPatternCompletionProvider
 		ENTRIES =
 			[.. PatternLanguageReference.FUNCTIONS, .. PatternLanguageReference.KEYWORDS];
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="PatternCompletionProvider"/>.
 	/// </summary>
 	public PatternCompletionProvider()
 	{
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

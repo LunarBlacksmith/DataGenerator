@@ -23,7 +23,6 @@ internal sealed class ExistingKeyPool
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public int                        Number              { get; }
 	public string                     ReferencedTableName { get; }
 	public IReadOnlyList<string>      ReferencedColumns   { get; }
@@ -37,11 +36,9 @@ internal sealed class ExistingKeyPool
 
 	public string VariableName      => $"@dg_existing_{Number}";
 	public string CountVariableName => $"@dg_existing_{Number}_count";
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a pool descriptor for one referenced table and key shape.
 	/// </summary>
@@ -76,11 +73,9 @@ internal sealed class ExistingKeyPool
 		TargetColumns       = targetColumns;
 		UsesScriptVariables = usesScriptVariables;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Builds the cache key that lets compatible existing-key rules share one sampled pool.
 	/// </summary>
@@ -234,6 +229,5 @@ internal sealed class ExistingKeyPool
 
 		return new SqlFragment($"(SELECT {valueColumn} FROM {VariableName} WHERE [RowNumber] = 1 + ({choice} % {CountVariableName}))");
 	}
-	#endregion PUBLIC
 	#endregion METHODS
 }

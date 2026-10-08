@@ -7,13 +7,10 @@
 public sealed class SavedColumnSetting
 {
 	#region FIELDS
-	#region PUBLIC
 	public const string DEFAULT_SEQUENCE_VALUE = "1";
-	#endregion PUBLIC
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public string              Name              { get; set; }
 	public ValueGenerationMode GenerationMode    { get; set; }
 	public string              FixedValue        { get; set; }
@@ -41,11 +38,9 @@ public sealed class SavedColumnSetting
 	public bool ApplyAutomatically { get; set; }
 
 	public bool AppliesToAnyTable => string.IsNullOrWhiteSpace(TableName);
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="SavedColumnSetting"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -64,11 +59,9 @@ public sealed class SavedColumnSetting
 		ColumnName         = null;
 		ApplyAutomatically = false;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Checks whether this setting can apply automatically to the given table and column.
 	/// </summary>
@@ -147,6 +140,5 @@ public sealed class SavedColumnSetting
 	///	A new setting instance with the same values as this one.
 	/// </returns>
 	public SavedColumnSetting Clone() => (SavedColumnSetting)MemberwiseClone();
-	#endregion PUBLIC
 	#endregion METHODS
 }

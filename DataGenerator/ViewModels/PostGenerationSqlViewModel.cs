@@ -11,7 +11,6 @@ namespace DataGenerator.ViewModels;
 public sealed class PostGenerationSqlViewModel : ObservableObject
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly IPostGenerationSqlParser _parser;
 
 	private string                                 _text;
@@ -20,11 +19,9 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 	private IReadOnlyList<string>                  _databaseNames;
 	private IReadOnlyList<PostGenerationStatement> _statements;
 	private string?                                _parseError;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	/// <summary>
 	///	One stored procedure name per line, or SQL that is run as typed.
 	/// </summary>
@@ -116,20 +113,16 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 				+ "If any of it fails, nothing is saved.";
 		}
 	}
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
 	#region EVENTS
-	#region PUBLIC
 	/// <summary>
 	///	Raised whenever the statements, their validity or the database change.
 	/// </summary>
 	public event EventHandler? Changed;
-	#endregion PUBLIC
 	#endregion EVENTS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the post-generation SQL editor with no statements and no chosen database.
 	/// </summary>
@@ -149,8 +142,7 @@ public sealed class PostGenerationSqlViewModel : ObservableObject
 		_statements       = [];
 		_parseError       = null;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

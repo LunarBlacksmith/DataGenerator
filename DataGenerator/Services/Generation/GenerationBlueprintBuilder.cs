@@ -9,15 +9,12 @@ namespace DataGenerator.Services.Generation;
 internal sealed class GenerationBlueprintBuilder
 {
 	#region FIELDS
-	#region PRIVATE
 	private readonly ISqlValueConverter    _converter;
 	private readonly IColumnValueGenerator _valueGenerator;
 	private readonly IPatternSqlTranslator _patternTranslator;
-	#endregion PRIVATE
 	#endregion FIELDS
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates the service that validates requests and builds generation blueprints.
 	/// </summary>
@@ -39,8 +36,7 @@ internal sealed class GenerationBlueprintBuilder
 		_valueGenerator    = valueGenerator    ?? throw new ArgumentNullException(nameof(valueGenerator));
 		_patternTranslator = patternTranslator ?? throw new ArgumentNullException(nameof(patternTranslator));
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -475,7 +471,7 @@ internal sealed class GenerationBlueprintBuilder
 
 			if (!columnNamesByTable.TryGetValue(reference.ReferencedTableKey, out List<string>? columnNames))
 			{
-				columnNames                                     = [];
+				columnNames                                      = [];
 				columnNamesByTable[reference.ReferencedTableKey] = columnNames;
 			}
 
@@ -1132,25 +1128,20 @@ internal sealed class GenerationBlueprintBuilder
 	#endregion METHODS
 
 	#region TYPES
-	#region PRIVATE
 	/// <summary>
 	///	What the row sets of one request share while they are built.
 	/// </summary>
 	private sealed class BuildContext
 	{
 		#region PROPERTIES
-		#region PUBLIC
 		public required Dictionary<string, GeneratedKeyTable> KeyTables     { get; init; }
 		public Dictionary<string, ExistingKeyPool>            Pools         { get; }
 		public required RowSnapshotSet                        Snapshots     { get; init; }
 		public required LookupPoolFactory                     LookupFactory { get; init; }
 		public required bool                                  IsScript      { get; init; }
 		public int                                            UpdateCount   { get; set; }
-		#endregion PUBLIC
 		#endregion PROPERTIES
 
-		#region CONSTRUCTORS
-		#region PUBLIC
 		/// <summary>
 		///	Creates a new <see cref="BuildContext"/> and sets the default values of its fields and properties.
 		/// </summary>
@@ -1159,9 +1150,6 @@ internal sealed class GenerationBlueprintBuilder
 			Pools       = new(StringComparer.OrdinalIgnoreCase);
 			UpdateCount = 0;
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
 	}
-	#endregion PRIVATE
 	#endregion TYPES
 }

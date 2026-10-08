@@ -7,13 +7,9 @@
 public sealed record SqlFragment
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public string Sql { get; init; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
 	/// <summary>
 	///	Creates a new <see cref="SqlFragment"/> from the supplied values.
 	/// </summary>
@@ -24,6 +20,4 @@ public sealed record SqlFragment
 	{
 		Sql = sql;
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
 }

@@ -9,17 +9,14 @@ namespace DataGenerator.ViewModels;
 public abstract class TreeNodeViewModel : ObservableObject
 {
 	#region FIELDS
-	#region PRIVATE
 	private bool _isSelected;
 	private bool _isHidden;
 	private bool _isExpanded;
 	private bool _isVisibleInTree;
 	private bool _isAlternate;
-	#endregion PRIVATE
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public abstract string DisplayName { get; }
 
 	public bool IsSelected
@@ -75,11 +72,9 @@ public abstract class TreeNodeViewModel : ObservableObject
 		get          => _isAlternate;
 		internal set => SetProperty(ref _isAlternate, value);
 	}
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PROTECTED
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="TreeNodeViewModel"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -91,11 +86,9 @@ public abstract class TreeNodeViewModel : ObservableObject
 		_isVisibleInTree = true;
 		_isAlternate     = false;
 	}
-	#endregion PROTECTED
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PROTECTED
 	/// <summary>
 	///	Lets derived nodes react after their hidden state changes.
 	/// </summary>
@@ -107,6 +100,5 @@ public abstract class TreeNodeViewModel : ObservableObject
 	///	Notifies bindings that the effective dimmed state changed.
 	/// </summary>
 	protected void RaiseDimmedChanged() => OnPropertyChanged(nameof(IsDimmed));
-	#endregion PROTECTED
 	#endregion METHODS
 }

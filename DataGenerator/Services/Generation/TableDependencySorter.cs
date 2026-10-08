@@ -7,16 +7,14 @@ namespace DataGenerator.Services.Generation;
 /// </summary>
 internal static class TableDependencySorter
 {
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Initialises the static state of <see cref="TableDependencySorter"/>.
 	/// </summary>
 	static TableDependencySorter()
 	{
 	}
-	#endregion STATIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC
@@ -274,19 +272,14 @@ internal static class TableDependencySorter
 	#endregion METHODS
 
 	#region TYPES
-	#region PRIVATE
 	private sealed record Dependency
 	{
 		#region PROPERTIES
-		#region PUBLIC
 		public string TargetKey  { get; init; }
 		public bool   IsRequired { get; init; }
 		public string ColumnName { get; init; }
-		#endregion PUBLIC
 		#endregion PROPERTIES
 
-		#region CONSTRUCTORS
-		#region PUBLIC
 		/// <summary>
 		///	Creates a new <see cref="Dependency"/> from the supplied values.
 		/// </summary>
@@ -305,9 +298,6 @@ internal static class TableDependencySorter
 			IsRequired = isRequired;
 			ColumnName = columnName;
 		}
-		#endregion PUBLIC
-		#endregion CONSTRUCTORS
 	}
-	#endregion PRIVATE
 	#endregion TYPES
 }

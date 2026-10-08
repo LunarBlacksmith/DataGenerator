@@ -30,7 +30,6 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	#endregion FIELDS
 
 	#region PROPERTIES
-	#region PUBLIC
 	public IReadOnlyList<ColumnRuleViewModel> ColumnRules { get; }
 
 	/// <summary>
@@ -164,20 +163,16 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 	///	Columns whose values SQL Server always chooses (e.g. identity columns) are not part of set configurations.
 	/// </summary>
 	public IEnumerable<ColumnRuleViewModel> ConfigurableRules => ColumnRules.Where(rule => rule.CanChangeMode);
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
 	#region EVENTS
-	#region PUBLIC
 	/// <summary>
 	///	Raised when the number of rows or the validity of the row set changes.
 	/// </summary>
 	public event EventHandler? SettingsChanged;
-	#endregion PUBLIC
 	#endregion EVENTS
 
-	#region CONSTRUCTORS
-	#region STATIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Sets the default values of the static fields and properties of <see cref="RowSetViewModel"/>.
 	/// </summary>
@@ -190,9 +185,7 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 			new ChoiceOption<RowScope>(RowScope.Existing,  "Rows already there",  "Only rows that existed before this run may be changed.")
 		];
 	}
-	#endregion STATIC
 
-	#region PUBLIC
 	/// <summary>
 	///	Creates a row set with its column rules and attaches rule validation to the row-set state.
 	/// </summary>
@@ -237,8 +230,7 @@ public sealed class RowSetViewModel : ValidatableObservableObject
 		ValidateName();
 		ValidateUpdateRules();
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
 	#region PUBLIC

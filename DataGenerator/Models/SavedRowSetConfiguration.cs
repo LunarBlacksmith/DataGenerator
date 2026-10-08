@@ -8,7 +8,6 @@
 public sealed class SavedRowSetConfiguration
 {
 	#region PROPERTIES
-	#region PUBLIC
 	public string Name { get; set; }
 
 	/// <summary>
@@ -27,11 +26,9 @@ public sealed class SavedRowSetConfiguration
 	///	One entry per column; <see cref="SavedColumnSetting.ColumnName"/> names the column it belongs to.
 	/// </summary>
 	public List<SavedColumnSetting> Columns { get; set; }
-	#endregion PUBLIC
 	#endregion PROPERTIES
 
-	#region CONSTRUCTORS
-	#region PUBLIC
+	#region CONSTRUCTOR
 	/// <summary>
 	///	Creates a new <see cref="SavedRowSetConfiguration"/> and sets the default values of its fields and properties.
 	/// </summary>
@@ -43,11 +40,9 @@ public sealed class SavedRowSetConfiguration
 		RowCount  = null;
 		Columns   = [];
 	}
-	#endregion PUBLIC
-	#endregion CONSTRUCTORS
+	#endregion CONSTRUCTOR
 
 	#region METHODS
-	#region PUBLIC
 	/// <summary>
 	///	Checks whether this configuration was saved from the given table.
 	/// </summary>
@@ -97,6 +92,5 @@ public sealed class SavedRowSetConfiguration
 				.Select(column => column.Clone())
 		]
 	};
-	#endregion PUBLIC
 	#endregion METHODS
 }
